@@ -134,19 +134,22 @@ ul { list-style: none; }
 .cal-day.sun { color: #e05c6a; }
 .cal-day.sat { color: #6b9fd4; }
 .cal-day.today { background: transparent; color: var(--accent); font-weight: 700; }
-.cal-day.selected { background: transparent; color: #1a1a2e; font-weight: 700; }
+.cal-day.selected { background: transparent; font-weight: 700; }
 .cal-day.today::before, .cal-day.selected::before {
   content: '';
   position: absolute;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  z-index: -1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
 }
-.cal-day.today::before { background: var(--accent-glow); border: 2px solid var(--accent); }
+.cal-day.today::before { background: var(--accent-glow); border: 1.5px solid var(--accent); }
 .cal-day.selected::before { background: var(--accent); }
-.cal-day.today { color: var(--accent); }
-.cal-day.selected { color: #1a1a2e; }.cal-day.has-todo::after {
+.cal-day.selected { color: #1a1a2e; position: relative; }
+.cal-day.selected span, .cal-day.today span { position: relative; z-index: 1; }.cal-day.has-todo::after {
   content: '';
   position: absolute;
   bottom: 3px;
