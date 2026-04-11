@@ -7,13 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initModal();
   initGesturePopup();
   initSearch();
+  initWeekly();
   initTabs();
-
-  // 첫 로드: 오늘 날짜 할일
   loadTodos();
 });
 
-// ── 탭 전환 ──
 function initTabs() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -30,5 +28,9 @@ function switchTab(tabName) {
 
   if (tabName === 'search') {
     setTimeout(() => document.getElementById('search-input').focus(), 200);
+  }
+  if (tabName === 'weekly') {
+    weekOffset = 0;
+    loadWeekly();
   }
 }
