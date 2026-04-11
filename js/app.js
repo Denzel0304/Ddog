@@ -7,6 +7,7 @@ let currentTab = 'todo';
 document.addEventListener('DOMContentLoaded', () => {
   initCalendar();
   initModal();
+  initRepeat();
   initGesturePopup();
   initSearch();
   initWeekly();
