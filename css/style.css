@@ -143,11 +143,10 @@ ul { list-style: none; }
   border-radius: 50%;
   z-index: -1;
 }
-.cal-day.today::before { background: var(--accent-glow); }
+.cal-day.today::before { background: var(--accent-glow); border: 2px solid var(--accent); }
 .cal-day.selected::before { background: var(--accent); }
 .cal-day.today { color: var(--accent); }
-.cal-day.selected { color: #1a1a2e; }
-.cal-day.has-todo::after {
+.cal-day.selected { color: #1a1a2e; }.cal-day.has-todo::after {
   content: '';
   position: absolute;
   bottom: 3px;
@@ -264,8 +263,6 @@ ul { list-style: none; }
   flex-shrink: 0;
   position: relative;
   z-index: 10;
-  padding: 0 8px;
-  gap: 4px;
 }
 .nav-btn {
   flex: 1;
@@ -278,15 +275,15 @@ ul { list-style: none; }
   font-size: 10px;
   font-family: var(--font-ui);
   transition: color 0.15s;
+  height: 100%;
 }
 .nav-btn svg { width: 22px; height: 22px; }
 .nav-btn.active { color: var(--accent); }
 
-/* ── FAB ── */
+/* ── FAB (탭바 우측) ── */
 #fab-add {
-  position: relative;
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--accent);
   color: #1a1a2e;
@@ -295,11 +292,11 @@ ul { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(126, 207, 160, 0.4);
-  z-index: 20;
+  box-shadow: 0 4px 16px rgba(126, 207, 160, 0.4);
+  flex-shrink: 0;
+  margin-right: 12px;
   transition: transform 0.15s, box-shadow 0.15s;
   line-height: 1;
-  flex-shrink: 0;
 }
 #fab-add:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(126, 207, 160, 0.5); }
 #fab-add:active { transform: scale(0.95); }
