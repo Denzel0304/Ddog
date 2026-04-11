@@ -278,12 +278,16 @@ ul { list-style: none; }
   font-family: var(--font-ui);
 }
 .week-nav {
-  font-size: 24px; color: var(--text-secondary);
+  font-size: 20px; color: var(--text-secondary);
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; transition: background 0.15s, color 0.15s;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-elevated);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-weight: 600;
 }
-.week-nav:hover { background: var(--bg-elevated); color: var(--accent); }
+.week-nav:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
 
 /* 요일 카드 행 */
 #week-day-row-wrap {
