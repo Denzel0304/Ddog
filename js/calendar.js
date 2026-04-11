@@ -106,7 +106,7 @@ function makeCalCell(day, year, month, isOtherMonth, today, selectedDate) {
 
   const el = document.createElement('div');
   el.className = 'cal-day';
-  el.textContent = day;
+  el.innerHTML = `<span>${day}</span>`;
   el.dataset.date = dateStr;
 
   if (isOtherMonth) el.classList.add('other-month');
