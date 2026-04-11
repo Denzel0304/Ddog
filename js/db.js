@@ -68,10 +68,11 @@ async function insertTodo(data) {
   return rows[0];
 }
 
-// 상기용 복사본 삽입 (N일 전)
-async function insertRemindCopy(original, remindDate) {
+// 상기용 복사본 삽입 (N일 전) — dateLabel: '4월 15일' 형태
+async function insertRemindCopy(original, remindDate, dateLabel) {
+  const titleSuffix = dateLabel ? `(${dateLabel})` : '';
   const payload = {
-    title:      `🔔 ${original.title}`,
+    title:      `🔔 ${original.title}${titleSuffix}`,
     memo:       original.memo || '',
     importance: original.importance,
     date:       remindDate,
