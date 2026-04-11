@@ -13,207 +13,183 @@
 </head>
 <body>
 
-  <!-- 앱 전체 래퍼 -->
-  <div id="app">
+<div id="app">
 
-    <!-- ===== 할일 탭 ===== -->
-    <div id="tab-todo" class="tab-content active">
-
-      <!-- 달력 영역 -->
-      <div id="calendar-section">
-        <div id="calendar-header">
-          <button id="cal-prev" class="cal-nav">&#8249;</button>
-          <div id="cal-title">
-            <span id="cal-year" class="cal-year-btn"></span>년
-            <span id="cal-month" class="cal-month-btn"></span>월
-          </div>
-          <button id="cal-next" class="cal-nav">&#8250;</button>
+  <!-- ===== 할일 탭 ===== -->
+  <div id="tab-todo" class="tab-content active">
+    <div id="calendar-section">
+      <div id="calendar-header">
+        <button id="cal-prev" class="cal-nav">&#8249;</button>
+        <div id="cal-title">
+          <span id="cal-year" class="cal-year-btn"></span>년
+          <span id="cal-month" class="cal-month-btn"></span>월
         </div>
-        <div id="calendar-weekdays">
-          <span class="wd sun">일</span>
-          <span class="wd">월</span>
-          <span class="wd">화</span>
-          <span class="wd">수</span>
-          <span class="wd">목</span>
-          <span class="wd">금</span>
-          <span class="wd sat">토</span>
-        </div>
-        <div id="calendar-grid"></div>
+        <button id="cal-next" class="cal-nav">&#8250;</button>
       </div>
-
-      <!-- 선택 날짜 표시 -->
-      <div id="selected-date-bar">
-        <span id="selected-date-label"></span>
+      <div id="calendar-weekdays">
+        <span class="wd sun">일</span><span class="wd">월</span><span class="wd">화</span>
+        <span class="wd">수</span><span class="wd">목</span><span class="wd">금</span><span class="wd sat">토</span>
       </div>
-
-      <!-- 할일 목록 -->
-      <div id="todo-list-section">
-        <ul id="todo-list"></ul>
-      </div>
-
+      <div id="calendar-grid"></div>
     </div>
-
-    <!-- ===== 주간 일정 탭 ===== -->
-    <div id="tab-weekly" class="tab-content">
-      <div id="weekly-header">
-        <button id="week-prev" class="week-nav">&#8249;</button>
-        <span id="week-label"></span>
-        <button id="week-next" class="week-nav">&#8250;</button>
-      </div>
-      <div id="weekly-list-section">
-        <div id="weekly-list"></div>
-      </div>
+    <div id="selected-date-bar">
+      <span id="selected-date-label"></span>
     </div>
-
-    <!-- ===== 검색 탭 ===== -->
-    <div id="tab-search" class="tab-content">
-      <div id="search-container">
-        <div id="search-input-wrap">
-          <input type="text" id="search-input" placeholder="검색어를 입력하세요..." />
-          <button id="search-clear">✕</button>
-        </div>
-        <ul id="search-results"></ul>
-      </div>
-    </div>
-
-    <!-- ===== 하단 탭바 ===== -->
-    <nav id="bottom-nav">
-      <button class="nav-btn active" data-tab="todo" id="nav-todo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-          <line x1="8" y1="14" x2="8.01" y2="14" stroke-width="3"/>
-          <line x1="12" y1="14" x2="16" y2="14"/>
-          <line x1="8" y1="18" x2="8.01" y2="18" stroke-width="3"/>
-          <line x1="12" y1="18" x2="16" y2="18"/>
-        </svg>
-        <span>할일</span>
-      </button>
-      <button class="nav-btn" data-tab="search" id="nav-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <span>검색</span>
-      </button>
-      <button class="nav-btn" data-tab="weekly" id="nav-weekly">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-          <line x1="3" y1="15" x2="21" y2="15"/>
-          <line x1="8" y1="10" x2="8" y2="20"/>
-        </svg>
-        <span>주간</span>
-      </button>
-      <!-- + 추가 버튼 (탭바 우측) -->
-      <button id="fab-add">＋</button>
-    </nav>
-
-  </div>
-
-  <!-- ===== 할일 추가/수정 모달 ===== -->
-  <div id="modal-overlay" class="hidden">
-    <div id="modal-box">
-      <div id="modal-header">
-        <span id="modal-title-label">할일 추가</span>
-        <button id="modal-close">✕</button>
-      </div>
-
-      <!-- 제목 입력 -->
-      <div id="modal-title-row">
-        <input type="text" id="input-title" placeholder="할일을 입력하세요..." autocomplete="off" />
-        <label id="detail-toggle-label">
-          <input type="checkbox" id="detail-toggle" />
-          <span>상세</span>
-        </label>
-      </div>
-
-      <!-- 상세 영역 (기본 숨김) -->
-      <div id="detail-section" class="hidden">
-        <div class="detail-row">
-          <label class="detail-label">중요도</label>
-          <div id="importance-btns">
-            <button class="imp-btn" data-val="0">없음</button>
-            <button class="imp-btn" data-val="1">낮음</button>
-            <button class="imp-btn" data-val="2">보통</button>
-            <button class="imp-btn" data-val="3">높음</button>
-          </div>
-        </div>
-        <div class="detail-row">
-          <label class="detail-label">메모</label>
-          <textarea id="input-memo" placeholder="메모 (선택사항)"></textarea>
-        </div>
-        <div class="detail-row">
-          <label class="detail-label">날짜</label>
-          <input type="date" id="input-date" />
-        </div>
-        <div class="detail-row">
-          <label class="detail-label">며칠 전 상기</label>
-          <input type="number" id="input-remind" placeholder="0" min="0" max="30" value="0" />
-          <span class="detail-unit">일 전에도 추가</span>
-        </div>
-      </div>
-
-      <button id="modal-save">저장</button>
+    <div id="todo-list-section">
+      <ul id="todo-list"></ul>
     </div>
   </div>
 
-  <!-- ===== 슬라이드 액션 팝업 (좌→우 스와이프) ===== -->
-  <div id="action-popup" class="hidden">
-    <div id="action-box">
-      <button class="action-btn" id="action-tomorrow">📅 내일</button>
-      <button class="action-btn" id="action-pick-date">🗓 날짜 선택</button>
-      <button class="action-btn danger" id="action-delete">🗑 삭제</button>
+  <!-- ===== 주간 탭 ===== -->
+  <div id="tab-weekly" class="tab-content">
+    <div id="weekly-header">
+      <button id="week-prev" class="week-nav">&#8249;</button>
+      <span id="week-range-label"></span>
+      <button id="week-next" class="week-nav">&#8250;</button>
     </div>
-    <input type="date" id="action-date-picker" class="hidden" />
+    <div id="week-day-row-wrap">
+      <div id="week-day-row"></div>
+    </div>
+    <div id="week-selected-bar">
+      <span id="week-selected-label"></span>
+    </div>
+    <div id="weekly-list-section">
+      <div id="weekly-todo-list"></div>
+    </div>
   </div>
 
-  <!-- ===== 년도 입력 팝업 ===== -->
-  <div id="year-popup" class="hidden">
-    <div id="year-box">
-      <label>년도 입력</label>
-      <input type="number" id="year-input" min="2000" max="2099" />
-      <div id="year-btns">
-        <button id="year-cancel">취소</button>
-        <button id="year-confirm">확인</button>
+  <!-- ===== 검색 탭 ===== -->
+  <div id="tab-search" class="tab-content">
+    <div id="search-container">
+      <div id="search-input-wrap">
+        <input type="text" id="search-input" placeholder="검색어를 입력하세요..." />
+        <button id="search-clear">✕</button>
+      </div>
+      <ul id="search-results"></ul>
+    </div>
+  </div>
+
+  <!-- ===== 하단 탭바 ===== -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-tab="todo" id="nav-todo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <line x1="8" y1="14" x2="8.01" y2="14" stroke-width="3"/><line x1="12" y1="14" x2="16" y2="14"/>
+        <line x1="8" y1="18" x2="8.01" y2="18" stroke-width="3"/><line x1="12" y1="18" x2="16" y2="18"/>
+      </svg>
+      <span>할일</span>
+    </button>
+    <button class="nav-btn" data-tab="weekly" id="nav-weekly">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+        <line x1="8" y1="10" x2="8" y2="20"/>
+      </svg>
+      <span>주간</span>
+    </button>
+    <button class="nav-btn" data-tab="search" id="nav-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span>검색</span>
+    </button>
+    <button id="fab-add">＋</button>
+  </nav>
+
+</div>
+
+<!-- ===== 모달 ===== -->
+<div id="modal-overlay" class="hidden">
+  <div id="modal-box">
+    <div id="modal-header">
+      <span id="modal-title-label">할일 추가</span>
+      <button id="modal-close">✕</button>
+    </div>
+    <div id="modal-title-row">
+      <input type="text" id="input-title" placeholder="할일을 입력하세요..." autocomplete="off" />
+      <label id="detail-toggle-label">
+        <input type="checkbox" id="detail-toggle" />
+        <span>상세</span>
+      </label>
+    </div>
+    <div id="detail-section" class="hidden">
+      <div class="detail-row">
+        <label class="detail-label">중요도</label>
+        <div id="importance-btns">
+          <button class="imp-btn" data-val="0">없음</button>
+          <button class="imp-btn" data-val="1">낮음</button>
+          <button class="imp-btn" data-val="2">보통</button>
+          <button class="imp-btn" data-val="3">높음</button>
+        </div>
+      </div>
+      <div class="detail-row">
+        <label class="detail-label">메모</label>
+        <textarea id="input-memo" placeholder="메모 (선택사항)"></textarea>
+      </div>
+      <div class="detail-row">
+        <label class="detail-label">날짜</label>
+        <input type="date" id="input-date" />
+      </div>
+      <div class="detail-row">
+        <label class="detail-label">며칠 전 상기</label>
+        <input type="number" id="input-remind" placeholder="0" min="0" max="30" value="0" />
+        <span class="detail-unit">일 전에도 추가</span>
       </div>
     </div>
+    <button id="modal-save">저장</button>
   </div>
+</div>
 
-  <!-- ===== 월 선택 팝업 ===== -->
-  <div id="month-popup" class="hidden">
-    <div id="month-box">
-      <div id="month-grid">
-        <button class="month-btn" data-m="1">1월</button>
-        <button class="month-btn" data-m="2">2월</button>
-        <button class="month-btn" data-m="3">3월</button>
-        <button class="month-btn" data-m="4">4월</button>
-        <button class="month-btn" data-m="5">5월</button>
-        <button class="month-btn" data-m="6">6월</button>
-        <button class="month-btn" data-m="7">7월</button>
-        <button class="month-btn" data-m="8">8월</button>
-        <button class="month-btn" data-m="9">9월</button>
-        <button class="month-btn" data-m="10">10월</button>
-        <button class="month-btn" data-m="11">11월</button>
-        <button class="month-btn" data-m="12">12월</button>
-      </div>
+<!-- ===== 액션 팝업 ===== -->
+<div id="action-popup" class="hidden">
+  <div id="action-box">
+    <button class="action-btn" id="action-tomorrow">📅 내일</button>
+    <button class="action-btn" id="action-pick-date">🗓 날짜 선택</button>
+    <button class="action-btn danger" id="action-delete">🗑 삭제</button>
+  </div>
+  <input type="date" id="action-date-picker" class="hidden" />
+</div>
+
+<!-- ===== 년도 팝업 ===== -->
+<div id="year-popup" class="hidden">
+  <div id="year-box">
+    <label>년도 입력</label>
+    <input type="number" id="year-input" min="2000" max="2099" />
+    <div id="year-btns">
+      <button id="year-cancel">취소</button>
+      <button id="year-confirm">확인</button>
     </div>
   </div>
+</div>
 
-  <!-- JS 모듈 로드 순서 중요 -->
-  <script src="js/config.js"></script>
-  <script src="js/db.js"></script>
-  <script src="js/calendar.js"></script>
-  <script src="js/modal.js"></script>
-  <script src="js/gesture.js"></script>
-  <script src="js/todo.js"></script>
-  <script src="js/search.js"></script>
-  <script src="js/weekly.js"></script>
-  <script src="js/app.js"></script>
+<!-- ===== 월 팝업 ===== -->
+<div id="month-popup" class="hidden">
+  <div id="month-box">
+    <div id="month-grid">
+      <button class="month-btn" data-m="1">1월</button><button class="month-btn" data-m="2">2월</button>
+      <button class="month-btn" data-m="3">3월</button><button class="month-btn" data-m="4">4월</button>
+      <button class="month-btn" data-m="5">5월</button><button class="month-btn" data-m="6">6월</button>
+      <button class="month-btn" data-m="7">7월</button><button class="month-btn" data-m="8">8월</button>
+      <button class="month-btn" data-m="9">9월</button><button class="month-btn" data-m="10">10월</button>
+      <button class="month-btn" data-m="11">11월</button><button class="month-btn" data-m="12">12월</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/gesture.js"></script>
+<script src="js/todo.js"></script>
+<script src="js/search.js"></script>
+<script src="js/weekly.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>
