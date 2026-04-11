@@ -36,7 +36,6 @@ function initModal() {
   remindInput.addEventListener('blur',  () => { if (remindInput.value === '')  remindInput.value = '0'; });
 }
 
-// 현재 탭 기준 기본 날짜 반환
 function getDefaultDate() {
   if (currentTab === 'weekly' && selectedWeekDay) return selectedWeekDay;
   return AppState.selectedDate;
@@ -65,7 +64,18 @@ function openEditModal(todo) {
     b.classList.toggle('active', parseInt(b.dataset.val) === selectedImportance);
   });
 
-  if (todo.memo || todo.importance > 0 || todo.remind_days > 0) {
+  // 반복 설정 복원
+  if (todo.repeat_type && todo.repeat_type !== 'none') {
+    repeatConfig = {
+      type: todo.repeat_type,
+      interval: todo.repeat_interval || 1,
+      day: todo.repeat_day || null,
+      endDate: todo.repeat_end_date || null,
+    };
+    updateRepeatBtn();
+  }
+
+  if (todo.memo || todo.importance > 0 || todo.remind_days > 0 || (todo.repeat_type && todo.repeat_type !== 'none')) {
     document.getElementById('detail-toggle').checked = true;
     document.getElementById('detail-section').classList.remove('hidden');
   }
@@ -89,6 +99,7 @@ function resetModalForm() {
   selectedImportance = 0;
   document.querySelectorAll('.imp-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.imp-btn[data-val="0"]').classList.add('active');
+  resetRepeat();
 }
 
 async function handleSave() {
@@ -105,7 +116,16 @@ async function handleSave() {
     return;
   }
 
-  const data = { title, memo, importance: selectedImportance, date, remind_days: remind };
+  const data = {
+    title, memo,
+    importance: selectedImportance,
+    date,
+    remind_days: remind,
+    repeat_type:     repeatConfig.type,
+    repeat_interval: repeatConfig.interval || 1,
+    repeat_day:      repeatConfig.day || null,
+    repeat_end_date: repeatConfig.endDate || null,
+  };
 
   try {
     if (AppState.editingId) {
@@ -127,7 +147,7 @@ async function handleSave() {
     }
 
     closeModal();
-    refreshCurrentTab();  // 현재 탭 갱신
+    refreshCurrentTab();
     showToast(AppState.editingId ? '수정됐어요 ✓' : '추가됐어요 ✓');
   } catch(e) {
     showToast('저장 실패. 다시 시도해주세요');
