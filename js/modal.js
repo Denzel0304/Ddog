@@ -27,19 +27,19 @@ function initModal() {
 
   document.getElementById('input-title').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
-      const isDetail = document.getElementById('detail-toggle').checked;
-      if (!isDetail) handleSave();
+      if (!document.getElementById('detail-toggle').checked) handleSave();
     }
   });
 
-  // 상기 입력: 포커스 시 0이면 비우기, 블러 시 비어있으면 0
   const remindInput = document.getElementById('input-remind');
-  remindInput.addEventListener('focus', () => {
-    if (remindInput.value === '0') remindInput.value = '';
-  });
-  remindInput.addEventListener('blur', () => {
-    if (remindInput.value === '') remindInput.value = '0';
-  });
+  remindInput.addEventListener('focus', () => { if (remindInput.value === '0') remindInput.value = ''; });
+  remindInput.addEventListener('blur',  () => { if (remindInput.value === '')  remindInput.value = '0'; });
+}
+
+// 현재 탭 기준 기본 날짜 반환
+function getDefaultDate() {
+  if (currentTab === 'weekly' && selectedWeekDay) return selectedWeekDay;
+  return AppState.selectedDate;
 }
 
 function openAddModal() {
@@ -82,7 +82,7 @@ function closeModal() {
 function resetModalForm() {
   document.getElementById('input-title').value  = '';
   document.getElementById('input-memo').value   = '';
-  document.getElementById('input-date').value   = AppState.selectedDate;
+  document.getElementById('input-date').value   = getDefaultDate();
   document.getElementById('input-remind').value = 0;
   document.getElementById('detail-toggle').checked = false;
   document.getElementById('detail-section').classList.add('hidden');
@@ -94,16 +94,13 @@ function resetModalForm() {
 async function handleSave() {
   const title  = document.getElementById('input-title').value.trim();
   const memo   = document.getElementById('input-memo').value.trim();
-  const date   = document.getElementById('input-date').value || AppState.selectedDate;
+  const date   = document.getElementById('input-date').value || getDefaultDate();
   const remind = parseInt(document.getElementById('input-remind').value) || 0;
 
-  // 제목 필수 체크
   if (!title) {
     document.getElementById('input-title').focus();
     document.getElementById('input-title').style.borderColor = 'var(--danger)';
-    setTimeout(() => {
-      document.getElementById('input-title').style.borderColor = '';
-    }, 1500);
+    setTimeout(() => { document.getElementById('input-title').style.borderColor = ''; }, 1500);
     showToast('제목을 입력해주세요 ✏️');
     return;
   }
@@ -119,7 +116,6 @@ async function handleSave() {
       const newTodo = await insertTodo(data);
       if (date === AppState.selectedDate) AppState.todos.unshift(newTodo);
 
-      // 상기용 복사본 추가 (날짜 괄호 포함)
       if (remind > 0) {
         const remindDate = daysBeforeStr(date, remind);
         if (remindDate !== date) {
@@ -131,8 +127,7 @@ async function handleSave() {
     }
 
     closeModal();
-    renderTodos();
-    updateMonthDots();
+    refreshCurrentTab();  // 현재 탭 갱신
     showToast(AppState.editingId ? '수정됐어요 ✓' : '추가됐어요 ✓');
   } catch(e) {
     showToast('저장 실패. 다시 시도해주세요');
