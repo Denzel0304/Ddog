@@ -140,9 +140,59 @@
         <label class="detail-label">며칠 전 상기</label>
         <input type="number" id="input-remind" placeholder="0" min="0" max="30" value="0" />
         <span class="detail-unit">일 전에도 추가</span>
+        <button id="repeat-btn" class="repeat-btn" title="반복 설정">🔁 반복</button>
       </div>
     </div>
     <button id="modal-save">저장</button>
+  </div>
+</div>
+
+<!-- ===== 반복 설정 모달 ===== -->
+<div id="repeat-overlay" class="hidden">
+  <div id="repeat-box">
+    <div id="repeat-header">
+      <span>반복 설정</span>
+      <button id="repeat-modal-close">✕</button>
+    </div>
+
+    <!-- 반복 타입 선택 -->
+    <div id="rtype-row">
+      <button class="rtype-btn active" data-type="none">없음</button>
+      <button class="rtype-btn" data-type="daily">매일</button>
+      <button class="rtype-btn" data-type="weekly">매주</button>
+      <button class="rtype-btn" data-type="monthly">매월</button>
+      <button class="rtype-btn" data-type="custom">커스텀</button>
+    </div>
+
+    <!-- 매월 N일 -->
+    <div id="repeat-monthly-wrap" class="repeat-option hidden">
+      <label>매월</label>
+      <input type="number" id="repeat-monthly-day" min="1" max="31" value="1" />
+      <span>일</span>
+    </div>
+
+    <!-- 커스텀: 매 N일마다 -->
+    <div id="repeat-custom-wrap" class="repeat-option hidden">
+      <label>매</label>
+      <input type="number" id="repeat-custom-interval" min="1" max="365" value="1" />
+      <span>일마다</span>
+    </div>
+
+    <!-- 종료일 -->
+    <div class="repeat-option">
+      <label class="repeat-end-label">
+        <input type="checkbox" id="repeat-end-toggle" />
+        <span>종료일 설정</span>
+      </label>
+      <div id="repeat-end-date-wrap" class="hidden">
+        <input type="date" id="repeat-end-date" />
+      </div>
+    </div>
+
+    <div id="repeat-footer">
+      <button id="repeat-cancel-btn" class="repeat-footer-btn cancel">취소</button>
+      <button id="repeat-confirm-btn" class="repeat-footer-btn confirm">확인</button>
+    </div>
   </div>
 </div>
 
@@ -185,6 +235,7 @@
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/calendar.js"></script>
+<script src="js/repeat.js"></script>
 <script src="js/modal.js"></script>
 <script src="js/gesture.js"></script>
 <script src="js/todo.js"></script>
