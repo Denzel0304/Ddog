@@ -180,36 +180,142 @@ function openMonthPopup() {
 function closeMonthPopup() { document.getElementById('month-popup').classList.add('hidden'); }
 
 function initCalendarSwipe() {
-  const el = document.getElementById('calendar-section');
-  let startX = 0, startY = 0, moved = false;
+  const calSection = document.getElementById('calendar-section');
+  const todoSection = document.getElementById('todo-list-section');
+  const collapseBar = document.getElementById('cal-collapse-bar');
+  let startX = 0, startY = 0, movedH = false, movedV = false;
 
-  el.addEventListener('touchstart', e => {
+  // 콜랩스 바 클릭 → 토글
+  collapseBar.addEventListener('click', () => toggleCalendar());
+
+  // 할일 목록 위로 드래그 → 달력 접기
+  todoSection.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    movedV = false;
+  }, { passive: true });
+  todoSection.addEventListener('touchmove', e => {
+    const dy = e.touches[0].clientY - startY;
+    if (dy < -30) movedV = true;
+  }, { passive: true });
+  todoSection.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy < -60) collapseCalendar();
+    else if (dy > 60) expandCalendar();
+  }, { passive: true });
+
+  // 달력 영역 터치 (좌우: 월 이동, 위아래: 접기/펴기)
+  calSection.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-    moved = false;
+    movedH = false; movedV = false;
   }, { passive: true });
 
-  el.addEventListener('touchmove', e => {
+  calSection.addEventListener('touchmove', e => {
     const dx = Math.abs(e.touches[0].clientX - startX);
     const dy = Math.abs(e.touches[0].clientY - startY);
-    if (dx > dy && dx > 10) moved = true;
+    if (dx > dy && dx > 10) movedH = true;
+    if (dy > dx && dy > 10) movedV = true;
   }, { passive: true });
 
-  el.addEventListener('touchend', e => {
-    if (!moved) return;
+  calSection.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50)
+    if (movedH && Math.abs(dx) > 50) {
       moveCalMonth(dx < 0 ? 1 : -1);
+    } else if (movedV && dy < -50) {
+      collapseCalendar();
+    }
   }, { passive: true });
 
-  // PC 마우스
+  // PC 마우스 (달력 좌우)
   let mStartX = 0, mDown = false;
-  el.addEventListener('mousedown', e => { mStartX = e.clientX; mDown = true; });
-  el.addEventListener('mouseup', e => {
+  calSection.addEventListener('mousedown', e => { mStartX = e.clientX; mDown = true; });
+  calSection.addEventListener('mouseup', e => {
     if (!mDown) return; mDown = false;
     const dx = e.clientX - mStartX;
     if (Math.abs(dx) > 50) moveCalMonth(dx < 0 ? 1 : -1);
   });
-  el.addEventListener('mouseleave', () => { mDown = false; });
+  calSection.addEventListener('mouseleave', () => { mDown = false; });
 }
+
+let calCollapsed = false;
+
+function collapseCalendar() {
+  if (calCollapsed) return;
+  calCollapsed = true;
+  const cal = document.getElementById('calendar-section');
+  const grid = document.getElementById('calendar-grid');
+  const header = document.getElementById('calendar-header');
+  const weekdays = document.getElementById('calendar-weekdays');
+
+  // 오늘 날짜가 포함된 행만 남기기
+  const todayEl = cal.querySelector('.cal-day.today, .cal-day.selected');
+  const allRows = [...grid.querySelectorAll('.cal-day')];
+
+  // 오늘/선택된 날의 행 인덱스 (7개씩)
+  let targetRowStart = 0;
+  if (todayEl) {
+    const idx = allRows.indexOf(todayEl);
+    targetRowStart = Math.floor(idx / 7) * 7;
+  }
+
+  // 현재 주 날짜들만 남기고 나머지 숨기기
+  allRows.forEach((el, i) => {
+    const rowIdx = Math.floor(i / 7);
+    const targetRow = Math.floor(targetRowStart / 7);
+    if (rowIdx !== targetRow) {
+      el.style.transition = 'opacity 0.3s, max-height 0.3s';
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      el.style.overflow = 'hidden';
+      el.style.padding = '0';
+      el.style.margin = '0';
+    }
+  });
+
+  header.style.transition = 'opacity 0.3s, max-height 0.3s';
+  header.style.opacity = '0';
+  header.style.maxHeight = '0';
+  header.style.overflow = 'hidden';
+  header.style.marginBottom = '0';
+
+  weekdays.style.transition = 'opacity 0.3s, max-height 0.3s';
+  weekdays.style.opacity = '0';
+  weekdays.style.maxHeight = '0';
+  weekdays.style.overflow = 'hidden';
+  weekdays.style.marginBottom = '0';
+}
+
+function expandCalendar() {
+  if (!calCollapsed) return;
+  calCollapsed = false;
+  const cal = document.getElementById('calendar-section');
+  const grid = document.getElementById('calendar-grid');
+  const header = document.getElementById('calendar-header');
+  const weekdays = document.getElementById('calendar-weekdays');
+
+  grid.querySelectorAll('.cal-day').forEach(el => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '1';
+    el.style.maxHeight = '';
+    el.style.overflow = '';
+    el.style.padding = '';
+    el.style.margin = '';
+  });
+
+  header.style.opacity = '1';
+  header.style.maxHeight = '';
+  header.style.overflow = '';
+  header.style.marginBottom = '';
+
+  weekdays.style.opacity = '1';
+  weekdays.style.maxHeight = '';
+  weekdays.style.overflow = '';
+  weekdays.style.marginBottom = '';
+}
+
+function toggleCalendar() {
+  if (calCollapsed) expandCalendar();
+  else collapseCalendar();
+}
+
