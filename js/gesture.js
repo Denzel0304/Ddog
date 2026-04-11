@@ -3,6 +3,7 @@
 // =============================================
 
 let actionTargetId = null;
+let actionFromWeekly = false;
 
 function initGesturePopup() {
   document.getElementById('action-popup').addEventListener('click', e => {
@@ -15,7 +16,7 @@ function initGesturePopup() {
       await moveTodoDate(actionTargetId, tomorrowStr());
       closeActionPopup();
       showToast('내일로 이동했어요');
-      await loadTodos();
+      actionFromWeekly ? loadWeekly() : await loadTodos();
     } catch(e) { showToast('오류가 발생했어요'); }
   });
 
@@ -32,7 +33,7 @@ function initGesturePopup() {
         await moveTodoDate(actionTargetId, picker.value);
         closeActionPopup();
         showToast('날짜를 변경했어요');
-        await loadTodos();
+        actionFromWeekly ? loadWeekly() : await loadTodos();
       } catch(e) { showToast('오류가 발생했어요'); }
     });
   });
@@ -41,17 +42,21 @@ function initGesturePopup() {
     if (!actionTargetId) return;
     try {
       await deleteTodo(actionTargetId);
-      AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
+      if (!actionFromWeekly) {
+        AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
+        renderTodos();
+        updateMonthDots();
+      }
       closeActionPopup();
-      renderTodos();
-      updateMonthDots();
+      if (actionFromWeekly) loadWeekly();
       showToast('삭제됐어요');
     } catch(e) { showToast('오류가 발생했어요'); }
   });
 }
 
-function openActionPopup(id) {
+function openActionPopup(id, fromWeekly = false) {
   actionTargetId = id;
+  actionFromWeekly = fromWeekly;
   document.getElementById('action-popup').classList.remove('hidden');
 }
 
@@ -59,69 +64,45 @@ function closeActionPopup() {
   document.getElementById('action-popup').classList.add('hidden');
   document.getElementById('action-date-picker').classList.add('hidden');
   actionTargetId = null;
+  actionFromWeekly = false;
 }
 
-// ── 아이템별 제스처 초기화 ──
+// ── 할일탭 아이템 제스처 ──
 function initItemGesture(el, todo) {
-  let startX = 0, startY = 0;
-  let moved = false;
-  let currentX = 0;
-  let isHorizontal = null;
+  let startX = 0, startY = 0, moved = false, currentX = 0, isHorizontal = null;
 
   el.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
-    moved = false;
-    currentX = 0;
-    isHorizontal = null;
+    moved = false; currentX = 0; isHorizontal = null;
     el.style.transition = 'none';
   }, { passive: true });
 
   el.addEventListener('touchmove', e => {
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
-
     if (isHorizontal === null) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8)
         isHorizontal = Math.abs(dx) > Math.abs(dy);
-      }
       return;
     }
-
     if (!isHorizontal) return;
     moved = true;
     currentX = dx;
-
-    // 슬라이드 시각 피드백
     const clampedX = Math.max(-120, Math.min(120, dx));
     el.style.transform = `translateX(${clampedX}px)`;
-
-    // 우→좌: 배경 붉게, 좌→우: 배경 초록
-    if (dx > 20) {
-      el.style.background = `rgba(126,207,160,${Math.min(dx/120, 0.3)})`;
-    } else if (dx < -20) {
-      el.style.background = `rgba(224,92,106,${Math.min(Math.abs(dx)/120, 0.25)})`;
-    } else {
-      el.style.background = '';
-    }
+    if (dx > 20)       el.style.background = `rgba(126,207,160,${Math.min(dx/120, 0.3)})`;
+    else if (dx < -20) el.style.background = `rgba(224,92,106,${Math.min(Math.abs(dx)/120, 0.25)})`;
+    else               el.style.background = '';
   }, { passive: true });
 
   el.addEventListener('touchend', e => {
-    if (!isHorizontal || !moved) {
-      resetItemStyle(el);
-      return;
-    }
-
+    if (!isHorizontal || !moved) { resetItemStyle(el); return; }
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
-
-    if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) {
-      resetItemStyle(el);
-      return;
-    }
+    if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) { resetItemStyle(el); return; }
 
     if (dx > 0 && !todo.is_done) {
-      // 좌→우: 완료
       el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
       el.style.transform = 'translateX(110%)';
       el.style.opacity = '0';
@@ -132,15 +113,11 @@ function initItemGesture(el, todo) {
           if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
           renderTodos();
           updateMonthDots();
-        } catch(e) {
-          resetItemStyle(el);
-          showToast('오류가 발생했어요');
-        }
+        } catch(e) { resetItemStyle(el); showToast('오류가 발생했어요'); }
       }, 250);
     } else if (dx < 0) {
-      // 우→좌: 액션 팝업
       resetItemStyle(el);
-      openActionPopup(todo.id);
+      openActionPopup(todo.id, false);
     } else {
       resetItemStyle(el);
     }
@@ -152,21 +129,4 @@ function resetItemStyle(el) {
   el.style.transform = '';
   el.style.background = '';
   setTimeout(() => { el.style.transition = ''; }, 220);
-}
-
-async function handleSwipeComplete(el, todo) {
-  if (todo.is_done) return;
-  el.classList.add('swipe-complete');
-  setTimeout(async () => {
-    try {
-      await toggleDone(todo.id, true);
-      const t = AppState.todos.find(t => t.id === todo.id);
-      if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
-      renderTodos();
-      updateMonthDots();
-    } catch(e) {
-      el.classList.remove('swipe-complete');
-      showToast('오류가 발생했어요');
-    }
-  }, 300);
 }
