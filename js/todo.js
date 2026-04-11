@@ -7,8 +7,24 @@ async function loadTodos() {
   const list = document.getElementById('todo-list');
   list.innerHTML = '<div class="spinner"></div>';
   try {
-    const rows = await fetchTodosByDate(AppState.selectedDate);
-    AppState.todos = rows || [];
+    const dateStr = AppState.selectedDate;
+
+    // 1. 해당 날짜 직접 등록된 할일
+    const directRows = await fetchTodosByDate(dateStr);
+
+    // 2. 반복 마스터 행 조회 (repeat_type != 'none', 기준일 이전, 예외 행 아님)
+    const repeatMasters = await fetchRepeatMasters(dateStr);
+
+    // 3. 해당 날짜에 이미 예외 처리된 마스터 ID 목록
+    const exceptions = await fetchRepeatExceptions(dateStr);
+    const exceptionIds = new Set(exceptions.map(e => e.repeat_master_id));
+
+    // 4. 반복 마스터 중 해당 날짜에 매칭되고 예외 아닌 것 가상 추가
+    const virtualRows = repeatMasters
+      .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
+      .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
+
+    AppState.todos = [...(directRows || []), ...virtualRows];
     renderTodos();
     updateMonthDots();
   } catch(e) {
@@ -73,6 +89,13 @@ function makeTodoItem(todo) {
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
   titleEl.textContent = todo.title;
+  // 반복 아이콘 표시
+  if (todo.repeat_type && todo.repeat_type !== 'none') {
+    const icon = document.createElement('span');
+    icon.className = 'repeat-icon';
+    icon.textContent = ' 🔁';
+    titleEl.appendChild(icon);
+  }
 
   textWrap.appendChild(titleEl);
 
@@ -107,14 +130,21 @@ function makeTodoItem(todo) {
   return li;
 }
 
-// 완료 토글 처리
+// 완료 토글 처리 (반복 가상 항목 포함)
 async function handleToggleDone(todo) {
   const newDone = !todo.is_done;
   try {
-    await toggleDone(todo.id, newDone);
-    // 로컬 상태 업데이트
-    const t = AppState.todos.find(t => t.id === todo.id);
-    if (t) { t.is_done = newDone; t.done_at = newDone ? new Date().toISOString() : null; }
+    if (todo._virtual) {
+      // 반복 가상 항목 → 예외 행 생성
+      const exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
+      // 로컬에 예외 행으로 교체
+      const idx = AppState.todos.findIndex(t => t._masterId === todo._masterId && t._virtual);
+      if (idx !== -1) AppState.todos[idx] = { ...exRow, _wasVirtual: true };
+    } else {
+      await toggleDone(todo.id, newDone);
+      const t = AppState.todos.find(t => t.id === todo.id);
+      if (t) { t.is_done = newDone; t.done_at = newDone ? new Date().toISOString() : null; }
+    }
     renderTodos();
     updateMonthDots();
   } catch(e) {
