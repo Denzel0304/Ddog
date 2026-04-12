@@ -6,11 +6,11 @@ let repeatConfig = {
   type: 'none',
   weekdays: [],      // 매주: [0~6] 배열
   monthMode: 'day',  // 매월: 'day' | 'week'
-  monthDay: 1,       // 매월 N일
+  monthDay: 0,       // 매월 N일 (0 = 미설정)
   monthWeek: 1,      // 매월 X째주
   monthWeekday: 1,   // 매월 X째주 Y요일
   yearlyMonth: 1,    // 매년 M월
-  yearlyDay: 1,      // 매년 M월 N일
+  yearlyDay: 0,      // 매년 M월 N일 (0 = 미설정)
   customDays: [],    // 커스텀: 요일 배열 [0~6]
   endDate: null,
 };
@@ -64,9 +64,9 @@ function openRepeatModal() {
   const d = new Date(baseDate + 'T00:00:00');
 
   // 초기값 세팅
-  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay > 0 && repeatConfig.type === 'monthly' ? repeatConfig.monthDay : '';
+  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || '';
   document.getElementById('repeat-yearly-month').value = repeatConfig.yearlyMonth || (d.getMonth() + 1);
-  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay > 0 && repeatConfig.type === 'yearly' ? repeatConfig.yearlyDay : '';
+  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || '';
   document.getElementById('repeat-end-date').value = repeatConfig.endDate || '';
   document.getElementById('repeat-end-toggle').checked = !!repeatConfig.endDate;
   document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !repeatConfig.endDate);
@@ -158,7 +158,7 @@ function confirmRepeat() {
 }
 
 function resetRepeat() {
-  repeatConfig = { type: 'none', weekdays: [], monthMode: 'day', monthDay: 1, monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 1, customDays: [], endDate: null };
+  repeatConfig = { type: 'none', weekdays: [], monthMode: 'day', monthDay: 0, monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 0, customDays: [], endDate: null };
   updateRepeatBtn();
 }
 
