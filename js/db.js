@@ -50,24 +50,22 @@ async function insertTodo(data) {
   const minOrder = AppState.todos.length > 0
     ? Math.min(...AppState.todos.map(t => t.sort_order)) - 1
     : 0;
-
   const payload = {
     title:           data.title || '',
     memo:            data.memo  || '',
     importance:      data.importance ?? 0,
     date:            data.date  || todayStr(),
     remind_days:     data.remind_days ?? 0,
+    weekly_flag:     data.weekly_flag ?? false,
     is_done:         false,
     sort_order:      minOrder,
     repeat_type:     data.repeat_type     || 'none',
     repeat_interval: data.repeat_interval || 1,
     repeat_day:      data.repeat_day      || null,
     repeat_end_date: data.repeat_end_date || null,
+    repeat_meta:     data.repeat_meta     || null,
   };
-  const rows = await dbFetch(TABLE_NAME, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
+  const rows = await dbFetch(TABLE_NAME, { method: 'POST', body: JSON.stringify(payload) });
   return rows[0];
 }
 
