@@ -25,7 +25,7 @@ async function fetchDotDatesForMonth(year, month) {
   const from = `${year}-${String(month).padStart(2,'0')}-01`;
   const lastDay = new Date(year, month, 0).getDate();
   const to = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
-  const rows = await dbFetch(`${TABLE_NAME}?date=gte.${from}&date=lte.${to}&select=date&is_done=eq.false`);
+  const rows = await dbFetch(`${TABLE_NAME}?date=gte.${from}&date=lte.${to}&is_done=eq.false&select=date`);
   return (rows || []).map(r => r.date);
 }
 
@@ -54,6 +54,8 @@ async function insertTodo(data) {
     repeat_day:      data.repeat_day      || null,
     repeat_end_date: data.repeat_end_date || null,
     repeat_meta:     data.repeat_meta     || null,
+    repeat_master_id: null,
+    repeat_exception: false,
   };
   const rows = await dbFetch(TABLE_NAME, { method: 'POST', body: JSON.stringify(payload) });
   return rows[0];

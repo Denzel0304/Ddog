@@ -4,6 +4,7 @@
 
 let actionTargetId = null;
 let actionFromWeekly = false;
+let actionTargetDate = null;
 
 function initGesturePopup() {
   document.getElementById('action-popup').addEventListener('click', e => {
@@ -13,16 +14,25 @@ function initGesturePopup() {
   document.getElementById('action-tomorrow').addEventListener('click', async () => {
     if (!actionTargetId) return;
     try {
-      await moveTodoDate(actionTargetId, tomorrowStr());
+      const baseDate = actionTargetDate || AppState.selectedDate;
+      const d = new Date(baseDate + 'T00:00:00');
+      d.setDate(d.getDate() + 1);
+      const nextDay = toLocalDateStr(d);
+      await moveTodoDate(actionTargetId, nextDay);
       closeActionPopup();
-      showToast('내일로 이동했어요');
-      actionFromWeekly ? loadWeekly() : await loadTodos();
+      showToast('1일 뒤로 이동했어요');
+      if (actionFromWeekly) {
+        await loadWeekly();
+      } else {
+        await loadTodos();
+        updateMonthDots();
+      }
     } catch(e) { showToast('오류가 발생했어요'); }
   });
 
   document.getElementById('action-pick-date').addEventListener('click', () => {
     const picker = document.getElementById('action-date-picker');
-    picker.value = AppState.selectedDate;
+    picker.value = actionTargetDate || AppState.selectedDate;
     picker.classList.remove('hidden');
     picker.showPicker?.();
     picker.addEventListener('change', async function onPick() {
@@ -33,7 +43,12 @@ function initGesturePopup() {
         await moveTodoDate(actionTargetId, picker.value);
         closeActionPopup();
         showToast('날짜를 변경했어요');
-        actionFromWeekly ? loadWeekly() : await loadTodos();
+        if (actionFromWeekly) {
+          await loadWeekly();
+        } else {
+          await loadTodos();
+          updateMonthDots();
+        }
       } catch(e) { showToast('오류가 발생했어요'); }
     });
   });
@@ -45,21 +60,22 @@ function initGesturePopup() {
       AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
       closeActionPopup();
       showToast('삭제됐어요');
-      // 양쪽 모두 갱신
       if (actionFromWeekly) {
         await loadWeekly();
       } else {
-        renderTodos();
+        await loadTodos();
         updateMonthDots();
       }
     } catch(e) { showToast('오류가 발생했어요'); }
   });
 }
 
-function openActionPopup(id, fromWeekly = false) {
+function openActionPopup(id, fromWeekly = false, targetDate = null) {
   actionTargetId = id;
   actionFromWeekly = fromWeekly;
+  actionTargetDate = targetDate || AppState.selectedDate;
   document.getElementById('action-popup').classList.remove('hidden');
+  history.pushState({ popup: true }, '');
 }
 
 function closeActionPopup() {
@@ -67,6 +83,7 @@ function closeActionPopup() {
   document.getElementById('action-date-picker').classList.add('hidden');
   actionTargetId = null;
   actionFromWeekly = false;
+  actionTargetDate = null;
 }
 
 // ── 할일탭 아이템 제스처 ──
@@ -113,13 +130,13 @@ function initItemGesture(el, todo) {
           await toggleDone(todo.id, true);
           const t = AppState.todos.find(t => t.id === todo.id);
           if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
-          renderTodos();
+          await loadTodos();
           updateMonthDots();
         } catch(e) { resetItemStyle(el); showToast('오류가 발생했어요'); }
       }, 250);
     } else if (dx < 0) {
       resetItemStyle(el);
-      openActionPopup(todo.id, false);
+      openActionPopup(todo.id, false, todo.date || AppState.selectedDate);
     } else {
       resetItemStyle(el);
     }

@@ -84,6 +84,7 @@ function renderWeekDayCards(monday, hasTodo) {
       selectedWeekDay = dateStr;
       document.querySelectorAll('.week-day-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
+      renderWeekAllTodos(weekAllRows, monday);
     });
     row.appendChild(card);
   }
@@ -160,13 +161,14 @@ function makeWeekTodoItem(todo, isDone) {
   text.className = 'todo-text';
   const title = document.createElement('div');
   title.className = 'todo-title';
-  title.textContent = todo.title || '(제목 없음)';
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';
-    flag.textContent = ' ★';
+    flag.textContent = '★ ';
     title.appendChild(flag);
   }
+  const titleText = document.createTextNode(todo.title || '(제목 없음)');
+  title.appendChild(titleText);
   text.appendChild(title);
   if (todo.memo) {
     const memo = document.createElement('div');
@@ -220,7 +222,7 @@ function initWeekItemGesture(el, todo) {
       }, 250);
     } else if (dx < 0) {
       resetWeekItemStyle(el);
-      openActionPopup(todo.id, true);
+      openActionPopup(todo.id, true, todo.date);
     } else { resetWeekItemStyle(el); }
   }, { passive: true });
 }

@@ -85,7 +85,14 @@ function makeTodoItem(todo) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
-  titleEl.textContent = todo.title;
+  // weekly_flag 별표를 제목 앞에
+  if (todo.weekly_flag) {
+    const flag = document.createElement('span');
+    flag.className = 'weekly-flag-icon';
+    flag.textContent = '★ ';
+    titleEl.appendChild(flag);
+  }
+  titleEl.appendChild(document.createTextNode(todo.title));
   // 반복 아이콘 표시
   if (todo.repeat_type && todo.repeat_type !== 'none') {
     const icon = document.createElement('span');
@@ -242,10 +249,10 @@ async function finishDrag(x, y) {
       target.before(dragSrc);
     }
 
-    // AppState 순서 업데이트 & DB 저장
+    // AppState 순서 업데이트 & DB 저장 (virtual 항목 제외)
     const newOrder = [...list.querySelectorAll('.todo-item:not(.done)')]
-      .map(el => AppState.todos.find(t => t.id === el.dataset.id))
-      .filter(Boolean);
+      .map(el => AppState.todos.find(t => String(t.id) === String(el.dataset.id)))
+      .filter(t => t && !t._virtual);
 
     try {
       await updateSortOrders(newOrder);

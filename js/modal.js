@@ -40,6 +40,7 @@ function openAddModal() {
   resetModalForm();
   document.getElementById('modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('input-title').focus(), 300);
+  history.pushState({ popup: true }, '');
 }
 
 function openEditModal(todo) {
@@ -70,6 +71,7 @@ function openEditModal(todo) {
 
   document.getElementById('modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('input-title').focus(), 300);
+  history.pushState({ popup: true }, '');
 }
 
 function closeModal() {
@@ -107,6 +109,15 @@ async function handleSave() {
   }
 
   const repeatData = repeatConfigToData();
+
+  // 반복 해제 시 관련 필드 명시적 초기화
+  if (repeatData.repeat_type === 'none') {
+    repeatData.repeat_interval = 1;
+    repeatData.repeat_day = null;
+    repeatData.repeat_end_date = null;
+    repeatData.repeat_meta = null;
+  }
+
   const data = {
     title, memo,
     importance:  selectedImportance,

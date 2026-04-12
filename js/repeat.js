@@ -81,6 +81,7 @@ function openRepeatModal() {
 
   selectRepeatType(repeatConfig.type || 'none');
   document.getElementById('repeat-overlay').classList.remove('hidden');
+  history.pushState({ popup: true }, '');
 }
 
 function closeRepeatModal() {

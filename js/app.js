@@ -14,7 +14,44 @@ document.addEventListener('DOMContentLoaded', () => {
   initSettings();
   initTabs();
   loadTodos();
+  initBackButton();
 });
+
+// ── 뒤로가기 → 팝업 닫기 ──
+function initBackButton() {
+  // 팝업이 열릴 때마다 history에 더미 상태를 push해서
+  // 뒤로가기 시 popstate로 잡아 팝업만 닫는다
+  window.addEventListener('popstate', () => {
+    if (closeTopPopup()) {
+      // 팝업 닫혔으면 다시 더미 상태를 push해서 앱이 종료되지 않게
+      history.pushState({ popup: true }, '');
+    }
+  });
+  // 초기 더미 상태
+  history.pushState({ popup: true }, '');
+}
+
+function closeTopPopup() {
+  // 열려있는 팝업을 우선순위대로 닫기
+  const checks = [
+    { el: 'repeat-overlay',   close: () => document.getElementById('repeat-overlay').classList.add('hidden') },
+    { el: 'action-popup',     close: closeActionPopup },
+    { el: 'year-popup',       close: closeYearPopup },
+    { el: 'month-popup',      close: closeMonthPopup },
+    { el: 'modal-overlay',    close: closeModal },
+    { el: 'repeats-panel',    fn: 'open', close: closeRepeatsPanel },
+    { el: 'settings-panel',   fn: 'open', close: closeSettingsPanel },
+  ];
+  for (const { el, fn, close } of checks) {
+    const dom = document.getElementById(el);
+    if (!dom) continue;
+    const isVisible = fn === 'open'
+      ? dom.classList.contains('open')
+      : !dom.classList.contains('hidden');
+    if (isVisible) { close(); return true; }
+  }
+  return false;
+}
 
 function initTabs() {
   document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
