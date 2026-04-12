@@ -99,7 +99,6 @@ async function idbClear() {
 // ── Pending Queue ──
 
 async function queuePush(op) {
-  // op: { method: 'POST'|'PATCH'|'DELETE', path: string, body?: object, ts: number }
   const db = await getIDB();
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_QUEUE, 'readwrite');
@@ -175,7 +174,7 @@ async function flushQueue() {
       await queueDelete(op.qid);
     } catch(e) {
       console.warn('[sync] flush 실패, 다음에 재시도:', e);
-      break; // 순서 보장을 위해 실패 시 중단
+      break;
     }
   }
 }
@@ -186,7 +185,7 @@ async function onOnline() {
   await flushQueue();
 }
 
-// 브라우저 닫힐 때 — sendBeacon으로 최대한 전송
+// 브라우저 닫힐 때
 window.addEventListener('beforeunload', async () => {
   const ops = await queueGetAll().catch(() => []);
   ops.forEach(op => {
@@ -230,20 +229,46 @@ async function handleRealtimeEvent(payload) {
   const { eventType, new: newRow, old: oldRow } = payload;
 
   if (eventType === 'INSERT' || eventType === 'UPDATE') {
-    await idbPut(newRow);
+    if (newRow && newRow.id) {
+      await idbPut(newRow);
+    }
   } else if (eventType === 'DELETE') {
-    await idbDelete(oldRow.id);
+    // oldRow.id가 없는 경우(RLS/REPLICA IDENTITY 문제) 방어 처리
+    const deleteId = oldRow?.id;
+    if (deleteId) {
+      await idbDelete(deleteId);
+    } else {
+      // id를 못 받은 경우 → Supabase에서 전체 재동기화
+      console.warn('[realtime] DELETE 이벤트에 id 없음 → 전체 재동기화');
+      await fullResync();
+      return;
+    }
   }
 
-  // 현재 화면에 영향 있는 변경이면 UI 갱신
   refreshCurrentTab();
   updateMonthDots();
+}
+
+// ── 전체 재동기화 (DELETE id 누락 등 비상용) ──
+async function fullResync() {
+  try {
+    const rows = await sbFetch(`${TABLE_NAME}?order=created_at.asc`);
+    if (rows) {
+      await idbClear();
+      if (rows.length > 0) await idbPutMany(rows);
+    }
+    refreshCurrentTab();
+    updateMonthDots();
+    console.log('[sync] 전체 재동기화 완료');
+  } catch(e) {
+    console.warn('[sync] 전체 재동기화 실패', e);
+  }
 }
 
 // ── 앱 시작 시 호출 ──
 
 async function initSync() {
-  await getIDB(); // IDB 열기
+  await getIDB();
 
   const idbRows = await idbGetAll();
 
@@ -253,41 +278,57 @@ async function initSync() {
   } else {
     // 로컬캐시 있음 → 바로 렌더링 후 백그라운드에서 최신화
     if (AppState.isOnline) {
-      // 백그라운드 동기화: updated_at 기준으로 변경분만 가져오기
       bgSync().catch(e => console.warn('[sync] bg sync 실패', e));
     }
   }
 
-  // pending queue 있으면 flush
   if (AppState.isOnline) {
     await flushQueue();
   }
 
-  // Realtime 구독 시작
   startRealtime();
 }
 
-// 백그라운드 동기화 — 마지막 updated_at 이후 변경분만 가져오기
+// ── 백그라운드 동기화 ──
+// updated_at 변경분 + 삭제된 항목 감지를 위해 Supabase 전체 id 목록과 비교
 async function bgSync() {
   const all = await idbGetAll();
   if (!all.length) return;
 
-  // IDB에서 가장 최근 updated_at 찾기
+  // 1. updated_at 기준 변경분 가져오기
   const latest = all.reduce((max, t) => {
     const ts = t.updated_at || t.created_at || '';
     return ts > max ? ts : max;
   }, '');
 
-  if (!latest) return;
-
-  const rows = await sbFetch(
-    `${TABLE_NAME}?updated_at=gt.${encodeURIComponent(latest)}&order=updated_at.asc`
-  );
-
-  if (rows && rows.length > 0) {
-    await idbPutMany(rows);
-    console.log('[sync] bg sync:', rows.length, '건 업데이트');
-    refreshCurrentTab();
-    updateMonthDots();
+  if (latest) {
+    const updated = await sbFetch(
+      `${TABLE_NAME}?updated_at=gt.${encodeURIComponent(latest)}&order=updated_at.asc`
+    );
+    if (updated && updated.length > 0) {
+      await idbPutMany(updated);
+      console.log('[sync] bg sync 변경:', updated.length, '건');
+    }
   }
+
+  // 2. 삭제된 항목 감지: Supabase id 목록과 IDB id 목록 비교
+  try {
+    const sbIds = await sbFetch(`${TABLE_NAME}?select=id`);
+    if (sbIds) {
+      const sbIdSet = new Set(sbIds.map(r => r.id));
+      const idbAll = await idbGetAll();
+      const deletedLocally = idbAll.filter(t =>
+        !String(t.id).startsWith('tmp_') && !sbIdSet.has(t.id)
+      );
+      if (deletedLocally.length > 0) {
+        await Promise.all(deletedLocally.map(t => idbDelete(t.id)));
+        console.log('[sync] bg sync 삭제 감지:', deletedLocally.length, '건');
+      }
+    }
+  } catch(e) {
+    console.warn('[sync] 삭제 감지 실패', e);
+  }
+
+  refreshCurrentTab();
+  updateMonthDots();
 }

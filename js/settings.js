@@ -3,7 +3,6 @@
 // =============================================
 
 function initSettings() {
-  // 설정 탭 버튼 → 패널 열기
   document.getElementById('nav-settings').addEventListener('click', openSettingsPanel);
   document.getElementById('settings-close').addEventListener('click', closeSettingsPanel);
   document.getElementById('settings-overlay').addEventListener('click', closeSettingsPanel);
@@ -20,21 +19,18 @@ function openSettingsPanel() {
   history.pushState({ popup: true }, '');
 }
 
-// 설정 패널만 닫기 (뒤로가기에서 반복함 패널과 분리 처리할 때 사용)
 function closeSettingsPanelOnly() {
   const panel = document.getElementById('settings-panel');
   panel.classList.remove('open');
   setTimeout(() => {
     panel.classList.add('hidden');
     document.getElementById('settings-overlay').classList.add('hidden');
-    // 설정 패널이 닫힐 때 반복함도 함께 숨김 처리 (이미 open 아닌 상태)
     const repeatsPanel = document.getElementById('repeats-panel');
     repeatsPanel.classList.remove('open');
     repeatsPanel.classList.add('hidden');
   }, 300);
 }
 
-// X 버튼 또는 오버레이 클릭으로 전체 닫기 (반복함 포함)
 function closeSettingsPanel() {
   closeRepeatsPanel();
   closeSettingsPanelOnly();
@@ -59,9 +55,13 @@ async function loadRepeats() {
   const list = document.getElementById('repeats-list');
   list.innerHTML = '<div class="spinner"></div>';
   try {
-    const rows = await sbFetch(
-      `${TABLE_NAME}?repeat_type=neq.none&repeat_master_id=is.null&repeat_exception=eq.false&order=created_at.desc`
-    ) || [];
+    // IDB에서 읽기
+    const all = await idbGetAll();
+    const rows = all.filter(t =>
+      t.repeat_type && t.repeat_type !== 'none' &&
+      !t.repeat_master_id &&
+      !t.repeat_exception
+    ).sort((a, b) => (b.created_at || '') > (a.created_at || '') ? 1 : -1);
 
     if (!rows.length) {
       list.innerHTML = '<div class="empty-state"><div class="empty-icon">🔁</div>반복 일정이 없어요</div>';
@@ -123,7 +123,6 @@ function getRepeatDescFromTodo(todo) {
 }
 
 function showRepeatDeleteOptions(todo, el) {
-  // 기존 옵션 제거
   el.querySelectorAll('.repeat-del-options').forEach(e => e.remove());
 
   const opts = document.createElement('div');
@@ -154,8 +153,16 @@ function showRepeatDeleteOptions(todo, el) {
 }
 
 async function deleteRepeatAll(masterId) {
-  // 마스터 + 모든 예외 행 삭제
-  await sbFetch(`${TABLE_NAME}?id=eq.${masterId}`, { method: 'DELETE' });
-  await sbFetch(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, { method: 'DELETE' });
+  // IDB에서 마스터 + 예외 행 모두 삭제
+  const all = await idbGetAll();
+  const toDelete = all.filter(t =>
+    t.id === masterId || t.repeat_master_id === masterId
+  );
+  await Promise.all(toDelete.map(t => idbDelete(t.id)));
+
+  // Supabase 백그라운드 삭제
+  await sbPush(`${TABLE_NAME}?id=eq.${masterId}`, 'DELETE', null);
+  await sbPush(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, 'DELETE', null);
+
   showToast('반복 일정을 삭제했어요');
 }

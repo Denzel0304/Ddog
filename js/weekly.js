@@ -45,25 +45,33 @@ async function loadWeekly() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const directRows = await sbFetch(
-      `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&order=date.asc,sort_order.asc,created_at.desc`
-    ) || [];
+    // ── IDB에서 읽기 (Supabase 직접 호출 X → 오프라인 대응 + 빠른 속도) ──
+    const all = await idbGetAll();
 
-    // 반복 마스터 가상 렌더링 (주간 범위 내 각 날짜에 대해 매칭 여부 확인)
+    const directRows = all
+      .filter(r => r.date >= fromStr && r.date <= toStr)
+      .filter(r => !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true)
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+        if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+        return (b.created_at || '') > (a.created_at || '') ? 1 : -1;
+      });
+
+    // 반복 마스터 가상 렌더링
     let virtualRows = [];
     try {
-      const repeatMasters = await sbFetch(
-        `${TABLE_NAME}?repeat_type=neq.none&date=lte.${toStr}&repeat_master_id=is.null&repeat_exception=eq.false&order=created_at.asc`
-      ) || [];
+      const repeatMasters = all.filter(t =>
+        t.repeat_type && t.repeat_type !== 'none' &&
+        t.date <= toStr &&
+        !t.repeat_master_id &&
+        !t.repeat_exception
+      );
 
-      // 주간 범위 내 예외 행 전체 조회
-      const exceptions = await sbFetch(
-        `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&repeat_exception=eq.true`
-      ) || [];
-      // (masterId, date) 쌍으로 예외 Set 구성
+      const exceptions = all.filter(r =>
+        r.date >= fromStr && r.date <= toStr && r.repeat_exception === true
+      );
       const exceptionSet = new Set(exceptions.map(e => `${e.repeat_master_id}_${e.date}`));
 
-      // 이미 직접 행에 포함된 마스터 id (repeat_type!=none 인 행은 directRows에서 제거)
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
@@ -74,12 +82,9 @@ async function loadWeekly() {
       }
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 
-    // directRows에서 반복 마스터 행(repeat_type!=none, repeat_exception=false) 제거 후 병합
-    const filteredDirect = directRows.filter(r =>
-      !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true
-    );
-    weekAllRows = [...filteredDirect, ...virtualRows]
+    weekAllRows = [...directRows, ...virtualRows]
       .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+
   } catch(e) {
     container.innerHTML = '<div class="empty-state">불러오기 실패</div>';
     return;
@@ -126,7 +131,6 @@ function renderWeekAllTodos(allRows, monday) {
   const container = document.getElementById('weekly-todo-list');
   container.innerHTML = '';
 
-  // 중요 필터: weekly_flag 체크된 것만
   const filtered = weekImportantOnly ? allRows.filter(r => r.weekly_flag) : allRows;
 
   const grouped = {};
