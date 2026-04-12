@@ -4,7 +4,11 @@
 
 let currentTab = 'todo';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // 1. 동기화 엔진 초기화 (IDB 열기 + Supabase 동기화 + Realtime 구독)
+  await initSync();
+
+  // 2. UI 초기화
   initCalendar();
   initModal();
   initRepeat();
@@ -21,68 +25,55 @@ document.addEventListener('DOMContentLoaded', () => {
 function initBackButton() {
   window.addEventListener('popstate', () => {
     if (closeTopPopup()) {
-      // 닫은 뒤 다음 뒤로가기도 잡히도록 다시 push
       history.pushState({ popup: true }, '');
     }
-    // 닫을 것이 없으면 브라우저 기본 동작(앱 종료)
   });
-  // 초기 더미 상태 1개
   history.pushState({ popup: true }, '');
 }
 
 function closeTopPopup() {
-  // 우선순위: 위에 떠있는 레이어부터 한 단계씩
-
-  // 1. 반복 설정 모달
   const repeatOverlay = document.getElementById('repeat-overlay');
   if (repeatOverlay && !repeatOverlay.classList.contains('hidden')) {
     repeatOverlay.classList.add('hidden');
     return true;
   }
 
-  // 2. 액션 팝업 (스와이프 메뉴)
   const actionPopup = document.getElementById('action-popup');
   if (actionPopup && !actionPopup.classList.contains('hidden')) {
     closeActionPopup();
     return true;
   }
 
-  // 3. 년도 팝업
   const yearPopup = document.getElementById('year-popup');
   if (yearPopup && !yearPopup.classList.contains('hidden')) {
     closeYearPopup();
     return true;
   }
 
-  // 4. 월 팝업
   const monthPopup = document.getElementById('month-popup');
   if (monthPopup && !monthPopup.classList.contains('hidden')) {
     closeMonthPopup();
     return true;
   }
 
-  // 5. 할일 추가/수정 모달
   const modalOverlay = document.getElementById('modal-overlay');
   if (modalOverlay && !modalOverlay.classList.contains('hidden')) {
     closeModal();
     return true;
   }
 
-  // 6. 반복함 패널 (설정 패널보다 위 depth)
   const repeatsPanel = document.getElementById('repeats-panel');
   if (repeatsPanel && repeatsPanel.classList.contains('open')) {
     closeRepeatsPanel();
     return true;
   }
 
-  // 7. 설정 패널
   const settingsPanel = document.getElementById('settings-panel');
   if (settingsPanel && settingsPanel.classList.contains('open')) {
-    closeSettingsPanelOnly(); // 반복함은 건드리지 않고 설정 패널만 닫기
+    closeSettingsPanelOnly();
     return true;
   }
 
-  // 8. 검색/주간 탭 → 할일 탭으로 복귀
   if (currentTab === 'search' || currentTab === 'weekly') {
     switchTab('todo');
     return true;

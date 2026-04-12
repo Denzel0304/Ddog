@@ -2,11 +2,11 @@
 // config.js — Supabase 설정 & 전역 상태
 // =============================================
 
-const SUPABASE_URL  = 'https://rcfayyhlgxubuakxhrxy.supabase.co';
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjZmF5eWhsZ3h1YnVha3hocnh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDQ4MjYsImV4cCI6MjA5MTQyMDgyNn0.j7YtqXfN0zxM-35RLGcjcw47uq83etMjJbHip4td4xg';
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY  = 'YOUR_SUPABASE_ANON_KEY';
 const TABLE_NAME    = 'ddog';
 
-// Supabase 클라이언트 (CDN 없이 직접 fetch 사용)
+// Supabase REST 클라이언트 (직접 fetch)
 const DB = {
   url: SUPABASE_URL,
   key: SUPABASE_KEY,
@@ -18,15 +18,30 @@ const DB = {
   }
 };
 
+// Supabase JS SDK 클라이언트 (Realtime용)
+// index.html에서 CDN으로 로드한 supabase global 사용
+let supabaseClient = null;
+function getSupabaseClient() {
+  if (!supabaseClient) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return supabaseClient;
+}
+
 // 전역 앱 상태
 const AppState = {
   selectedDate: toLocalDateStr(new Date()),  // 'YYYY-MM-DD'
   calYear:  new Date().getFullYear(),
   calMonth: new Date().getMonth() + 1,       // 1~12
-  todos: [],        // 현재 날짜 할일 목록
+  todos: [],           // 현재 날짜 할일 목록
   dotDates: new Set(), // 달력 점 표시용 날짜 set
-  editingId: null,  // 수정 중인 todo id
+  editingId: null,     // 수정 중인 todo id
+  isOnline: navigator.onLine,
 };
+
+// 온/오프라인 상태 감지
+window.addEventListener('online',  () => { AppState.isOnline = true;  onOnline(); });
+window.addEventListener('offline', () => { AppState.isOnline = false; });
 
 // 날짜를 로컬 기준 YYYY-MM-DD 문자열로 변환
 function toLocalDateStr(date) {
