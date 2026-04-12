@@ -11,13 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initGesturePopup();
   initSearch();
   initWeekly();
+  initSettings();
   initTabs();
   loadTodos();
 });
 
 function initTabs() {
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // 설정은 슬라이드 패널로 처리 (탭 전환 아님)
+      if (btn.dataset.tab === 'settings') return;
+      switchTab(btn.dataset.tab);
+    });
   });
 }
 
@@ -28,25 +33,12 @@ function switchTab(tabName) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
-
-  // 탭 이동 시 항상 데이터 새로 불러오기
-  if (tabName === 'todo') {
-    loadTodos();
-    updateMonthDots();
-  } else if (tabName === 'weekly') {
-    weekOffset = 0;
-    loadWeekly();
-  } else if (tabName === 'search') {
-    setTimeout(() => document.getElementById('search-input').focus(), 200);
-  }
+  if (tabName === 'todo') { loadTodos(); updateMonthDots(); }
+  else if (tabName === 'weekly') { weekOffset = 0; loadWeekly(); }
+  else if (tabName === 'search') { setTimeout(() => document.getElementById('search-input').focus(), 200); }
 }
 
-// 저장/수정 후 현재 탭 갱신
 function refreshCurrentTab() {
-  if (currentTab === 'todo') {
-    loadTodos();
-    updateMonthDots();
-  } else if (currentTab === 'weekly') {
-    loadWeekly();
-  }
+  if (currentTab === 'todo') { loadTodos(); updateMonthDots(); }
+  else if (currentTab === 'weekly') { loadWeekly(); }
 }
