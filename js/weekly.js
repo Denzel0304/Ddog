@@ -45,9 +45,41 @@ async function loadWeekly() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    weekAllRows = await dbFetch(
+    const directRows = await dbFetch(
       `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&order=date.asc,sort_order.asc,created_at.desc`
     ) || [];
+
+    // 반복 마스터 가상 렌더링 (주간 범위 내 각 날짜에 대해 매칭 여부 확인)
+    let virtualRows = [];
+    try {
+      const repeatMasters = await dbFetch(
+        `${TABLE_NAME}?repeat_type=neq.none&date=lte.${toStr}&repeat_master_id=is.null&repeat_exception=eq.false&order=created_at.asc`
+      ) || [];
+
+      // 주간 범위 내 예외 행 전체 조회
+      const exceptions = await dbFetch(
+        `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&repeat_exception=eq.true`
+      ) || [];
+      // (masterId, date) 쌍으로 예외 Set 구성
+      const exceptionSet = new Set(exceptions.map(e => `${e.repeat_master_id}_${e.date}`));
+
+      // 이미 직접 행에 포함된 마스터 id (repeat_type!=none 인 행은 directRows에서 제거)
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateStr = toLocalDateStr(d);
+        repeatMasters
+          .filter(m => isRepeatMatch(m, dateStr) && !exceptionSet.has(`${m.id}_${dateStr}`))
+          .forEach(m => virtualRows.push({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
+      }
+    } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
+
+    // directRows에서 반복 마스터 행(repeat_type!=none, repeat_exception=false) 제거 후 병합
+    const filteredDirect = directRows.filter(r =>
+      !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true
+    );
+    weekAllRows = [...filteredDirect, ...virtualRows]
+      .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   } catch(e) {
     container.innerHTML = '<div class="empty-state">불러오기 실패</div>';
     return;
@@ -161,6 +193,12 @@ function makeWeekTodoItem(todo, isDone) {
   text.className = 'todo-text';
   const title = document.createElement('div');
   title.className = 'todo-title';
+  if (todo.repeat_type && todo.repeat_type !== 'none') {
+    const icon = document.createElement('span');
+    icon.className = 'repeat-icon';
+    icon.textContent = '🔁 ';
+    title.appendChild(icon);
+  }
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';
