@@ -53,6 +53,13 @@ function initRepeat() {
     });
   });
 
+  // 매월 N일, 매년 N일 입력 시 기존 숫자 자동 전체선택
+  ['repeat-monthly-day', 'repeat-yearly-day'].forEach(id => {
+    document.getElementById(id).addEventListener('focus', function() {
+      this.select();
+    });
+  });
+
   // 종료일 토글
   document.getElementById('repeat-end-toggle').addEventListener('change', e => {
     document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !e.target.checked);

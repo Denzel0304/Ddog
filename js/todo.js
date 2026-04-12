@@ -16,11 +16,8 @@ async function loadTodos() {
       const repeatMasters = await fetchRepeatMasters(dateStr);
       const exceptions = await fetchRepeatExceptions(dateStr);
       const exceptionIds = new Set((exceptions || []).map(e => e.repeat_master_id));
-      // directRows에 이미 존재하는 마스터 ID는 가상 행에서 제외
-      // (반복 마스터 본인이 해당 날짜에 직접 저장된 경우 중복 방지)
-      const directIds = new Set((directRows || []).map(r => r.id));
       virtualRows = (repeatMasters || [])
-        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id) && !directIds.has(m.id))
+        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
         .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 
@@ -88,7 +85,14 @@ function makeTodoItem(todo) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
-  // weekly_flag 별표를 제목 앞에
+  // 반복 아이콘 표시 (제목 맨 앞)
+  if (todo.repeat_type && todo.repeat_type !== 'none') {
+    const icon = document.createElement('span');
+    icon.className = 'repeat-icon';
+    icon.textContent = '🔁 ';
+    titleEl.appendChild(icon);
+  }
+  // weekly_flag 별표
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';
@@ -96,13 +100,6 @@ function makeTodoItem(todo) {
     titleEl.appendChild(flag);
   }
   titleEl.appendChild(document.createTextNode(todo.title));
-  // 반복 아이콘 표시
-  if (todo.repeat_type && todo.repeat_type !== 'none') {
-    const icon = document.createElement('span');
-    icon.className = 'repeat-icon';
-    icon.textContent = ' 🔁';
-    titleEl.appendChild(icon);
-  }
 
   textWrap.appendChild(titleEl);
 

@@ -26,8 +26,11 @@ function closeSettingsPanel() {
   setTimeout(() => {
     panel.classList.add('hidden');
     document.getElementById('settings-overlay').classList.add('hidden');
+    // 반복함도 함께 숨김 (패널 전체 닫힐 때)
+    const repeatsPanel = document.getElementById('repeats-panel');
+    repeatsPanel.classList.remove('open');
+    repeatsPanel.classList.add('hidden');
   }, 300);
-  closeRepeatsPanel();
 }
 
 function openRepeatsPanel() {
