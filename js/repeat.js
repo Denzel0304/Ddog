@@ -64,9 +64,9 @@ function openRepeatModal() {
   const d = new Date(baseDate + 'T00:00:00');
 
   // 초기값 세팅
-  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || d.getDate();
+  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay > 0 && repeatConfig.type === 'monthly' ? repeatConfig.monthDay : '';
   document.getElementById('repeat-yearly-month').value = repeatConfig.yearlyMonth || (d.getMonth() + 1);
-  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || d.getDate();
+  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay > 0 && repeatConfig.type === 'yearly' ? repeatConfig.yearlyDay : '';
   document.getElementById('repeat-end-date').value = repeatConfig.endDate || '';
   document.getElementById('repeat-end-toggle').checked = !!repeatConfig.endDate;
   document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !repeatConfig.endDate);
@@ -125,7 +125,9 @@ function confirmRepeat() {
     const mode = document.querySelector('.rmonth-mode-btn.active')?.dataset.mode || 'day';
     repeatConfig.monthMode = mode;
     if (mode === 'day') {
-      repeatConfig.monthDay = parseInt(document.getElementById('repeat-monthly-day').value) || 1;
+      const val = parseInt(document.getElementById('repeat-monthly-day').value);
+      if (!val || val < 1 || val > 31) { showToast('날짜를 입력해주세요 (1~31)'); return; }
+      repeatConfig.monthDay = val;
     } else {
       repeatConfig.monthWeek = parseInt(document.getElementById('repeat-monthly-week').value) || 1;
       repeatConfig.monthWeekday = parseInt(document.getElementById('repeat-monthly-weekday').value);
@@ -134,7 +136,9 @@ function confirmRepeat() {
 
   if (type === 'yearly') {
     repeatConfig.yearlyMonth = parseInt(document.getElementById('repeat-yearly-month').value) || 1;
-    repeatConfig.yearlyDay   = parseInt(document.getElementById('repeat-yearly-day').value) || 1;
+    const val = parseInt(document.getElementById('repeat-yearly-day').value);
+    if (!val || val < 1 || val > 31) { showToast('날짜를 입력해주세요 (1~31)'); return; }
+    repeatConfig.yearlyDay = val;
   }
 
   if (type === 'custom') {
