@@ -466,8 +466,7 @@ ul { list-style: none; }
   #app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
 }
 
-.spinner { width: 24px; height: 24px; border: 2px solid var(--border-light); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 24px auto; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: none; }
 
 #toast { position: fixed; bottom: calc(var(--bottom-nav-h) + 80px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg-elevated); color: var(--text-primary); padding: 10px 20px; border-radius: 24px; font-size: 13px; border: 1px solid var(--border-light); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 200; white-space: nowrap; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
