@@ -433,13 +433,31 @@ ul { list-style: none; }
 #cal-collapse-bar:hover::before { background: var(--accent); }
 
 /* 달력 축소 상태 */
+#calendar-section {
+  transition: padding 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#calendar-section #calendar-header,
+#calendar-section #calendar-weekdays {
+  transition: opacity 0.2s ease, max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  max-height: 60px;
+  opacity: 1;
+}
 #calendar-section.collapsed #calendar-header,
 #calendar-section.collapsed #calendar-weekdays {
-  display: none;
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  margin: 0;
 }
 #calendar-section.collapsed {
-  padding: 4px 12px;
+  padding: 6px 12px 2px;
 }
+#calendar-section.collapsed #calendar-grid .cal-day {
+  aspect-ratio: 1.1;
+  font-size: 12px;
+}
+
 
 /* ── 공통 ── */
 .todo-item.swipe-complete { background: var(--accent-glow) !important; }
@@ -587,6 +605,25 @@ ul { list-style: none; }
   justify-content: space-between;
   min-height: 40px;
 }
+#date-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#cal-toggle-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  border: 1px solid var(--border-light);
+}
+#cal-toggle-btn svg { width: 16px; height: 16px; }
+#cal-toggle-btn:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
+#cal-toggle-btn:active { transform: scale(0.92); }
 #fab-add {
   width: 34px; height: 34px;
   border-radius: 50%;
