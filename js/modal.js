@@ -10,11 +10,9 @@ function initModal() {
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeModal();
   });
-
   document.getElementById('detail-toggle').addEventListener('change', e => {
     document.getElementById('detail-section').classList.toggle('hidden', !e.target.checked);
   });
-
   document.querySelectorAll('.imp-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       selectedImportance = parseInt(btn.dataset.val);
@@ -22,15 +20,10 @@ function initModal() {
       btn.classList.add('active');
     });
   });
-
   document.getElementById('modal-save').addEventListener('click', handleSave);
-
   document.getElementById('input-title').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      if (!document.getElementById('detail-toggle').checked) handleSave();
-    }
+    if (e.key === 'Enter' && !document.getElementById('detail-toggle').checked) handleSave();
   });
-
   const remindInput = document.getElementById('input-remind');
   remindInput.addEventListener('focus', () => { if (remindInput.value === '0') remindInput.value = ''; });
   remindInput.addEventListener('blur',  () => { if (remindInput.value === '')  remindInput.value = '0'; });
@@ -53,29 +46,24 @@ function openEditModal(todo) {
   AppState.editingId = todo.id;
   document.getElementById('modal-title-label').textContent = '할일 수정';
   resetModalForm();
-
   document.getElementById('input-title').value  = todo.title || '';
   document.getElementById('input-memo').value   = todo.memo  || '';
   document.getElementById('input-date').value   = todo.date  || todayStr();
   document.getElementById('input-remind').value = todo.remind_days || 0;
+  document.getElementById('input-weekly-flag').checked = !!todo.weekly_flag;
 
   selectedImportance = todo.importance || 0;
   document.querySelectorAll('.imp-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.val) === selectedImportance);
   });
 
-  // 반복 설정 복원
   if (todo.repeat_type && todo.repeat_type !== 'none') {
-    repeatConfig = {
-      type: todo.repeat_type,
-      interval: todo.repeat_interval || 1,
-      day: todo.repeat_day || null,
-      endDate: todo.repeat_end_date || null,
-    };
+    repeatConfig = dataToRepeatConfig(todo);
     updateRepeatBtn();
   }
 
-  if (todo.memo || todo.importance > 0 || todo.remind_days > 0 || (todo.repeat_type && todo.repeat_type !== 'none')) {
+  if (todo.memo || todo.importance > 0 || todo.remind_days > 0 || todo.weekly_flag ||
+      (todo.repeat_type && todo.repeat_type !== 'none')) {
     document.getElementById('detail-toggle').checked = true;
     document.getElementById('detail-section').classList.remove('hidden');
   }
@@ -94,6 +82,7 @@ function resetModalForm() {
   document.getElementById('input-memo').value   = '';
   document.getElementById('input-date').value   = getDefaultDate();
   document.getElementById('input-remind').value = 0;
+  document.getElementById('input-weekly-flag').checked = false;
   document.getElementById('detail-toggle').checked = false;
   document.getElementById('detail-section').classList.add('hidden');
   selectedImportance = 0;
@@ -103,10 +92,11 @@ function resetModalForm() {
 }
 
 async function handleSave() {
-  const title  = document.getElementById('input-title').value.trim();
-  const memo   = document.getElementById('input-memo').value.trim();
-  const date   = document.getElementById('input-date').value || getDefaultDate();
-  const remind = parseInt(document.getElementById('input-remind').value) || 0;
+  const title       = document.getElementById('input-title').value.trim();
+  const memo        = document.getElementById('input-memo').value.trim();
+  const date        = document.getElementById('input-date').value || getDefaultDate();
+  const remind      = parseInt(document.getElementById('input-remind').value) || 0;
+  const weeklyFlag  = document.getElementById('input-weekly-flag').checked;
 
   if (!title) {
     document.getElementById('input-title').focus();
@@ -116,15 +106,14 @@ async function handleSave() {
     return;
   }
 
+  const repeatData = repeatConfigToData();
   const data = {
     title, memo,
-    importance: selectedImportance,
+    importance:  selectedImportance,
     date,
     remind_days: remind,
-    repeat_type:     repeatConfig.type,
-    repeat_interval: repeatConfig.interval || 1,
-    repeat_day:      repeatConfig.day || null,
-    repeat_end_date: repeatConfig.endDate || null,
+    weekly_flag: weeklyFlag,
+    ...repeatData,
   };
 
   try {
@@ -135,7 +124,6 @@ async function handleSave() {
     } else {
       const newTodo = await insertTodo(data);
       if (date === AppState.selectedDate) AppState.todos.unshift(newTodo);
-
       if (remind > 0) {
         const remindDate = daysBeforeStr(date, remind);
         if (remindDate !== date) {
@@ -145,7 +133,6 @@ async function handleSave() {
         }
       }
     }
-
     closeModal();
     refreshCurrentTab();
     showToast(AppState.editingId ? '수정됐어요 ✓' : '추가됐어요 ✓');
