@@ -42,14 +42,16 @@ function initGesturePopup() {
     if (!actionTargetId) return;
     try {
       await deleteTodo(actionTargetId);
-      if (!actionFromWeekly) {
-        AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
+      AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
+      closeActionPopup();
+      showToast('삭제됐어요');
+      // 양쪽 모두 갱신
+      if (actionFromWeekly) {
+        await loadWeekly();
+      } else {
         renderTodos();
         updateMonthDots();
       }
-      closeActionPopup();
-      if (actionFromWeekly) loadWeekly();
-      showToast('삭제됐어요');
     } catch(e) { showToast('오류가 발생했어요'); }
   });
 }
