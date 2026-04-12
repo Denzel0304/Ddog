@@ -34,8 +34,8 @@
     </div>
     <div id="selected-date-bar">
       <span id="selected-date-label"></span>
+      <button id="fab-add">＋</button>
     </div>
-    <div id="cal-collapse-bar"></div>
     <div id="todo-list-section">
       <ul id="todo-list"></ul>
     </div>
@@ -46,7 +46,10 @@
     <div id="weekly-header">
       <button id="week-prev" class="week-nav">&#8249;</button>
       <span id="week-range-label"></span>
-      <button id="week-next" class="week-nav">&#8250;</button>
+      <div id="week-header-right">
+        <button id="week-important-btn" class="week-filter-btn" title="주간 표시 항목만 보기">중요</button>
+        <button id="week-next" class="week-nav">&#8250;</button>
+      </div>
     </div>
     <div id="week-day-row-wrap">
       <div id="week-day-row"></div>
@@ -99,9 +102,40 @@
       </svg>
       <span>검색</span>
     </button>
-    <button id="fab-add">＋</button>
+    <button class="nav-btn" data-tab="settings" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span>설정</span>
+    </button>
   </nav>
 
+</div>
+
+<!-- ===== 설정 슬라이드 패널 ===== -->
+<div id="settings-overlay" class="hidden"></div>
+<div id="settings-panel" class="hidden">
+  <div id="settings-panel-header">
+    <span>설정</span>
+    <button id="settings-close">✕</button>
+  </div>
+  <div id="settings-menu">
+    <button class="settings-menu-item" id="menu-repeats">
+      <span class="settings-menu-icon">🔁</span>
+      <span class="settings-menu-label">반복함</span>
+      <span class="settings-menu-arrow">›</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== 반복함 패널 ===== -->
+<div id="repeats-panel" class="hidden">
+  <div id="repeats-panel-header">
+    <button id="repeats-back">‹</button>
+    <span>반복함</span>
+  </div>
+  <div id="repeats-list"></div>
 </div>
 
 <!-- ===== 모달 ===== -->
@@ -127,6 +161,10 @@
           <button class="imp-btn" data-val="2">보통</button>
           <button class="imp-btn" data-val="3">높음</button>
         </div>
+        <label id="weekly-flag-label">
+          <input type="checkbox" id="input-weekly-flag" />
+          <span>주간</span>
+        </label>
       </div>
       <div class="detail-row">
         <label class="detail-label">메모</label>
@@ -161,21 +199,84 @@
       <button class="rtype-btn" data-type="daily">매일</button>
       <button class="rtype-btn" data-type="weekly">매주</button>
       <button class="rtype-btn" data-type="monthly">매월</button>
+      <button class="rtype-btn" data-type="yearly">매년</button>
       <button class="rtype-btn" data-type="custom">커스텀</button>
     </div>
 
-    <!-- 매월 N일 -->
-    <div id="repeat-monthly-wrap" class="repeat-option hidden">
-      <label>매월</label>
-      <input type="number" id="repeat-monthly-day" min="1" max="31" value="1" />
-      <span>일</span>
+    <!-- 매주: 요일 선택 -->
+    <div id="repeat-weekly-wrap" class="repeat-detail hidden">
+      <label class="repeat-sub-label">요일 선택</label>
+      <div id="repeat-weekday-btns">
+        <button class="rday-btn" data-d="0">일</button>
+        <button class="rday-btn" data-d="1">월</button>
+        <button class="rday-btn" data-d="2">화</button>
+        <button class="rday-btn" data-d="3">수</button>
+        <button class="rday-btn" data-d="4">목</button>
+        <button class="rday-btn" data-d="5">금</button>
+        <button class="rday-btn" data-d="6">토</button>
+      </div>
     </div>
 
-    <!-- 커스텀: 매 N일마다 -->
-    <div id="repeat-custom-wrap" class="repeat-option hidden">
-      <label>매</label>
-      <input type="number" id="repeat-custom-interval" min="1" max="365" value="1" />
-      <span>일마다</span>
+    <!-- 매월: N일 or X째주 Y요일 -->
+    <div id="repeat-monthly-wrap" class="repeat-detail hidden">
+      <div id="repeat-monthly-mode-row">
+        <button class="rmonth-mode-btn active" data-mode="day">N일</button>
+        <button class="rmonth-mode-btn" data-mode="week">X째주 Y요일</button>
+      </div>
+      <div id="repeat-monthly-day-wrap" class="repeat-option">
+        <label>매월</label>
+        <input type="number" id="repeat-monthly-day" min="1" max="31" value="1" />
+        <span>일</span>
+      </div>
+      <div id="repeat-monthly-week-wrap" class="repeat-option hidden">
+        <select id="repeat-monthly-week">
+          <option value="1">첫째</option>
+          <option value="2">둘째</option>
+          <option value="3">셋째</option>
+          <option value="4">넷째</option>
+          <option value="5">마지막</option>
+        </select>
+        <select id="repeat-monthly-weekday">
+          <option value="0">일요일</option>
+          <option value="1">월요일</option>
+          <option value="2">화요일</option>
+          <option value="3">수요일</option>
+          <option value="4">목요일</option>
+          <option value="5">금요일</option>
+          <option value="6">토요일</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 매년: 월/일 선택 -->
+    <div id="repeat-yearly-wrap" class="repeat-detail hidden">
+      <div class="repeat-option">
+        <label>매년</label>
+        <select id="repeat-yearly-month">
+          <option value="1">1월</option><option value="2">2월</option>
+          <option value="3">3월</option><option value="4">4월</option>
+          <option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option>
+          <option value="9">9월</option><option value="10">10월</option>
+          <option value="11">11월</option><option value="12">12월</option>
+        </select>
+        <input type="number" id="repeat-yearly-day" min="1" max="31" value="1" />
+        <span>일</span>
+      </div>
+    </div>
+
+    <!-- 커스텀: 요일 복수 선택 -->
+    <div id="repeat-custom-wrap" class="repeat-detail hidden">
+      <label class="repeat-sub-label">요일 선택 (복수)</label>
+      <div id="repeat-custom-day-btns">
+        <button class="rday-btn" data-d="0">일</button>
+        <button class="rday-btn" data-d="1">월</button>
+        <button class="rday-btn" data-d="2">화</button>
+        <button class="rday-btn" data-d="3">수</button>
+        <button class="rday-btn" data-d="4">목</button>
+        <button class="rday-btn" data-d="5">금</button>
+        <button class="rday-btn" data-d="6">토</button>
+      </div>
     </div>
 
     <!-- 종료일 -->
@@ -241,6 +342,7 @@
 <script src="js/todo.js"></script>
 <script src="js/search.js"></script>
 <script src="js/weekly.js"></script>
+<script src="js/settings.js"></script>
 <script src="js/app.js"></script>
 
 </body>
