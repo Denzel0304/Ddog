@@ -146,8 +146,29 @@ function updateSelectedDateLabel() {
 
 async function updateMonthDots() {
   try {
-    const dates = await fetchDotDatesForMonth(AppState.calYear, AppState.calMonth);
-    AppState.dotDates = new Set(dates);
+    const year  = AppState.calYear;
+    const month = AppState.calMonth;
+
+    // 1) 일반 할일 날짜 (DB 직접 조회)
+    const directDates = await fetchDotDatesForMonth(year, month);
+
+    // 2) 반복 마스터 → 해당 월의 매칭 날짜를 클라이언트에서 계산
+    const repeatDates = [];
+    try {
+      const masters = await fetchRepeatMastersForMonth(year, month);
+      const lastDay = new Date(year, month, 0).getDate();
+      for (let d = 1; d <= lastDay; d++) {
+        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        for (const m of masters) {
+          if (isRepeatMatch(m, dateStr)) {
+            repeatDates.push(dateStr);
+            break; // 같은 날짜 중복 방지
+          }
+        }
+      }
+    } catch(e) { /* 반복 컬럼 없으면 무시 */ }
+
+    AppState.dotDates = new Set([...directDates, ...repeatDates]);
     document.querySelectorAll('.cal-day').forEach(el => {
       el.classList.toggle('has-todo', AppState.dotDates.has(el.dataset.date));
     });

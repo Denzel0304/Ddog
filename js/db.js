@@ -29,6 +29,17 @@ async function fetchDotDatesForMonth(year, month) {
   return (rows || []).map(r => r.date);
 }
 
+// 해당 월의 반복 마스터 행 전부 조회 (달력 dot 계산용)
+async function fetchRepeatMastersForMonth(year, month) {
+  const lastDay = new Date(year, month, 0).getDate();
+  const to = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  try {
+    return await dbFetch(
+      `${TABLE_NAME}?repeat_type=neq.none&date=lte.${to}&repeat_master_id=is.null&repeat_exception=eq.false&select=id,date,repeat_type,repeat_interval,repeat_day,repeat_end_date,repeat_meta`
+    ) || [];
+  } catch(e) { return []; }
+}
+
 async function searchTodos(keyword) {
   const encoded = encodeURIComponent(keyword);
   return dbFetch(`${TABLE_NAME}?or=(title.ilike.*${encoded}*,memo.ilike.*${encoded}*)&order=date.desc,created_at.desc`);
