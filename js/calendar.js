@@ -45,20 +45,14 @@ function moveCalMonth(dir) {
 function animateCalendar(dir) {
   const grid = document.getElementById('calendar-grid');
   const parent = grid.parentElement;
-
-  // 기존 그리드 스냅샷
   const oldGrid = grid.cloneNode(true);
   oldGrid.style.cssText = `position:absolute;top:${grid.offsetTop}px;left:0;width:100%;z-index:1;pointer-events:none;`;
   parent.style.position = 'relative';
   parent.style.overflow = 'hidden';
   parent.appendChild(oldGrid);
-
-  // 새 달 렌더
   renderCalendar();
-
   const fromX = dir > 0 ? '100%' : '-100%';
   const toX   = dir > 0 ? '-100%' : '100%';
-
   grid.style.cssText = `transform:translateX(${fromX});transition:none;`;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -106,8 +100,12 @@ function makeCalCell(day, year, month, isOtherMonth, today, selectedDate) {
 
   const el = document.createElement('div');
   el.className = 'cal-day';
-  el.innerHTML = `<span>${day}</span>`;
   el.dataset.date = dateStr;
+
+  // span으로 숫자+점 묶기 (z-index용)
+  const span = document.createElement('span');
+  span.textContent = day;
+  el.appendChild(span);
 
   if (isOtherMonth) el.classList.add('other-month');
   if (dow === 0) el.classList.add('sun');
@@ -181,29 +179,8 @@ function closeMonthPopup() { document.getElementById('month-popup').classList.ad
 
 function initCalendarSwipe() {
   const calSection = document.getElementById('calendar-section');
-  const todoSection = document.getElementById('todo-list-section');
-  const collapseBar = document.getElementById('cal-collapse-bar');
   let startX = 0, startY = 0, movedH = false, movedV = false;
 
-  // 콜랩스 바 클릭 → 토글
-  collapseBar.addEventListener('click', () => toggleCalendar());
-
-  // 할일 목록 위로 드래그 → 달력 접기
-  todoSection.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    movedV = false;
-  }, { passive: true });
-  todoSection.addEventListener('touchmove', e => {
-    const dy = e.touches[0].clientY - startY;
-    if (dy < -30) movedV = true;
-  }, { passive: true });
-  todoSection.addEventListener('touchend', e => {
-    const dy = e.changedTouches[0].clientY - startY;
-    if (dy < -60) collapseCalendar();
-    else if (dy > 60) expandCalendar();
-  }, { passive: true });
-
-  // 달력 영역 터치 (좌우: 월 이동, 위아래: 접기/펴기)
   calSection.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
@@ -219,15 +196,10 @@ function initCalendarSwipe() {
 
   calSection.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (movedH && Math.abs(dx) > 50) {
-      moveCalMonth(dx < 0 ? 1 : -1);
-    } else if (movedV && dy < -50) {
-      collapseCalendar();
-    }
+    if (movedH && Math.abs(dx) > 50) moveCalMonth(dx < 0 ? 1 : -1);
   }, { passive: true });
 
-  // PC 마우스 (달력 좌우)
+  // PC 마우스
   let mStartX = 0, mDown = false;
   calSection.addEventListener('mousedown', e => { mStartX = e.clientX; mDown = true; });
   calSection.addEventListener('mouseup', e => {
@@ -237,85 +209,3 @@ function initCalendarSwipe() {
   });
   calSection.addEventListener('mouseleave', () => { mDown = false; });
 }
-
-let calCollapsed = false;
-
-function collapseCalendar() {
-  if (calCollapsed) return;
-  calCollapsed = true;
-  const cal = document.getElementById('calendar-section');
-  const grid = document.getElementById('calendar-grid');
-  const header = document.getElementById('calendar-header');
-  const weekdays = document.getElementById('calendar-weekdays');
-
-  // 오늘 날짜가 포함된 행만 남기기
-  const todayEl = cal.querySelector('.cal-day.today, .cal-day.selected');
-  const allRows = [...grid.querySelectorAll('.cal-day')];
-
-  // 오늘/선택된 날의 행 인덱스 (7개씩)
-  let targetRowStart = 0;
-  if (todayEl) {
-    const idx = allRows.indexOf(todayEl);
-    targetRowStart = Math.floor(idx / 7) * 7;
-  }
-
-  // 현재 주 날짜들만 남기고 나머지 숨기기
-  allRows.forEach((el, i) => {
-    const rowIdx = Math.floor(i / 7);
-    const targetRow = Math.floor(targetRowStart / 7);
-    if (rowIdx !== targetRow) {
-      el.style.transition = 'opacity 0.3s, max-height 0.3s';
-      el.style.opacity = '0';
-      el.style.maxHeight = '0';
-      el.style.overflow = 'hidden';
-      el.style.padding = '0';
-      el.style.margin = '0';
-    }
-  });
-
-  header.style.transition = 'opacity 0.3s, max-height 0.3s';
-  header.style.opacity = '0';
-  header.style.maxHeight = '0';
-  header.style.overflow = 'hidden';
-  header.style.marginBottom = '0';
-
-  weekdays.style.transition = 'opacity 0.3s, max-height 0.3s';
-  weekdays.style.opacity = '0';
-  weekdays.style.maxHeight = '0';
-  weekdays.style.overflow = 'hidden';
-  weekdays.style.marginBottom = '0';
-}
-
-function expandCalendar() {
-  if (!calCollapsed) return;
-  calCollapsed = false;
-  const cal = document.getElementById('calendar-section');
-  const grid = document.getElementById('calendar-grid');
-  const header = document.getElementById('calendar-header');
-  const weekdays = document.getElementById('calendar-weekdays');
-
-  grid.querySelectorAll('.cal-day').forEach(el => {
-    el.style.transition = 'opacity 0.3s';
-    el.style.opacity = '1';
-    el.style.maxHeight = '';
-    el.style.overflow = '';
-    el.style.padding = '';
-    el.style.margin = '';
-  });
-
-  header.style.opacity = '1';
-  header.style.maxHeight = '';
-  header.style.overflow = '';
-  header.style.marginBottom = '';
-
-  weekdays.style.opacity = '1';
-  weekdays.style.maxHeight = '';
-  weekdays.style.overflow = '';
-  weekdays.style.marginBottom = '';
-}
-
-function toggleCalendar() {
-  if (calCollapsed) expandCalendar();
-  else collapseCalendar();
-}
-
