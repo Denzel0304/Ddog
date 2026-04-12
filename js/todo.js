@@ -11,7 +11,7 @@ async function loadTodos() {
     const allDirectRows = await fetchTodosByDate(dateStr);
 
     // 반복 마스터 행(repeat_type≠none, repeat_exception=false)은
-    // 가상 렌더링 로직이 담당 → directRows에서 제외
+    // 아래 가상 렌더링 로직이 담당 → directRows에서 제외해 중복 방지
     const directRows = (allDirectRows || []).filter(r =>
       !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true
     );

@@ -53,22 +53,6 @@ function initRepeat() {
     });
   });
 
-  // 매월 N일 / 매년 N일: focus 시 비우고, blur 시 빈값이면 placeholder 유지
-  document.getElementById('repeat-monthly-day').addEventListener('focus', function() {
-    this.placeholder = this.value || '1';
-    this.value = '';
-  });
-  document.getElementById('repeat-monthly-day').addEventListener('blur', function() {
-    if (!this.value) this.placeholder = '1';
-  });
-  document.getElementById('repeat-yearly-day').addEventListener('focus', function() {
-    this.placeholder = this.value || '1';
-    this.value = '';
-  });
-  document.getElementById('repeat-yearly-day').addEventListener('blur', function() {
-    if (!this.value) this.placeholder = '1';
-  });
-
   // 종료일 토글
   document.getElementById('repeat-end-toggle').addEventListener('change', e => {
     document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !e.target.checked);
@@ -79,10 +63,10 @@ function openRepeatModal() {
   const baseDate = document.getElementById('input-date').value || getDefaultDate();
   const d = new Date(baseDate + 'T00:00:00');
 
-  // 초기값 세팅: 이미 저장된 값이 있으면 채우고, 없으면 비워둠 (placeholder로 힌트 표시)
-  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || '';
+  // 초기값 세팅
+  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || d.getDate();
   document.getElementById('repeat-yearly-month').value = repeatConfig.yearlyMonth || (d.getMonth() + 1);
-  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || '';
+  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || d.getDate();
   document.getElementById('repeat-end-date').value = repeatConfig.endDate || '';
   document.getElementById('repeat-end-toggle').checked = !!repeatConfig.endDate;
   document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !repeatConfig.endDate);
@@ -141,8 +125,7 @@ function confirmRepeat() {
     const mode = document.querySelector('.rmonth-mode-btn.active')?.dataset.mode || 'day';
     repeatConfig.monthMode = mode;
     if (mode === 'day') {
-      const mdEl = document.getElementById('repeat-monthly-day');
-      repeatConfig.monthDay = parseInt(mdEl.value || mdEl.placeholder) || 1;
+      repeatConfig.monthDay = parseInt(document.getElementById('repeat-monthly-day').value) || 1;
     } else {
       repeatConfig.monthWeek = parseInt(document.getElementById('repeat-monthly-week').value) || 1;
       repeatConfig.monthWeekday = parseInt(document.getElementById('repeat-monthly-weekday').value);
@@ -151,8 +134,7 @@ function confirmRepeat() {
 
   if (type === 'yearly') {
     repeatConfig.yearlyMonth = parseInt(document.getElementById('repeat-yearly-month').value) || 1;
-    const ydEl = document.getElementById('repeat-yearly-day');
-    repeatConfig.yearlyDay   = parseInt(ydEl.value || ydEl.placeholder) || 1;
+    repeatConfig.yearlyDay   = parseInt(document.getElementById('repeat-yearly-day').value) || 1;
   }
 
   if (type === 'custom') {
@@ -262,6 +244,10 @@ function isRepeatMatch(todo, dateStr) {
     const end = new Date(todo.repeat_end_date + 'T00:00:00');
     if (target > end) return false;
   }
+
+  // 시작일 당일은 반복 유형에 관계없이 항상 표시
+  // (매주 특정 요일, 매월 특정 일, 매년 특정 날짜 등 시작일이 조건에 안 맞아도 첫 등록일엔 보여야 함)
+  if (target.getTime() === base.getTime()) return true;
 
   let meta = {};
   try { meta = JSON.parse(todo.repeat_meta || '{}'); } catch(e) {}
