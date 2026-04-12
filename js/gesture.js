@@ -13,6 +13,7 @@ function initGesturePopup() {
 
   document.getElementById('action-tomorrow').addEventListener('click', async () => {
     if (!actionTargetId) return;
+    const fromWeekly = actionFromWeekly; // 플래그를 먼저 로컬에 저장
     try {
       const baseDate = actionTargetDate || AppState.selectedDate;
       const d = new Date(baseDate + 'T00:00:00');
@@ -21,7 +22,7 @@ function initGesturePopup() {
       await moveTodoDate(actionTargetId, nextDay);
       closeActionPopup();
       showToast('1일 뒤로 이동했어요');
-      if (actionFromWeekly) {
+      if (fromWeekly) {
         await loadWeekly();
       } else {
         await loadTodos();
@@ -31,6 +32,7 @@ function initGesturePopup() {
   });
 
   document.getElementById('action-pick-date').addEventListener('click', () => {
+    const fromWeekly = actionFromWeekly; // 플래그를 먼저 로컬에 저장
     const picker = document.getElementById('action-date-picker');
     picker.value = actionTargetDate || AppState.selectedDate;
     picker.classList.remove('hidden');
@@ -43,7 +45,7 @@ function initGesturePopup() {
         await moveTodoDate(actionTargetId, picker.value);
         closeActionPopup();
         showToast('날짜를 변경했어요');
-        if (actionFromWeekly) {
+        if (fromWeekly) {
           await loadWeekly();
         } else {
           await loadTodos();
@@ -55,12 +57,13 @@ function initGesturePopup() {
 
   document.getElementById('action-delete').addEventListener('click', async () => {
     if (!actionTargetId) return;
+    const fromWeekly = actionFromWeekly; // 플래그를 먼저 로컬에 저장
     try {
       await deleteTodo(actionTargetId);
       AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
       closeActionPopup();
       showToast('삭제됐어요');
-      if (actionFromWeekly) {
+      if (fromWeekly) {
         await loadWeekly();
       } else {
         await loadTodos();

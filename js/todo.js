@@ -16,8 +16,11 @@ async function loadTodos() {
       const repeatMasters = await fetchRepeatMasters(dateStr);
       const exceptions = await fetchRepeatExceptions(dateStr);
       const exceptionIds = new Set((exceptions || []).map(e => e.repeat_master_id));
+      // directRows에 이미 존재하는 마스터 ID는 가상 행에서 제외
+      // (반복 마스터 본인이 해당 날짜에 직접 저장된 경우 중복 방지)
+      const directIds = new Set((directRows || []).map(r => r.id));
       virtualRows = (repeatMasters || [])
-        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
+        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id) && !directIds.has(m.id))
         .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 
