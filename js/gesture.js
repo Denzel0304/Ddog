@@ -78,7 +78,6 @@ function openActionPopup(id, fromWeekly = false, targetDate = null) {
   actionFromWeekly = fromWeekly;
   actionTargetDate = targetDate || AppState.selectedDate;
   document.getElementById('action-popup').classList.remove('hidden');
-  history.pushState({ popup: true }, '');
 }
 
 function closeActionPopup() {

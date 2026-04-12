@@ -21,76 +21,70 @@ document.addEventListener('DOMContentLoaded', async () => {
   initBackButton();
 });
 
-// ── 뒤로가기 → 팝업/패널/탭 한 단계씩 닫기 ──
+// ── 뒤로가기 → 팝업/패널 닫기, 탭 복귀, 종료 ──
 function initBackButton() {
-  window.addEventListener('popstate', () => {
-    if (closeTopPopup()) {
-      history.pushState({ popup: true }, '');
+  // 스택을 [외부, 앱] 두 단계로 고정
+  history.replaceState({ page: 'base' }, '');
+  history.pushState({ page: 'app' }, '');
+
+  window.addEventListener('popstate', e => {
+    if (e.state && e.state.page === 'base') {
+      // base 상태로 빠져나갔을 때
+      if (hasOpenPopup()) {
+        // 팝업 닫고 앱 스택 복원
+        closeTopPopup();
+        history.pushState({ page: 'app' }, '');
+      } else if (currentTab !== 'todo') {
+        // 탭을 할일로 복귀 후 앱 스택 복원
+        switchTab('todo');
+        history.pushState({ page: 'app' }, '');
+      }
+      // 할일 탭이고 팝업도 없으면 → 그냥 통과 → 브라우저가 종료/홈으로
     }
   });
-  history.pushState({ popup: true }, '');
+}
+
+function hasOpenPopup() {
+  if (!document.getElementById('repeat-overlay').classList.contains('hidden')) return true;
+  if (!document.getElementById('action-popup').classList.contains('hidden')) return true;
+  if (!document.getElementById('year-popup').classList.contains('hidden')) return true;
+  if (!document.getElementById('month-popup').classList.contains('hidden')) return true;
+  if (!document.getElementById('modal-overlay').classList.contains('hidden')) return true;
+  if (document.getElementById('repeats-panel').classList.contains('open')) return true;
+  if (document.getElementById('settings-panel').classList.contains('open')) return true;
+  return false;
 }
 
 function closeTopPopup() {
-  const repeatOverlay = document.getElementById('repeat-overlay');
-  if (repeatOverlay && !repeatOverlay.classList.contains('hidden')) {
-    repeatOverlay.classList.add('hidden');
-    return true;
+  if (!document.getElementById('repeat-overlay').classList.contains('hidden')) {
+    document.getElementById('repeat-overlay').classList.add('hidden');
+    return;
   }
-
-  const actionPopup = document.getElementById('action-popup');
-  if (actionPopup && !actionPopup.classList.contains('hidden')) {
-    closeActionPopup();
-    return true;
+  if (!document.getElementById('action-popup').classList.contains('hidden')) {
+    closeActionPopup(); return;
   }
-
-  const yearPopup = document.getElementById('year-popup');
-  if (yearPopup && !yearPopup.classList.contains('hidden')) {
-    closeYearPopup();
-    return true;
+  if (!document.getElementById('year-popup').classList.contains('hidden')) {
+    closeYearPopup(); return;
   }
-
-  const monthPopup = document.getElementById('month-popup');
-  if (monthPopup && !monthPopup.classList.contains('hidden')) {
-    closeMonthPopup();
-    return true;
+  if (!document.getElementById('month-popup').classList.contains('hidden')) {
+    closeMonthPopup(); return;
   }
-
-  const modalOverlay = document.getElementById('modal-overlay');
-  if (modalOverlay && !modalOverlay.classList.contains('hidden')) {
-    closeModal();
-    return true;
+  if (!document.getElementById('modal-overlay').classList.contains('hidden')) {
+    closeModal(); return;
   }
-
-  const repeatsPanel = document.getElementById('repeats-panel');
-  if (repeatsPanel && repeatsPanel.classList.contains('open')) {
-    closeRepeatsPanel();
-    return true;
+  if (document.getElementById('repeats-panel').classList.contains('open')) {
+    closeRepeatsPanel(); return;
   }
-
-  const settingsPanel = document.getElementById('settings-panel');
-  if (settingsPanel && settingsPanel.classList.contains('open')) {
-    closeSettingsPanelOnly();
-    return true;
+  if (document.getElementById('settings-panel').classList.contains('open')) {
+    closeSettingsPanelOnly(); return;
   }
-
-  if (currentTab === 'search' || currentTab === 'weekly') {
-    switchTab('todo');
-    return true;
-  }
-
-  return false;
 }
 
 function initTabs() {
   document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.dataset.tab === 'settings') return;
-      const targetTab = btn.dataset.tab;
-      if (targetTab !== currentTab) {
-        history.pushState({ popup: true }, '');
-      }
-      switchTab(targetTab);
+      switchTab(btn.dataset.tab);
     });
   });
 }

@@ -16,7 +16,6 @@ function openSettingsPanel() {
   requestAnimationFrame(() => {
     document.getElementById('settings-panel').classList.add('open');
   });
-  history.pushState({ popup: true }, '');
 }
 
 function closeSettingsPanelOnly() {
@@ -42,7 +41,6 @@ function openRepeatsPanel() {
   requestAnimationFrame(() => {
     document.getElementById('repeats-panel').classList.add('open');
   });
-  history.pushState({ popup: true }, '');
 }
 
 function closeRepeatsPanel() {

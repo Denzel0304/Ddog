@@ -40,7 +40,6 @@ function openAddModal() {
   resetModalForm();
   document.getElementById('modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('input-title').focus(), 300);
-  history.pushState({ popup: true }, '');
 }
 
 function openEditModal(todo) {
@@ -71,7 +70,6 @@ function openEditModal(todo) {
 
   document.getElementById('modal-overlay').classList.remove('hidden');
   setTimeout(() => document.getElementById('input-title').focus(), 300);
-  history.pushState({ popup: true }, '');
 }
 
 function closeModal() {
