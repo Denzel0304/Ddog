@@ -2,7 +2,11 @@
 // calendar.js — 달력 렌더링 & 인터랙션
 // =============================================
 
+let calCollapsed = false;
+
 function initCalendar() {
+  document.getElementById('cal-toggle-btn').addEventListener('click', toggleCalendar);
+
   document.getElementById('cal-prev').addEventListener('click', () => moveCalMonth(-1));
   document.getElementById('cal-next').addEventListener('click', () => moveCalMonth(1));
   document.getElementById('cal-year').addEventListener('click', openYearPopup);
@@ -32,6 +36,51 @@ function initCalendar() {
   });
 
   renderCalendar();
+}
+
+function toggleCalendar() {
+  calCollapsed = !calCollapsed;
+  const section = document.getElementById('calendar-section');
+  const icon = document.getElementById('cal-toggle-icon');
+
+  if (calCollapsed) {
+    section.classList.add('collapsed');
+    // 아이콘 → 아래 화살표
+    icon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+    renderMiniWeek();
+  } else {
+    section.classList.remove('collapsed');
+    // 아이콘 → 위 화살표
+    icon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+    renderCalendar();
+  }
+}
+
+function renderMiniWeek() {
+  const today = new Date();
+  const todayStr = toLocalDateStr(today);
+  const selectedDate = AppState.selectedDate;
+
+  // 선택된 날짜가 포함된 주를 기준으로 렌더링
+  const baseDate = new Date(selectedDate + 'T00:00:00');
+  const dow = baseDate.getDay(); // 0=일, 6=토
+  const weekStart = new Date(baseDate);
+  weekStart.setDate(baseDate.getDate() - dow); // 일요일 기준 주 시작
+
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const dateStr = toLocalDateStr(d);
+    const cell = makeCalCell(d.getDate(), d.getFullYear(), d.getMonth() + 1, false, todayStr, selectedDate);
+    grid.appendChild(cell);
+  }
+
+  // 헤더 년/월 표시 업데이트
+  document.getElementById('cal-year').textContent  = baseDate.getFullYear();
+  document.getElementById('cal-month').textContent = baseDate.getMonth() + 1;
 }
 
 function moveCalMonth(dir) {
@@ -121,7 +170,11 @@ function makeCalCell(day, year, month, isOtherMonth, today, selectedDate) {
 function selectDate(dateStr) {
   AppState.selectedDate = dateStr;
   const [y, m] = dateStr.split('-').map(Number);
-  if (y !== AppState.calYear || m !== AppState.calMonth) {
+  if (calCollapsed) {
+    // 축소 상태: 미니 주간 다시 렌더
+    renderMiniWeek();
+    updateSelectedDateLabel();
+  } else if (y !== AppState.calYear || m !== AppState.calMonth) {
     AppState.calYear  = y;
     AppState.calMonth = m;
     renderCalendar();
@@ -146,29 +199,8 @@ function updateSelectedDateLabel() {
 
 async function updateMonthDots() {
   try {
-    const year  = AppState.calYear;
-    const month = AppState.calMonth;
-
-    // 1) 일반 할일 날짜 (DB 직접 조회)
-    const directDates = await fetchDotDatesForMonth(year, month);
-
-    // 2) 반복 마스터 → 해당 월의 매칭 날짜를 클라이언트에서 계산
-    const repeatDates = [];
-    try {
-      const masters = await fetchRepeatMastersForMonth(year, month);
-      const lastDay = new Date(year, month, 0).getDate();
-      for (let d = 1; d <= lastDay; d++) {
-        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        for (const m of masters) {
-          if (isRepeatMatch(m, dateStr)) {
-            repeatDates.push(dateStr);
-            break; // 같은 날짜 중복 방지
-          }
-        }
-      }
-    } catch(e) { /* 반복 컬럼 없으면 무시 */ }
-
-    AppState.dotDates = new Set([...directDates, ...repeatDates]);
+    const dates = await fetchDotDatesForMonth(AppState.calYear, AppState.calMonth);
+    AppState.dotDates = new Set(dates);
     document.querySelectorAll('.cal-day').forEach(el => {
       el.classList.toggle('has-todo', AppState.dotDates.has(el.dataset.date));
     });
