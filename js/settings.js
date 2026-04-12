@@ -20,17 +20,24 @@ function openSettingsPanel() {
   history.pushState({ popup: true }, '');
 }
 
-function closeSettingsPanel() {
+// 설정 패널만 닫기 (뒤로가기에서 반복함 패널과 분리 처리할 때 사용)
+function closeSettingsPanelOnly() {
   const panel = document.getElementById('settings-panel');
   panel.classList.remove('open');
   setTimeout(() => {
     panel.classList.add('hidden');
     document.getElementById('settings-overlay').classList.add('hidden');
-    // 반복함도 함께 숨김 (패널 전체 닫힐 때)
+    // 설정 패널이 닫힐 때 반복함도 함께 숨김 처리 (이미 open 아닌 상태)
     const repeatsPanel = document.getElementById('repeats-panel');
     repeatsPanel.classList.remove('open');
     repeatsPanel.classList.add('hidden');
   }, 300);
+}
+
+// X 버튼 또는 오버레이 클릭으로 전체 닫기 (반복함 포함)
+function closeSettingsPanel() {
+  closeRepeatsPanel();
+  closeSettingsPanelOnly();
 }
 
 function openRepeatsPanel() {

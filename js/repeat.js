@@ -53,11 +53,20 @@ function initRepeat() {
     });
   });
 
-  // 매월 N일, 매년 N일 입력 시 기존 숫자 자동 전체선택
-  ['repeat-monthly-day', 'repeat-yearly-day'].forEach(id => {
-    document.getElementById(id).addEventListener('focus', function() {
-      this.select();
-    });
+  // 매월 N일 / 매년 N일: focus 시 비우고, blur 시 빈값이면 placeholder 유지
+  document.getElementById('repeat-monthly-day').addEventListener('focus', function() {
+    this.placeholder = this.value || '1';
+    this.value = '';
+  });
+  document.getElementById('repeat-monthly-day').addEventListener('blur', function() {
+    if (!this.value) this.placeholder = '1';
+  });
+  document.getElementById('repeat-yearly-day').addEventListener('focus', function() {
+    this.placeholder = this.value || '1';
+    this.value = '';
+  });
+  document.getElementById('repeat-yearly-day').addEventListener('blur', function() {
+    if (!this.value) this.placeholder = '1';
   });
 
   // 종료일 토글
@@ -70,10 +79,10 @@ function openRepeatModal() {
   const baseDate = document.getElementById('input-date').value || getDefaultDate();
   const d = new Date(baseDate + 'T00:00:00');
 
-  // 초기값 세팅
-  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || d.getDate();
+  // 초기값 세팅: 이미 저장된 값이 있으면 채우고, 없으면 비워둠 (placeholder로 힌트 표시)
+  document.getElementById('repeat-monthly-day').value = repeatConfig.monthDay || '';
   document.getElementById('repeat-yearly-month').value = repeatConfig.yearlyMonth || (d.getMonth() + 1);
-  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || d.getDate();
+  document.getElementById('repeat-yearly-day').value = repeatConfig.yearlyDay || '';
   document.getElementById('repeat-end-date').value = repeatConfig.endDate || '';
   document.getElementById('repeat-end-toggle').checked = !!repeatConfig.endDate;
   document.getElementById('repeat-end-date-wrap').classList.toggle('hidden', !repeatConfig.endDate);
@@ -132,7 +141,8 @@ function confirmRepeat() {
     const mode = document.querySelector('.rmonth-mode-btn.active')?.dataset.mode || 'day';
     repeatConfig.monthMode = mode;
     if (mode === 'day') {
-      repeatConfig.monthDay = parseInt(document.getElementById('repeat-monthly-day').value) || 1;
+      const mdEl = document.getElementById('repeat-monthly-day');
+      repeatConfig.monthDay = parseInt(mdEl.value || mdEl.placeholder) || 1;
     } else {
       repeatConfig.monthWeek = parseInt(document.getElementById('repeat-monthly-week').value) || 1;
       repeatConfig.monthWeekday = parseInt(document.getElementById('repeat-monthly-weekday').value);
@@ -141,7 +151,8 @@ function confirmRepeat() {
 
   if (type === 'yearly') {
     repeatConfig.yearlyMonth = parseInt(document.getElementById('repeat-yearly-month').value) || 1;
-    repeatConfig.yearlyDay   = parseInt(document.getElementById('repeat-yearly-day').value) || 1;
+    const ydEl = document.getElementById('repeat-yearly-day');
+    repeatConfig.yearlyDay   = parseInt(ydEl.value || ydEl.placeholder) || 1;
   }
 
   if (type === 'custom') {

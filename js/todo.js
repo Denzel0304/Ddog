@@ -8,7 +8,13 @@ async function loadTodos() {
   list.innerHTML = '<div class="spinner"></div>';
   try {
     const dateStr = AppState.selectedDate;
-    const directRows = await fetchTodosByDate(dateStr);
+    const allDirectRows = await fetchTodosByDate(dateStr);
+
+    // directRows: 반복 마스터 행(repeat_type≠none)은 가상 렌더링 로직이 담당
+    // repeat_exception=true인 예외 행은 직접 렌더링 대상에 포함
+    const directRows = (allDirectRows || []).filter(r =>
+      !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true
+    );
 
     // 반복 마스터 가상 렌더링 (컬럼 없으면 건너뜀)
     let virtualRows = [];
@@ -16,12 +22,13 @@ async function loadTodos() {
       const repeatMasters = await fetchRepeatMasters(dateStr);
       const exceptions = await fetchRepeatExceptions(dateStr);
       const exceptionIds = new Set((exceptions || []).map(e => e.repeat_master_id));
+      // 예외 행이 있는 마스터는 directRows에 포함되므로 가상 행 제외
       virtualRows = (repeatMasters || [])
         .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
         .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 
-    AppState.todos = [...(directRows || []), ...virtualRows];
+    AppState.todos = [...directRows, ...virtualRows];
     renderTodos();
     updateMonthDots();
   } catch(e) {
@@ -85,14 +92,7 @@ function makeTodoItem(todo) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
-  // 반복 아이콘 표시 (제목 맨 앞)
-  if (todo.repeat_type && todo.repeat_type !== 'none') {
-    const icon = document.createElement('span');
-    icon.className = 'repeat-icon';
-    icon.textContent = '🔁 ';
-    titleEl.appendChild(icon);
-  }
-  // weekly_flag 별표
+  // weekly_flag 별표를 제목 앞에
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';
@@ -100,6 +100,13 @@ function makeTodoItem(todo) {
     titleEl.appendChild(flag);
   }
   titleEl.appendChild(document.createTextNode(todo.title));
+  // 반복 아이콘 표시
+  if (todo.repeat_type && todo.repeat_type !== 'none') {
+    const icon = document.createElement('span');
+    icon.className = 'repeat-icon';
+    icon.textContent = ' 🔁';
+    titleEl.appendChild(icon);
+  }
 
   textWrap.appendChild(titleEl);
 

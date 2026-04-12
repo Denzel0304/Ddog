@@ -17,21 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initBackButton();
 });
 
-// ── 뒤로가기 → 팝업/패널/탭 순서대로 닫기 ──
+// ── 뒤로가기 → 팝업/패널/탭 한 단계씩 닫기 ──
 function initBackButton() {
   window.addEventListener('popstate', () => {
     if (closeTopPopup()) {
-      // 팝업을 닫았으면 다음 뒤로가기도 잡히도록 다시 push
+      // 닫은 뒤 다음 뒤로가기도 잡히도록 다시 push
       history.pushState({ popup: true }, '');
     }
-    // 닫을 팝업/패널/탭이 없으면 브라우저 기본 동작(앱 종료)으로 흘러감
+    // 닫을 것이 없으면 브라우저 기본 동작(앱 종료)
   });
-  // 초기 더미 상태
+  // 초기 더미 상태 1개
   history.pushState({ popup: true }, '');
 }
 
 function closeTopPopup() {
-  // 열려있는 팝업/패널을 우선순위대로 닫기 (가장 위에 떠있는 것부터)
+  // 우선순위: 위에 떠있는 레이어부터 한 단계씩
 
   // 1. 반복 설정 모달
   const repeatOverlay = document.getElementById('repeat-overlay');
@@ -68,7 +68,7 @@ function closeTopPopup() {
     return true;
   }
 
-  // 6. 반복함 패널 (설정 패널 안쪽 depth → 먼저 닫아야 함)
+  // 6. 반복함 패널 (설정 패널보다 위 depth)
   const repeatsPanel = document.getElementById('repeats-panel');
   if (repeatsPanel && repeatsPanel.classList.contains('open')) {
     closeRepeatsPanel();
@@ -78,7 +78,7 @@ function closeTopPopup() {
   // 7. 설정 패널
   const settingsPanel = document.getElementById('settings-panel');
   if (settingsPanel && settingsPanel.classList.contains('open')) {
-    closeSettingsPanel();
+    closeSettingsPanelOnly(); // 반복함은 건드리지 않고 설정 패널만 닫기
     return true;
   }
 
@@ -94,11 +94,9 @@ function closeTopPopup() {
 function initTabs() {
   document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
-      // 설정은 슬라이드 패널로 처리 (탭 전환 아님)
       if (btn.dataset.tab === 'settings') return;
       const targetTab = btn.dataset.tab;
       if (targetTab !== currentTab) {
-        // 탭 전환 시 히스토리에 push → 뒤로가기로 이전 탭 복귀 가능
         history.pushState({ popup: true }, '');
       }
       switchTab(targetTab);
