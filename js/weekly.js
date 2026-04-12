@@ -45,19 +45,19 @@ async function loadWeekly() {
   container.innerHTML = '<div class="spinner"></div>';
 
   try {
-    const directRows = await dbFetch(
+    const directRows = await sbFetch(
       `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&order=date.asc,sort_order.asc,created_at.desc`
     ) || [];
 
     // 반복 마스터 가상 렌더링 (주간 범위 내 각 날짜에 대해 매칭 여부 확인)
     let virtualRows = [];
     try {
-      const repeatMasters = await dbFetch(
+      const repeatMasters = await sbFetch(
         `${TABLE_NAME}?repeat_type=neq.none&date=lte.${toStr}&repeat_master_id=is.null&repeat_exception=eq.false&order=created_at.asc`
       ) || [];
 
       // 주간 범위 내 예외 행 전체 조회
-      const exceptions = await dbFetch(
+      const exceptions = await sbFetch(
         `${TABLE_NAME}?date=gte.${fromStr}&date=lte.${toStr}&repeat_exception=eq.true`
       ) || [];
       // (masterId, date) 쌍으로 예외 Set 구성

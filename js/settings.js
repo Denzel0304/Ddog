@@ -59,7 +59,7 @@ async function loadRepeats() {
   const list = document.getElementById('repeats-list');
   list.innerHTML = '<div class="spinner"></div>';
   try {
-    const rows = await dbFetch(
+    const rows = await sbFetch(
       `${TABLE_NAME}?repeat_type=neq.none&repeat_master_id=is.null&repeat_exception=eq.false&order=created_at.desc`
     ) || [];
 
@@ -155,7 +155,7 @@ function showRepeatDeleteOptions(todo, el) {
 
 async function deleteRepeatAll(masterId) {
   // 마스터 + 모든 예외 행 삭제
-  await dbFetch(`${TABLE_NAME}?id=eq.${masterId}`, { method: 'DELETE' });
-  await dbFetch(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, { method: 'DELETE' });
+  await sbFetch(`${TABLE_NAME}?id=eq.${masterId}`, { method: 'DELETE' });
+  await sbFetch(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, { method: 'DELETE' });
   showToast('반복 일정을 삭제했어요');
 }
