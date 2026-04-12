@@ -4,11 +4,17 @@
 
 let weekOffset = 0;
 let selectedWeekDay = null;
-let weekAllRows = []; // 현재 주 전체 데이터 캐시
+let weekAllRows = [];
+let weekImportantOnly = false;
 
 function initWeekly() {
   document.getElementById('week-prev').addEventListener('click', () => { weekOffset--; loadWeekly(); });
   document.getElementById('week-next').addEventListener('click', () => { weekOffset++; loadWeekly(); });
+  document.getElementById('week-important-btn').addEventListener('click', () => {
+    weekImportantOnly = !weekImportantOnly;
+    document.getElementById('week-important-btn').classList.toggle('active', weekImportantOnly);
+    renderWeekAllTodos(weekAllRows, getWeekRange(weekOffset).monday);
+  });
 }
 
 function getWeekRange(offset) {
@@ -26,18 +32,15 @@ function getWeekRange(offset) {
 
 async function loadWeekly() {
   const { monday, sunday } = getWeekRange(weekOffset);
-
   const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
   document.getElementById('week-range-label').textContent = `${fmt(monday)} ~ ${fmt(sunday)}`;
 
-  // 기본 선택: 월요일 (주 바뀔 때만)
   if (!selectedWeekDay || !isInWeek(selectedWeekDay, monday)) {
     selectedWeekDay = toLocalDateStr(monday);
   }
 
   const fromStr = toLocalDateStr(monday);
   const toStr   = toLocalDateStr(sunday);
-
   const container = document.getElementById('weekly-todo-list');
   container.innerHTML = '<div class="spinner"></div>';
 
@@ -47,13 +50,11 @@ async function loadWeekly() {
     ) || [];
   } catch(e) {
     container.innerHTML = '<div class="empty-state">불러오기 실패</div>';
-    console.warn(e);
     return;
   }
 
   const hasTodo = {};
   weekAllRows.forEach(r => { hasTodo[r.date] = true; });
-
   renderWeekDayCards(monday, hasTodo);
   renderWeekAllTodos(weekAllRows, monday);
 }
@@ -64,44 +65,39 @@ function isInWeek(dateStr, monday) {
   return d >= monday && d <= s;
 }
 
-// 날짜 카드 — 클릭 시 selectedWeekDay만 변경 (목록 변경 없음)
 function renderWeekDayCards(monday, hasTodo) {
   const row = document.getElementById('week-day-row');
   row.innerHTML = '';
   const dayNames = ['일','월','화','수','목','금','토'];
-
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     const dateStr = toLocalDateStr(d);
     const dow = d.getDay();
-
     const card = document.createElement('div');
     card.className = 'week-day-card';
     if (dow === 6) card.classList.add('sat');
     if (dow === 0) card.classList.add('sun');
     if (dateStr === selectedWeekDay) card.classList.add('selected');
     if (hasTodo[dateStr]) card.classList.add('has-todo');
-
     card.innerHTML = `<span class="wdc-name">${dayNames[dow]}</span><span class="wdc-num">${d.getDate()}</span>`;
-
-    // 클릭: selectedWeekDay 변경만 (목록 불변)
     card.addEventListener('click', () => {
       selectedWeekDay = dateStr;
       document.querySelectorAll('.week-day-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
     });
-
     row.appendChild(card);
   }
 }
 
-// 7일치 전체 목록 렌더링
 function renderWeekAllTodos(allRows, monday) {
   const container = document.getElementById('weekly-todo-list');
   container.innerHTML = '';
 
+  // 중요 필터: weekly_flag 체크된 것만
+  const filtered = weekImportantOnly ? allRows.filter(r => r.weekly_flag) : allRows;
+
   const grouped = {};
-  allRows.forEach(r => {
+  filtered.forEach(r => {
     if (!grouped[r.date]) grouped[r.date] = [];
     grouped[r.date].push(r);
   });
@@ -114,7 +110,6 @@ function renderWeekAllTodos(allRows, monday) {
     const dateStr = toLocalDateStr(d);
     const dayTodos = grouped[dateStr];
     if (!dayTodos || dayTodos.length === 0) continue;
-
     hasAny = true;
     const dow = d.getDay();
 
@@ -128,9 +123,7 @@ function renderWeekAllTodos(allRows, monday) {
 
     const active = dayTodos.filter(t => !t.is_done);
     const done   = dayTodos.filter(t => t.is_done);
-
     active.forEach(todo => container.appendChild(makeWeekTodoItem(todo, false)));
-
     if (done.length > 0) {
       const div = document.createElement('div');
       div.className = 'week-done-divider';
@@ -141,7 +134,8 @@ function renderWeekAllTodos(allRows, monday) {
   }
 
   if (!hasAny) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🗓</div>이번 주 할일이 없어요</div>';
+    const msg = weekImportantOnly ? '주간 표시된 할일이 없어요' : '이번 주 할일이 없어요';
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗓</div>${msg}</div>`;
   }
 }
 
@@ -167,6 +161,12 @@ function makeWeekTodoItem(todo, isDone) {
   const title = document.createElement('div');
   title.className = 'todo-title';
   title.textContent = todo.title || '(제목 없음)';
+  if (todo.weekly_flag) {
+    const flag = document.createElement('span');
+    flag.className = 'weekly-flag-icon';
+    flag.textContent = ' ★';
+    title.appendChild(flag);
+  }
   text.appendChild(title);
   if (todo.memo) {
     const memo = document.createElement('div');
@@ -175,48 +175,35 @@ function makeWeekTodoItem(todo, isDone) {
     text.appendChild(memo);
   }
 
-  const drag = document.createElement('div');
-  drag.className = 'drag-handle';
-  drag.innerHTML = '⠿';
-
   el.appendChild(bar);
   el.appendChild(check);
   el.appendChild(text);
-  if (!isDone) el.appendChild(drag);
 
-  // 주간 탭에서도 같은 제스처 적용
   initWeekItemGesture(el, todo);
-
   return el;
 }
 
-// 주간 아이템 제스처 (gesture.js의 initItemGesture와 동일 로직)
 function initWeekItemGesture(el, todo) {
-  let startX = 0, startY = 0, moved = false, currentX = 0, isHorizontal = null;
-
+  let startX = 0, startY = 0, moved = false, isHorizontal = null;
   el.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    moved = false; currentX = 0; isHorizontal = null;
-    el.style.transition = 'none';
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    moved = false; isHorizontal = null; el.style.transition = 'none';
   }, { passive: true });
 
   el.addEventListener('touchmove', e => {
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
     if (isHorizontal === null) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8)
-        isHorizontal = Math.abs(dx) > Math.abs(dy);
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) isHorizontal = Math.abs(dx) > Math.abs(dy);
       return;
     }
     if (!isHorizontal) return;
     moved = true;
-    currentX = dx;
     const clampedX = Math.max(-120, Math.min(120, dx));
     el.style.transform = `translateX(${clampedX}px)`;
-    if (dx > 20)       el.style.background = `rgba(126,207,160,${Math.min(dx/120, 0.3)})`;
-    else if (dx < -20) el.style.background = `rgba(224,92,106,${Math.min(Math.abs(dx)/120, 0.25)})`;
-    else               el.style.background = '';
+    if (dx > 20) el.style.background = `rgba(126,207,160,${Math.min(dx/120,0.3)})`;
+    else if (dx < -20) el.style.background = `rgba(224,92,106,${Math.min(Math.abs(dx)/120,0.25)})`;
+    else el.style.background = '';
   }, { passive: true });
 
   el.addEventListener('touchend', e => {
@@ -224,31 +211,22 @@ function initWeekItemGesture(el, todo) {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) { resetWeekItemStyle(el); return; }
-
     if (dx > 0 && !todo.is_done) {
-      // 좌→우: 완료
       el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-      el.style.transform = 'translateX(110%)';
-      el.style.opacity = '0';
+      el.style.transform = 'translateX(110%)'; el.style.opacity = '0';
       setTimeout(async () => {
-        try {
-          await toggleDone(todo.id, true);
-          loadWeekly();
-        } catch(e) { resetWeekItemStyle(el); showToast('오류가 발생했어요'); }
+        try { await toggleDone(todo.id, true); loadWeekly(); }
+        catch(e) { resetWeekItemStyle(el); showToast('오류가 발생했어요'); }
       }, 250);
     } else if (dx < 0) {
-      // 우→좌: 액션 팝업
       resetWeekItemStyle(el);
-      openActionPopup(todo.id, true); // true = 주간탭
-    } else {
-      resetWeekItemStyle(el);
-    }
+      openActionPopup(todo.id, true);
+    } else { resetWeekItemStyle(el); }
   }, { passive: true });
 }
 
 function resetWeekItemStyle(el) {
   el.style.transition = 'transform 0.2s ease, background 0.2s ease';
-  el.style.transform = '';
-  el.style.background = '';
+  el.style.transform = ''; el.style.background = '';
   setTimeout(() => { el.style.transition = ''; }, 220);
 }
