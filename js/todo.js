@@ -8,21 +8,18 @@ async function loadTodos() {
   list.innerHTML = '<div class="spinner"></div>';
   try {
     const dateStr = AppState.selectedDate;
-
-    // 1. 해당 날짜 직접 등록된 할일
     const directRows = await fetchTodosByDate(dateStr);
 
-    // 2. 반복 마스터 행 조회 (repeat_type != 'none', 기준일 이전, 예외 행 아님)
-    const repeatMasters = await fetchRepeatMasters(dateStr);
-
-    // 3. 해당 날짜에 이미 예외 처리된 마스터 ID 목록
-    const exceptions = await fetchRepeatExceptions(dateStr);
-    const exceptionIds = new Set(exceptions.map(e => e.repeat_master_id));
-
-    // 4. 반복 마스터 중 해당 날짜에 매칭되고 예외 아닌 것 가상 추가
-    const virtualRows = repeatMasters
-      .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
-      .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
+    // 반복 마스터 가상 렌더링 (컬럼 없으면 건너뜀)
+    let virtualRows = [];
+    try {
+      const repeatMasters = await fetchRepeatMasters(dateStr);
+      const exceptions = await fetchRepeatExceptions(dateStr);
+      const exceptionIds = new Set((exceptions || []).map(e => e.repeat_master_id));
+      virtualRows = (repeatMasters || [])
+        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
+        .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
+    } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 
     AppState.todos = [...(directRows || []), ...virtualRows];
     renderTodos();
