@@ -116,7 +116,7 @@ ul { list-style: none; }
 #selected-date-bar { padding: 8px 16px; background: var(--bg-base); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 #selected-date-label { font-size: 13px; font-family: var(--font-ui); }
 #selected-date-label.date-label-weekday { color: var(--text-primary); }
-#selected-date-label.date-label-sat { color: var(--imp-1); }
+#selected-date-label.date-label-sat { color: #6b9fd4; }
 #selected-date-label.date-label-sun { color: var(--danger); }
 
 /* ── 할일 목록 ── */
@@ -341,7 +341,7 @@ ul { list-style: none; }
   font-family: var(--font-ui);
 }
 .week-day-card.sat .wdc-name,
-.week-day-card.sat .wdc-num { color: var(--imp-1); }
+.week-day-card.sat .wdc-num { color: #6b9fd4; }
 .week-day-card.sun .wdc-name,
 .week-day-card.sun .wdc-num { color: var(--danger); }
 
@@ -368,7 +368,7 @@ ul { list-style: none; }
   font-family: var(--font-ui);
   color: var(--text-primary);
 }
-#week-selected-label.week-sat { color: var(--imp-1); }
+#week-selected-label.week-sat { color: #6b9fd4; }
 #week-selected-label.week-sun { color: var(--danger); }
 
 /* 주간 할일 목록 */
@@ -413,7 +413,7 @@ ul { list-style: none; }
   border-left: 3px solid var(--accent);
 }
 .week-section-header:first-child { margin-top: 0; }
-.week-section-header.week-sat { color: var(--imp-1); border-left-color: var(--imp-1); }
+.week-section-header.week-sat { color: #6b9fd4; border-left-color: #6b9fd4; }
 .week-section-header.week-sun { color: var(--danger); border-left-color: var(--danger); }
 
 /* 달력 콜랩스 핸들 바 */
