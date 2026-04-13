@@ -162,6 +162,7 @@ function makeCalCell(day, year, month, isOtherMonth, today, selectedDate) {
   if (dateStr === today) el.classList.add('today');
   if (dateStr === selectedDate) el.classList.add('selected');
   if (AppState.dotDates.has(dateStr)) el.classList.add('has-todo');
+  if (AppState.pastUndoneDates && AppState.pastUndoneDates.has(dateStr)) el.classList.add('past-undone');
 
   el.addEventListener('click', () => selectDate(dateStr));
   return el;
@@ -200,9 +201,12 @@ function updateSelectedDateLabel() {
 async function updateMonthDots() {
   try {
     const dates = await fetchDotDatesForMonth(AppState.calYear, AppState.calMonth);
+    const pastUndone = await fetchPastUndoneDatesForMonth(AppState.calYear, AppState.calMonth);
     AppState.dotDates = new Set(dates);
+    AppState.pastUndoneDates = new Set(pastUndone);
     document.querySelectorAll('.cal-day').forEach(el => {
       el.classList.toggle('has-todo', AppState.dotDates.has(el.dataset.date));
+      el.classList.toggle('past-undone', AppState.pastUndoneDates.has(el.dataset.date));
     });
   } catch(e) { console.warn('dot dates fetch failed', e); }
 }

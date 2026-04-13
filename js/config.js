@@ -35,6 +35,7 @@ const AppState = {
   calMonth: new Date().getMonth() + 1,       // 1~12
   todos: [],           // 현재 날짜 할일 목록
   dotDates: new Set(), // 달력 점 표시용 날짜 set
+  pastUndoneDates: new Set(), // 과거 미완료 날짜 set
   editingId: null,     // 수정 중인 todo id
   isOnline: navigator.onLine,
 };

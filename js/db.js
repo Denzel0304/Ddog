@@ -97,6 +97,61 @@ async function fetchDotDatesForMonth(year, month) {
   return [...directDates, ...repeatDates];
 }
 
+// 과거 미완료 할일이 있는 날짜 목록 (오늘 제외 이전 날짜만)
+async function fetchPastUndoneDatesForMonth(year, month) {
+  const from = `${year}-${String(month).padStart(2,'0')}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const to = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const today = todayStr();
+  const all = await idbGetAll();
+
+  // 일반 행: 과거 + 미완료
+  const directDates = all
+    .filter(t =>
+      t.date >= from && t.date < today && t.date <= to &&
+      !t.is_done &&
+      !(t.repeat_deleted) &&
+      (!t.repeat_type || t.repeat_type === 'none' || t.repeat_exception === true)
+    )
+    .map(t => t.date);
+
+  // 반복 마스터: 과거 날짜 중 미완료
+  const repeatMasters = all.filter(t =>
+    t.repeat_type && t.repeat_type !== 'none' &&
+    !t.repeat_master_id &&
+    !t.repeat_exception &&
+    t.date <= to
+  );
+
+  const exceptions = all.filter(t =>
+    t.date >= from && t.date <= to &&
+    t.repeat_exception === true
+  );
+  const exceptionSet = new Set(exceptions.map(e => `${e.repeat_master_id}_${e.date}`));
+  const deletedSet   = new Set(exceptions.filter(e => e.repeat_deleted).map(e => `${e.repeat_master_id}_${e.date}`));
+
+  const repeatDates = [];
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (dateStr >= today) continue; // 오늘 이후는 제외
+    for (const m of repeatMasters) {
+      const key = `${m.id}_${dateStr}`;
+      if (deletedSet.has(key)) continue;
+      if (exceptionSet.has(key)) {
+        const ex = exceptions.find(e => e.repeat_master_id === m.id && e.date === dateStr);
+        if (ex && !ex.is_done && !ex.repeat_deleted) repeatDates.push(dateStr);
+        continue;
+      }
+      if (isRepeatMatch(m, dateStr)) {
+        repeatDates.push(dateStr);
+        break;
+      }
+    }
+  }
+
+  return [...new Set([...directDates, ...repeatDates])];
+}
+
 async function searchTodos(keyword) {
   const all = await idbGetAll();
   const kw = keyword.toLowerCase();
