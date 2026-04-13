@@ -160,8 +160,21 @@ async function handleToggleDone(todo) {
   const newDone = !todo.is_done;
   try {
     if (todo._virtual) {
-      // 반복 가상 항목 → 예외 행 생성
-      const exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
+      // 반복 가상 항목 → 이미 예외 행이 있으면 업데이트, 없으면 새로 생성
+      const all = await idbGetAll();
+      const existingEx = all.find(t =>
+        String(t.repeat_master_id) === String(todo._masterId) &&
+        t.date === AppState.selectedDate &&
+        t.repeat_exception === true &&
+        !t.repeat_deleted
+      );
+      let exRow;
+      if (existingEx) {
+        await toggleDone(existingEx.id, newDone);
+        exRow = { ...existingEx, is_done: newDone, done_at: newDone ? new Date().toISOString() : null };
+      } else {
+        exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
+      }
       // 로컬에 예외 행으로 교체
       const idx = AppState.todos.findIndex(t => t._masterId === todo._masterId && t._virtual);
       if (idx !== -1) AppState.todos[idx] = { ...exRow, _wasVirtual: true };

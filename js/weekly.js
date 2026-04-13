@@ -212,8 +212,24 @@ function makeWeekTodoItem(todo, isDone) {
   check.className = 'todo-check' + (isDone ? ' checked' : '');
   check.addEventListener('click', async (e) => {
     e.stopPropagation();
+    const newDone = !todo.is_done;
     try {
-      await toggleDone(todo.id, !todo.is_done);
+      if (todo._virtual) {
+        const all = await idbGetAll();
+        const existingEx = all.find(t =>
+          String(t.repeat_master_id) === String(todo._masterId) &&
+          t.date === todo.date &&
+          t.repeat_exception === true &&
+          !t.repeat_deleted
+        );
+        if (existingEx) {
+          await toggleDone(existingEx.id, newDone);
+        } else {
+          await insertRepeatException(todo._masterId, todo.date, newDone);
+        }
+      } else {
+        await toggleDone(todo.id, newDone);
+      }
       loadWeekly();
     } catch(e) { showToast('오류가 발생했어요'); }
   });
@@ -279,7 +295,25 @@ function initWeekItemGesture(el, todo) {
       el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
       el.style.transform = 'translateX(110%)'; el.style.opacity = '0';
       setTimeout(async () => {
-        try { await toggleDone(todo.id, true); loadWeekly(); }
+        try {
+          if (todo._virtual) {
+            const all = await idbGetAll();
+            const existingEx = all.find(t =>
+              String(t.repeat_master_id) === String(todo._masterId) &&
+              t.date === todo.date &&
+              t.repeat_exception === true &&
+              !t.repeat_deleted
+            );
+            if (existingEx) {
+              await toggleDone(existingEx.id, true);
+            } else {
+              await insertRepeatException(todo._masterId, todo.date, true);
+            }
+          } else {
+            await toggleDone(todo.id, true);
+          }
+          loadWeekly();
+        }
         catch(e) { resetWeekItemStyle(el); showToast('오류가 발생했어요'); }
       }, 250);
     } else if (dx < 0) {
