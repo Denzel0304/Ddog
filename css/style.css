@@ -115,7 +115,7 @@ ul { list-style: none; }
 .cal-day.selected.past-undone span::after { background: #1a1a2e; }
 
 /* ── 날짜 바 ── */
-#selected-date-bar { padding: 8px 16px; background: var(--bg-base); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#selected-date-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-base); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 #selected-date-label { font-size: 13px; font-family: var(--font-ui); }
 #selected-date-label.date-label-weekday { color: var(--text-primary); }
 #selected-date-label.date-label-sat { color: var(--imp-1); }
