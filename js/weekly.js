@@ -71,13 +71,14 @@ async function loadWeekly() {
         r.date >= fromStr && r.date <= toStr && r.repeat_exception === true
       );
       const exceptionSet = new Set(exceptions.map(e => `${e.repeat_master_id}_${e.date}`));
+      const deletedSet   = new Set(exceptions.filter(e => e.repeat_deleted).map(e => `${e.repeat_master_id}_${e.date}`));
 
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
         const dateStr = toLocalDateStr(d);
         repeatMasters
-          .filter(m => isRepeatMatch(m, dateStr) && !exceptionSet.has(`${m.id}_${dateStr}`))
+          .filter(m => isRepeatMatch(m, dateStr) && !exceptionSet.has(`${m.id}_${dateStr}`) && !deletedSet.has(`${m.id}_${dateStr}`))
           .forEach(m => virtualRows.push({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
       }
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }

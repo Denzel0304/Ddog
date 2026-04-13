@@ -126,13 +126,36 @@ function showRepeatDeleteOptions(todo, el) {
   const opts = document.createElement('div');
   opts.className = 'repeat-del-options';
 
+  const today = todayStr();
+
   const choices = [
-    { label: '전체 삭제', action: () => deleteRepeatAll(todo.id) },
+    {
+      label: '이 날짜만 삭제',
+      action: async () => {
+        await deleteRepeatOnlyDate(todo.id, today);
+        showToast('이 날짜만 삭제했어요');
+      }
+    },
+    {
+      label: '이 날짜 이후 모두 삭제',
+      action: async () => {
+        await deleteRepeatFromDate(todo.id, today);
+        showToast('이후 반복을 삭제했어요');
+      }
+    },
+    {
+      label: '전체 반복 삭제',
+      action: async () => {
+        await deleteRepeatAll(todo.id);
+        showToast('반복 일정을 삭제했어요');
+      }
+    },
   ];
 
   choices.forEach(({ label, action }) => {
     const btn = document.createElement('button');
     btn.textContent = label;
+    if (label.includes('전체')) btn.classList.add('danger');
     btn.addEventListener('click', async () => {
       await action();
       loadRepeats();
@@ -150,17 +173,4 @@ function showRepeatDeleteOptions(todo, el) {
   el.appendChild(opts);
 }
 
-async function deleteRepeatAll(masterId) {
-  // IDB에서 마스터 + 예외 행 모두 삭제
-  const all = await idbGetAll();
-  const toDelete = all.filter(t =>
-    t.id === masterId || t.repeat_master_id === masterId
-  );
-  await Promise.all(toDelete.map(t => idbDelete(t.id)));
 
-  // Supabase 백그라운드 삭제
-  await sbPush(`${TABLE_NAME}?id=eq.${masterId}`, 'DELETE', null);
-  await sbPush(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, 'DELETE', null);
-
-  showToast('반복 일정을 삭제했어요');
-}

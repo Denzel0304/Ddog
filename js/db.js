@@ -48,9 +48,53 @@ async function fetchDotDatesForMonth(year, month) {
   const lastDay = new Date(year, month, 0).getDate();
   const to = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
   const all = await idbGetAll();
-  return all
-    .filter(t => t.date >= from && t.date <= to && !t.is_done)
+
+  // 일반 행 (반복 마스터 제외)
+  const directDates = all
+    .filter(t =>
+      t.date >= from && t.date <= to &&
+      !t.is_done &&
+      !(t.repeat_deleted) &&
+      (!t.repeat_type || t.repeat_type === 'none' || t.repeat_exception === true)
+    )
     .map(t => t.date);
+
+  // 반복 마스터 행 → 해당 월 날짜 중 매칭되는 날 계산
+  const repeatMasters = all.filter(t =>
+    t.repeat_type && t.repeat_type !== 'none' &&
+    !t.repeat_master_id &&
+    !t.repeat_exception &&
+    t.date <= to
+  );
+
+  // 예외/삭제 행 세트
+  const exceptions = all.filter(t =>
+    t.date >= from && t.date <= to &&
+    t.repeat_exception === true
+  );
+  const exceptionSet = new Set(exceptions.map(e => `${e.repeat_master_id}_${e.date}`));
+  const deletedSet   = new Set(exceptions.filter(e => e.repeat_deleted).map(e => `${e.repeat_master_id}_${e.date}`));
+
+  const repeatDates = [];
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    for (const m of repeatMasters) {
+      const key = `${m.id}_${dateStr}`;
+      if (deletedSet.has(key)) continue;
+      if (exceptionSet.has(key)) {
+        // 예외 행이 있고 완료 안됐으면 점 표시
+        const ex = exceptions.find(e => e.repeat_master_id === m.id && e.date === dateStr);
+        if (ex && !ex.is_done && !ex.repeat_deleted) repeatDates.push(dateStr);
+        continue;
+      }
+      if (isRepeatMatch(m, dateStr)) {
+        repeatDates.push(dateStr);
+        break;
+      }
+    }
+  }
+
+  return [...directDates, ...repeatDates];
 }
 
 async function searchTodos(keyword) {
@@ -222,6 +266,87 @@ async function fetchRepeatExceptions(dateStr) {
     const all = await idbGetAll();
     return all.filter(t => t.date === dateStr && t.repeat_exception === true);
   } catch(e) { return []; }
+}
+
+// ── 반복 일정 삭제 3종 ──
+
+// 1. 이 날짜만 삭제: repeat_deleted 예외 행 생성
+async function deleteRepeatOnlyDate(masterId, dateStr) {
+  // 이미 예외 행이 있으면 repeat_deleted 플래그만 업데이트
+  const all = await idbGetAll();
+  const existing = all.find(t =>
+    t.repeat_master_id === masterId && t.date === dateStr && t.repeat_exception
+  );
+
+  if (existing) {
+    await updateTodo(existing.id, { repeat_deleted: true });
+    return;
+  }
+
+  // 예외 행 새로 생성
+  const master = all.find(t => t.id === masterId);
+  const now = new Date().toISOString();
+  const payload = {
+    title:            master?.title || '',
+    memo:             master?.memo  || '',
+    importance:       master?.importance || 0,
+    date:             dateStr,
+    remind_days:      0,
+    is_done:          false,
+    sort_order:       0,
+    repeat_type:      'none',
+    repeat_master_id: masterId,
+    repeat_exception: true,
+    repeat_deleted:   true,
+    created_at:       now,
+    updated_at:       now,
+  };
+
+  if (AppState.isOnline) {
+    try {
+      const res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
+        method: 'POST',
+        headers: DB.headers,
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        await idbPut(rows[0]);
+        return;
+      }
+    } catch(e) {}
+  }
+  const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  await idbPut({ ...payload, id: tempId });
+  await queuePush({ path: TABLE_NAME, method: 'POST', body: payload });
+}
+
+// 2. 이 날짜 이후 삭제: 마스터 repeat_end_date를 dateStr - 1일로 업데이트
+//    + 해당 날짜 이후 예외 행 삭제
+async function deleteRepeatFromDate(masterId, dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const endDate = toLocalDateStr(d);
+
+  await updateTodo(masterId, { repeat_end_date: endDate });
+
+  // 이후 예외 행들 삭제
+  const all = await idbGetAll();
+  const toDeletes = all.filter(t =>
+    t.repeat_master_id === masterId && t.date >= dateStr
+  );
+  await Promise.all(toDeletes.map(t => deleteTodo(t.id)));
+}
+
+// 3. 전체 삭제: 마스터 + 모든 예외 행
+async function deleteRepeatAll(masterId) {
+  const all = await idbGetAll();
+  const toDeletes = all.filter(t =>
+    t.id === masterId || t.repeat_master_id === masterId
+  );
+  await Promise.all(toDeletes.map(t => idbDelete(t.id)));
+  await sbPush(`${TABLE_NAME}?id=eq.${masterId}`, 'DELETE', null);
+  await sbPush(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, 'DELETE', null);
 }
 
 async function insertRepeatException(masterId, dateStr, isDone = false) {

@@ -22,8 +22,9 @@ async function loadTodos() {
       const repeatMasters = await fetchRepeatMasters(dateStr);
       const exceptions = await fetchRepeatExceptions(dateStr);
       const exceptionIds = new Set((exceptions || []).map(e => e.repeat_master_id));
+      const deletedIds  = new Set((exceptions || []).filter(e => e.repeat_deleted).map(e => e.repeat_master_id));
       virtualRows = (repeatMasters || [])
-        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id))
+        .filter(m => isRepeatMatch(m, dateStr) && !exceptionIds.has(m.id) && !deletedIds.has(m.id))
         .map(m => ({ ...m, _virtual: true, _masterId: m.id, date: dateStr }));
     } catch(e) { /* 반복 컬럼 미존재 시 무시 */ }
 

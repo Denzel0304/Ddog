@@ -57,19 +57,33 @@ function initGesturePopup() {
 
   document.getElementById('action-delete').addEventListener('click', async () => {
     if (!actionTargetId) return;
-    const fromWeekly = actionFromWeekly; // 플래그를 먼저 로컬에 저장
-    try {
-      await deleteTodo(actionTargetId);
-      AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
-      closeActionPopup();
-      showToast('삭제됐어요');
-      if (fromWeekly) {
-        await loadWeekly();
-      } else {
-        await loadTodos();
-        updateMonthDots();
-      }
-    } catch(e) { showToast('오류가 발생했어요'); }
+    const todo = AppState.todos.find(t =>
+      String(t.id) === String(actionTargetId) ||
+      (t._virtual && String(t._masterId) === String(actionTargetId))
+    ) || weekAllRows?.find(t =>
+      String(t.id) === String(actionTargetId) ||
+      (t._virtual && String(t._masterId) === String(actionTargetId))
+    );
+
+    const isRepeat = todo && (
+      todo._virtual ||
+      (todo.repeat_type && todo.repeat_type !== 'none' && !todo.repeat_master_id)
+    );
+
+    if (isRepeat) {
+      const masterId = todo._virtual ? todo._masterId : todo.id;
+      showRepeatDeleteSheet(masterId, actionTargetDate, actionFromWeekly);
+    } else {
+      const fromWeekly = actionFromWeekly;
+      try {
+        await deleteTodo(actionTargetId);
+        AppState.todos = AppState.todos.filter(t => t.id !== actionTargetId);
+        closeActionPopup();
+        showToast('삭제됐어요');
+        if (fromWeekly) await loadWeekly();
+        else { await loadTodos(); updateMonthDots(); }
+      } catch(e) { showToast('오류가 발생했어요'); }
+    }
   });
 }
 
@@ -83,9 +97,58 @@ function openActionPopup(id, fromWeekly = false, targetDate = null) {
 function closeActionPopup() {
   document.getElementById('action-popup').classList.add('hidden');
   document.getElementById('action-date-picker').classList.add('hidden');
+  // 반복 삭제 시트도 닫기
+  const sheet = document.getElementById('repeat-delete-sheet');
+  if (sheet) sheet.remove();
   actionTargetId = null;
   actionFromWeekly = false;
   actionTargetDate = null;
+}
+
+// ── 반복 삭제 선택 시트 ──
+function showRepeatDeleteSheet(masterId, dateStr, fromWeekly) {
+  // 기존 시트 제거
+  const old = document.getElementById('repeat-delete-sheet');
+  if (old) old.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'repeat-delete-sheet';
+  sheet.className = 'repeat-delete-sheet';
+
+  const title = document.createElement('div');
+  title.className = 'rds-title';
+  title.textContent = '반복 일정 삭제';
+  sheet.appendChild(title);
+
+  const options = [
+    { label: '이 날짜만 삭제',       action: async () => { await deleteRepeatOnlyDate(masterId, dateStr); showToast('이 날짜만 삭제했어요'); } },
+    { label: '이 날짜 이후 모두 삭제', action: async () => { await deleteRepeatFromDate(masterId, dateStr); showToast('이후 반복을 삭제했어요'); } },
+    { label: '전체 반복 삭제',        action: async () => { await deleteRepeatAll(masterId); showToast('반복 일정을 삭제했어요'); } },
+  ];
+
+  options.forEach(({ label, action }) => {
+    const btn = document.createElement('button');
+    btn.className = 'rds-btn';
+    if (label.includes('전체')) btn.classList.add('danger');
+    btn.textContent = label;
+    btn.addEventListener('click', async () => {
+      try {
+        await action();
+        closeActionPopup();
+        if (fromWeekly) await loadWeekly();
+        else { await loadTodos(); updateMonthDots(); }
+      } catch(e) { showToast('오류가 발생했어요'); }
+    });
+    sheet.appendChild(btn);
+  });
+
+  const cancel = document.createElement('button');
+  cancel.className = 'rds-btn cancel';
+  cancel.textContent = '취소';
+  cancel.addEventListener('click', () => sheet.remove());
+  sheet.appendChild(cancel);
+
+  document.getElementById('action-box').appendChild(sheet);
 }
 
 // ── 할일탭 아이템 제스처 ──
