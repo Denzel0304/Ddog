@@ -50,7 +50,12 @@ async function loadWeekly() {
 
     const directRows = all
       .filter(r => r.date >= fromStr && r.date <= toStr)
-      .filter(r => !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true)
+      .filter(r => {
+        if (r.repeat_deleted) return false;
+        if (!r.repeat_type || r.repeat_type === 'none') return true;
+        if (r.repeat_exception === true) return true;
+        return false;
+      })
       .sort((a, b) => {
         if (a.date !== b.date) return a.date < b.date ? -1 : 1;
         if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
