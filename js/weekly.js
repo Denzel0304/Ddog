@@ -197,7 +197,16 @@ function makeWeekTodoItem(todo, isDone) {
   el.className = 'week-todo-item' + (isDone ? ' done' : '');
 
   const bar = document.createElement('div');
-  bar.className = `imp-badge imp-${todo.importance || 0}`;
+  const isRepeat = todo.repeat_type && todo.repeat_type !== 'none';
+  if (isRepeat) {
+    bar.className = 'imp-badge imp-repeat';
+    const star = document.createElement('span');
+    star.className = 'repeat-star';
+    star.textContent = '★';
+    bar.appendChild(star);
+  } else {
+    bar.className = `imp-badge imp-${todo.importance || 0}`;
+  }
 
   const check = document.createElement('div');
   check.className = 'todo-check' + (isDone ? ' checked' : '');
@@ -213,12 +222,7 @@ function makeWeekTodoItem(todo, isDone) {
   text.className = 'todo-text';
   const title = document.createElement('div');
   title.className = 'todo-title';
-  if (todo.repeat_type && todo.repeat_type !== 'none') {
-    const icon = document.createElement('span');
-    icon.className = 'repeat-icon';
-    icon.textContent = '🔁 ';
-    title.appendChild(icon);
-  }
+
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';

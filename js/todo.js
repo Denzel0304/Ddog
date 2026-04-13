@@ -88,9 +88,18 @@ function makeTodoItem(todo) {
   li.className = 'todo-item' + (todo.is_done ? ' done' : '');
   li.dataset.id = todo.id;
 
-  // 중요도 바
+  // 중요도 바 (반복 일정이면 빨간선 + 별)
   const impBar = document.createElement('div');
-  impBar.className = `imp-badge imp-${todo.importance}`;
+  const isRepeat = todo.repeat_type && todo.repeat_type !== 'none';
+  if (isRepeat) {
+    impBar.className = 'imp-badge imp-repeat';
+    const star = document.createElement('span');
+    star.className = 'repeat-star';
+    star.textContent = '★';
+    impBar.appendChild(star);
+  } else {
+    impBar.className = `imp-badge imp-${todo.importance}`;
+  }
 
   // 체크박스
   const check = document.createElement('div');
@@ -103,13 +112,7 @@ function makeTodoItem(todo) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
-  // 반복 아이콘 (제목 맨 앞)
-  if (todo.repeat_type && todo.repeat_type !== 'none') {
-    const icon = document.createElement('span');
-    icon.className = 'repeat-icon';
-    icon.textContent = '🔁 ';
-    titleEl.appendChild(icon);
-  }
+  // 반복 아이콘은 imp-badge 영역에서 처리 (아래에서 별도 처리)
   // weekly_flag 별표
   if (todo.weekly_flag) {
     const flag = document.createElement('span');

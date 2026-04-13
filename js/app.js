@@ -19,6 +19,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   loadTodos();
   initBackButton();
+
+  // 3. 달력 렌더 완료 후 버튼 표시 (잔상 방지)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('date-bar-actions').style.visibility = 'visible';
+    });
+  });
 });
 
 // ── 뒤로가기 → 팝업/패널 닫기, 탭 복귀, 종료 ──
@@ -29,13 +36,10 @@ function initBackButton() {
 
   window.addEventListener('popstate', e => {
     if (e.state && e.state.page === 'base') {
+      // base 상태로 빠져나갔을 때
       if (hasOpenPopup()) {
-        // closeTopPopup()이 true를 반환하면 설정 관련 패널을 닫은 것
-        // → 할일 탭 복귀 단계가 추가로 필요하므로 스택을 하나 더 쌓음
-        const wasSettings = closeTopPopup();
-        if (wasSettings) {
-          history.pushState({ page: 'app' }, ''); // 할일 탭 복귀용 여분 스택
-        }
+        // 팝업 닫고 앱 스택 복원
+        closeTopPopup();
         history.pushState({ page: 'app' }, '');
       } else if (currentTab !== 'todo') {
         // 탭을 할일로 복귀 후 앱 스택 복원
@@ -58,33 +62,29 @@ function hasOpenPopup() {
   return false;
 }
 
-// 반환값: true = 설정/반복함 패널을 닫은 경우 → 할일 탭 복귀 단계가 추가로 필요
 function closeTopPopup() {
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) {
     document.getElementById('repeat-overlay').classList.add('hidden');
-    return false;
+    return;
   }
   if (!document.getElementById('action-popup').classList.contains('hidden')) {
-    closeActionPopup(); return false;
+    closeActionPopup(); return;
   }
   if (!document.getElementById('year-popup').classList.contains('hidden')) {
-    closeYearPopup(); return false;
+    closeYearPopup(); return;
   }
   if (!document.getElementById('month-popup').classList.contains('hidden')) {
-    closeMonthPopup(); return false;
+    closeMonthPopup(); return;
   }
   if (!document.getElementById('modal-overlay').classList.contains('hidden')) {
-    closeModal(); return false;
+    closeModal(); return;
   }
   if (document.getElementById('repeats-panel').classList.contains('open')) {
-    // 반복함 닫기 → 설정 패널이 아직 열려 있으므로 true 반환
-    closeRepeatsPanel(); return true;
+    closeRepeatsPanel(); return;
   }
   if (document.getElementById('settings-panel').classList.contains('open')) {
-    // 설정 패널 닫기 → 할일 탭 복귀 단계 필요하므로 true 반환
-    closeSettingsPanelOnly(); return true;
+    closeSettingsPanelOnly(); return;
   }
-  return false;
 }
 
 function initTabs() {
