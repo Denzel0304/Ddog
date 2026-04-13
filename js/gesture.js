@@ -3,6 +3,7 @@
 // =============================================
 
 let actionTargetId = null;
+let actionTargetTodo = null;
 let actionFromWeekly = false;
 let actionTargetDate = null;
 
@@ -57,13 +58,7 @@ function initGesturePopup() {
 
   document.getElementById('action-delete').addEventListener('click', async () => {
     if (!actionTargetId) return;
-    const todo = AppState.todos.find(t =>
-      String(t.id) === String(actionTargetId) ||
-      (t._virtual && String(t._masterId) === String(actionTargetId))
-    ) || weekAllRows?.find(t =>
-      String(t.id) === String(actionTargetId) ||
-      (t._virtual && String(t._masterId) === String(actionTargetId))
-    );
+    const todo = actionTargetTodo;
 
     const isRepeat = todo && (
       todo._virtual ||
@@ -87,8 +82,9 @@ function initGesturePopup() {
   });
 }
 
-function openActionPopup(id, fromWeekly = false, targetDate = null) {
+function openActionPopup(id, fromWeekly = false, targetDate = null, todo = null) {
   actionTargetId = id;
+  actionTargetTodo = todo;
   actionFromWeekly = fromWeekly;
   actionTargetDate = targetDate || AppState.selectedDate;
   document.getElementById('action-popup').classList.remove('hidden');
@@ -97,10 +93,10 @@ function openActionPopup(id, fromWeekly = false, targetDate = null) {
 function closeActionPopup() {
   document.getElementById('action-popup').classList.add('hidden');
   document.getElementById('action-date-picker').classList.add('hidden');
-  // 반복 삭제 시트도 닫기
   const sheet = document.getElementById('repeat-delete-sheet');
   if (sheet) sheet.remove();
   actionTargetId = null;
+  actionTargetTodo = null;
   actionFromWeekly = false;
   actionTargetDate = null;
 }
@@ -201,7 +197,7 @@ function initItemGesture(el, todo) {
       }, 250);
     } else if (dx < 0) {
       resetItemStyle(el);
-      openActionPopup(todo.id, false, todo.date || AppState.selectedDate);
+      openActionPopup(todo.id, false, todo.date || AppState.selectedDate, todo);
     } else {
       resetItemStyle(el);
     }

@@ -265,7 +265,7 @@ function initWeekItemGesture(el, todo) {
       }, 250);
     } else if (dx < 0) {
       resetWeekItemStyle(el);
-      openActionPopup(todo.id, true, todo.date);
+      openActionPopup(todo.id, true, todo.date, todo);
     } else { resetWeekItemStyle(el); }
   }, { passive: true });
 }
