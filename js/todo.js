@@ -222,10 +222,16 @@ function onMouseDragStart(e) {
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
   dragCurrentY = e.clientY;
-  startAutoScroll();
+  const startY = e.clientY;
+  let scrollStarted = false;
 
   const onMove = ev => {
     dragCurrentY = ev.clientY;
+    // 10px 이상 움직인 후에만 자동 스크롤 시작
+    if (!scrollStarted && Math.abs(ev.clientY - startY) > 10) {
+      scrollStarted = true;
+      startAutoScroll();
+    }
     const target = getDragTarget(ev.clientX, ev.clientY);
     highlightDragOver(target, ev.clientY);
   };
@@ -250,11 +256,17 @@ function onTouchDragStart(e) {
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
   dragCurrentY = e.touches[0].clientY;
-  startAutoScroll();
+  const startY = e.touches[0].clientY;
+  let scrollStarted = false;
 
   const onMove = ev => {
     const t = ev.touches[0];
     dragCurrentY = t.clientY;
+    // 10px 이상 움직인 후에만 자동 스크롤 시작
+    if (!scrollStarted && Math.abs(t.clientY - startY) > 10) {
+      scrollStarted = true;
+      startAutoScroll();
+    }
     const target = getDragTarget(t.clientX, t.clientY);
     highlightDragOver(target, t.clientY);
   };
