@@ -227,7 +227,7 @@ ul { list-style: none; }
 /* ── 액션 팝업 ── */
 #action-popup { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 90; display: flex; align-items: flex-end; backdrop-filter: blur(3px); }
 #action-popup.hidden { display: none; }
-#action-box { background: var(--bg-elevated); width: 100%; max-width: 480px; margin: 0 auto; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 16px 32px; display: flex; flex-direction: column; gap: 4px; animation: slideUp 0.2s ease; }
+#action-box { background: var(--bg-elevated); width: 100%; max-width: 480px; margin: 0 auto; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 16px 32px; display: flex; flex-direction: column; gap: 4px; animation: slideUp 0.2s ease; position: relative; overflow: hidden; }
 .action-btn { padding: 15px 20px; border-radius: var(--radius-sm); font-size: 15px; text-align: left; color: var(--text-primary); transition: background 0.15s; }
 .action-btn:hover { background: var(--bg-hover); }
 .action-btn.danger { color: var(--danger); }
@@ -831,3 +831,72 @@ select {
   font-size: 12px; outline: none;
 }
 select:focus { border-color: var(--accent); }
+
+/* ── 반복 삭제 선택 시트 (action-box 내부 오버레이) ── */
+.repeat-delete-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated, #1e1e2e);
+  border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
+  padding: 16px 12px 32px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideUp 0.18s ease;
+}
+
+.rds-title {
+  font-size: 13px;
+  color: var(--text-muted, #888);
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, #333);
+  margin-bottom: 4px;
+}
+
+.rds-btn {
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--surface2, #2a2a3e);
+  border: none;
+  border-radius: 10px;
+  color: var(--text, #eee);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.rds-btn:active { background: var(--surface3, #333); }
+.rds-btn.danger { color: var(--danger, #e05c6a); }
+.rds-btn.cancel {
+  color: var(--text-muted, #888);
+  background: transparent;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* 반복함 삭제 옵션 개선 */
+.repeat-del-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface2, #2a2a3e);
+  border-radius: 10px;
+}
+.repeat-del-options button {
+  padding: 10px 14px;
+  background: var(--surface3, #333);
+  border: none;
+  border-radius: 8px;
+  color: var(--text, #eee);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.repeat-del-options button.danger { color: var(--danger, #e05c6a); }
+.repeat-del-options button.cancel { color: var(--text-muted, #888); background: transparent; }
