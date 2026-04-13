@@ -192,7 +192,7 @@ function onMouseDragStart(e) {
 
   const onMove = ev => {
     const target = getDragTarget(ev.clientX, ev.clientY);
-    highlightDragOver(target);
+    highlightDragOver(target, ev.clientY);
   };
   const onUp = ev => {
     document.removeEventListener('mousemove', onMove);
@@ -217,7 +217,7 @@ function onTouchDragStart(e) {
   const onMove = ev => {
     const t = ev.touches[0];
     const target = getDragTarget(t.clientX, t.clientY);
-    highlightDragOver(target);
+    highlightDragOver(target, t.clientY);
   };
   const onEnd = ev => {
     document.removeEventListener('touchmove', onMove);
@@ -240,16 +240,21 @@ function getDragTarget(x, y) {
   );
 }
 
-function highlightDragOver(target) {
-  document.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
-  if (target) {
-    // 드래그 목표 다음 형제(아래 아이템)에 표시
-    const next = target.nextElementSibling;
-    if (next && next.classList.contains('todo-item') && !next.classList.contains('done')) {
-      next.classList.add('drag-over');
-    } else {
-      target.classList.add('drag-over');
-    }
+function highlightDragOver(target, clientY) {
+  document.querySelectorAll('.todo-item').forEach(el => {
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+  if (!target) return;
+
+  const rect = target.getBoundingClientRect();
+  const mid  = rect.top + rect.height / 2;
+
+  if (clientY < mid) {
+    // 커서가 target 위쪽 절반 → target 위에 선 표시
+    target.classList.add('drag-over-top');
+  } else {
+    // 커서가 target 아래쪽 절반 → target 아래에 선 표시
+    target.classList.add('drag-over-bottom');
   }
 }
 
@@ -258,19 +263,19 @@ async function finishDrag(x, y) {
   dragSrc.classList.remove('dragging');
 
   const target = getDragTarget(x, y);
-  document.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.todo-item').forEach(el => {
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
 
   if (target && target !== dragSrc) {
-    const list = document.getElementById('todo-list');
-    const items = [...list.querySelectorAll('.todo-item:not(.done)')];
-    const srcIdx = items.indexOf(dragSrc);
-    const tgtIdx = items.indexOf(target);
+    const rect = target.getBoundingClientRect();
+    const mid  = rect.top + rect.height / 2;
+    const insertBefore = y < mid; // 위쪽 절반이면 target 앞에, 아래쪽이면 target 뒤에
 
-    // DOM 순서 변경
-    if (srcIdx < tgtIdx) {
-      target.after(dragSrc);
-    } else {
+    if (insertBefore) {
       target.before(dragSrc);
+    } else {
+      target.after(dragSrc);
     }
 
     // AppState 순서 업데이트 & DB 저장 (virtual 항목 제외)
