@@ -122,7 +122,7 @@ function makeTodoItem(todo) {
   // 드래그 핸들 (미완료만)
   const handle = document.createElement('div');
   handle.className = 'drag-handle';
-  handle.innerHTML = '⠿';
+  handle.innerHTML = '<svg viewBox="0 0 24 14" width="22" height="14" fill="currentColor"><rect y="0" width="24" height="2.5" rx="1.2"/><rect y="5.5" width="24" height="2.5" rx="1.2"/><rect y="11" width="24" height="2.5" rx="1.2"/></svg>';
   handle.setAttribute('data-drag-handle', '');
 
   li.appendChild(impBar);
@@ -175,7 +175,7 @@ function initDragSort() {
     if (!handle) return;
 
     // 터치 드래그
-    handle.addEventListener('touchstart', onTouchDragStart, { passive: true });
+    handle.addEventListener('touchstart', onTouchDragStart, { passive: false });
     // 마우스 드래그
     handle.addEventListener('mousedown', onMouseDragStart);
   });
@@ -183,9 +183,12 @@ function initDragSort() {
 
 // ── 마우스 드래그 ──
 function onMouseDragStart(e) {
+  e.preventDefault();
   const item = e.currentTarget.closest('.todo-item');
   dragSrc = item;
   item.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none';
 
   const onMove = ev => {
     const target = getDragTarget(ev.clientX, ev.clientY);
@@ -194,6 +197,8 @@ function onMouseDragStart(e) {
   const onUp = ev => {
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
     finishDrag(ev.clientX, ev.clientY);
   };
   document.addEventListener('mousemove', onMove);
@@ -202,9 +207,12 @@ function onMouseDragStart(e) {
 
 // ── 터치 드래그 ──
 function onTouchDragStart(e) {
+  e.preventDefault();
   const item = e.currentTarget.closest('.todo-item');
   dragSrc = item;
   item.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+  document.body.style.webkitUserSelect = 'none';
 
   const onMove = ev => {
     const t = ev.touches[0];
@@ -214,6 +222,8 @@ function onTouchDragStart(e) {
   const onEnd = ev => {
     document.removeEventListener('touchmove', onMove);
     document.removeEventListener('touchend', onEnd);
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
     const t = ev.changedTouches[0];
     finishDrag(t.clientX, t.clientY);
   };
@@ -232,7 +242,15 @@ function getDragTarget(x, y) {
 
 function highlightDragOver(target) {
   document.querySelectorAll('.todo-item').forEach(el => el.classList.remove('drag-over'));
-  if (target) target.classList.add('drag-over');
+  if (target) {
+    // 드래그 목표 다음 형제(아래 아이템)에 표시
+    const next = target.nextElementSibling;
+    if (next && next.classList.contains('todo-item') && !next.classList.contains('done')) {
+      next.classList.add('drag-over');
+    } else {
+      target.classList.add('drag-over');
+    }
+  }
 }
 
 async function finishDrag(x, y) {

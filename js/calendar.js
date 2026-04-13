@@ -215,7 +215,7 @@ function openYearPopup() {
 function closeYearPopup() { document.getElementById('year-popup').classList.add('hidden'); }
 function confirmYear() {
   const val = parseInt(document.getElementById('year-input').value);
-  if (val >= 2000 && val <= 2099) {
+  if (val >= 1900 && val <= 2100) {
     AppState.calYear = val;
     closeYearPopup();
     renderCalendar();
