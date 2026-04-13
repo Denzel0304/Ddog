@@ -17,9 +17,9 @@
   --border:       #2a2d38;
   --border-light: #333748;
   --danger:       #e05c6a;
-  --imp-1: #6b9fd4;
-  --imp-2: #e0a84a;
-  --imp-3: #e05c6a;
+  --imp-1: #c8a84b;
+  --imp-2: #a889c8;
+  --imp-3: #e8732a;
   --bottom-nav-h: 60px;
   --radius: 12px;
   --radius-sm: 8px;
@@ -90,7 +90,7 @@ ul { list-style: none; }
 .cal-day.today::before, .cal-day.selected::before {
   content: '';
   position: absolute;
-  width: 24px; height: 24px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -99,22 +99,16 @@ ul { list-style: none; }
 .cal-day.today::before { background: var(--accent-glow); border: 1.5px solid var(--accent); }
 .cal-day.selected::before { background: var(--accent); }
 .cal-day.selected { color: #1a1a2e; position: relative; }
-.cal-day span {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column; align-items: center;
-  line-height: 1;
-}
-/* 점: 숫자 아래 고정 위치 (숫자 정렬에 영향 없게 absolute) */
+.cal-day span { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+/* 점은 span 안에 넣어서 원 안에 포함되도록 */
 .cal-day.has-todo span::after {
   content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 50%; transform: translateX(-50%);
   width: 4px; height: 4px;
   border-radius: 50%;
   background: var(--accent);
+  display: block;
+  flex-shrink: 0;
 }
-.cal-day.has-todo.past-undone span::after { background: var(--danger); }
 .cal-day.selected.has-todo span::after { background: #1a1a2e; }
 .cal-day.today.has-todo span::after { background: var(--accent); }
 
@@ -216,8 +210,8 @@ ul { list-style: none; }
 .imp-btn { padding: 5px 9px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border-light); color: var(--text-secondary); transition: all 0.15s; white-space: nowrap; }
 .imp-btn:hover { border-color: var(--accent); color: var(--accent); }
 .imp-btn.active { background: var(--accent); color: #1a1a2e; border-color: var(--accent); font-weight: 600; }
-.imp-btn[data-val="1"].active { background: var(--imp-1); border-color: var(--imp-1); color: #fff; }
-.imp-btn[data-val="2"].active { background: var(--imp-2); border-color: var(--imp-2); color: #1a1a2e; }
+.imp-btn[data-val="1"].active { background: var(--imp-1); border-color: var(--imp-1); color: #1a1a2e; }
+.imp-btn[data-val="2"].active { background: var(--imp-2); border-color: var(--imp-2); color: #fff; }
 .imp-btn[data-val="3"].active { background: var(--imp-3); border-color: var(--imp-3); color: #fff; }
 #input-memo { flex: 1; background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text-primary); font-size: 13px; outline: none; resize: none; height: 60px; transition: border-color 0.15s; }
 #input-memo:focus { border-color: var(--accent); }
@@ -649,12 +643,12 @@ ul { list-style: none; }
    주간 필터 버튼
    ============================================= */
 #week-header-right {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 6px;
 }
 .week-filter-btn {
-  padding: 7px 14px;
+  padding: 4px 10px;
   border-radius: 14px;
-  font-size: 12px; font-weight: 500;
+  font-size: 11px; font-weight: 500;
   border: 1px solid var(--border-light);
   color: var(--text-secondary);
   transition: all 0.15s;
