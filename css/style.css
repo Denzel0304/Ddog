@@ -131,7 +131,8 @@ ul { list-style: none; }
 }
 .todo-item:hover { background: var(--bg-surface); }
 .todo-item.dragging { opacity: 0.6; background: var(--bg-elevated); z-index: 100; }
-.todo-item.drag-over { border-top: 2px solid var(--accent); }
+.todo-item.drag-over-top    { border-top: 2.5px solid var(--accent); }
+.todo-item.drag-over-bottom { border-bottom: 2.5px solid var(--accent); }
 
 .todo-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-light); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
 .todo-check:hover { border-color: var(--accent); }
