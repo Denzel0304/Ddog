@@ -62,7 +62,7 @@ function initGesturePopup() {
 
     const isRepeat = todo && (
       todo._virtual ||
-      (todo.repeat_type && todo.repeat_type !== 'none' && !todo.repeat_master_id)
+      (todo.repeat_type && todo.repeat_type !== 'none' && !todo.repeat_master_id && !todo.repeat_exception)
     );
 
     if (isRepeat) {

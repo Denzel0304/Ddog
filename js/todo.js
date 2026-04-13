@@ -12,9 +12,13 @@ async function loadTodos() {
 
     // 반복 마스터 행(repeat_type≠none, repeat_exception=false)은
     // 아래 가상 렌더링 로직이 담당 → directRows에서 제외해 중복 방지
-    const directRows = (allDirectRows || []).filter(r =>
-      !r.repeat_type || r.repeat_type === 'none' || r.repeat_exception === true
-    );
+    // repeat_deleted=true인 예외 행도 표시하지 않음
+    const directRows = (allDirectRows || []).filter(r => {
+      if (r.repeat_deleted) return false;
+      if (!r.repeat_type || r.repeat_type === 'none') return true;
+      if (r.repeat_exception === true) return true;
+      return false;
+    });
 
     // 반복 마스터 가상 렌더링 (컬럼 없으면 건너뜀)
     let virtualRows = [];
