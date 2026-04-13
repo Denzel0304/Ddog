@@ -166,6 +166,12 @@ function renderWeekAllTodos(allRows, monday) {
 
     const active = dayTodos.filter(t => !t.is_done)
       .sort((a, b) => {
+        const aIsRepeat = !!(a.repeat_type && a.repeat_type !== 'none');
+        const bIsRepeat = !!(b.repeat_type && b.repeat_type !== 'none');
+        if (aIsRepeat !== bIsRepeat) return aIsRepeat ? -1 : 1;
+        if (aIsRepeat && bIsRepeat) {
+          return (b.created_at || '') > (a.created_at || '') ? 1 : -1;
+        }
         if (b.importance !== a.importance) return b.importance - a.importance;
         return a.sort_order - b.sort_order;
       });

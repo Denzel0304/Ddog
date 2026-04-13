@@ -68,9 +68,16 @@ function renderTodos() {
   initDragSort();
 }
 
-// 활성 할일 정렬: 중요도 있는 것 먼저(높은순), 그 다음 sort_order
+// 활성 할일 정렬: 반복일정 최상단(나중 추가순) → 중요도 높은순 → sort_order
 function sortActiveTodos(todos) {
   return [...todos].sort((a, b) => {
+    const aIsRepeat = !!(a.repeat_type && a.repeat_type !== 'none');
+    const bIsRepeat = !!(b.repeat_type && b.repeat_type !== 'none');
+    if (aIsRepeat !== bIsRepeat) return aIsRepeat ? -1 : 1;
+    if (aIsRepeat && bIsRepeat) {
+      // 둘 다 반복: 나중에 추가한 것이 위 (created_at 내림차순)
+      return (b.created_at || '') > (a.created_at || '') ? 1 : -1;
+    }
     if (b.importance !== a.importance) return b.importance - a.importance;
     return a.sort_order - b.sort_order;
   });
