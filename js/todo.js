@@ -172,8 +172,8 @@ let dragCurrentY = 0;
 
 function startAutoScroll() {
   const scrollEl = document.getElementById('todo-list-section');
-  const ZONE = 80;   // 상/하단 감지 영역 px
-  const MAX_SPEED = 14; // 최대 스크롤 속도 px/frame
+  const ZONE = 80;
+  const MAX_SPEED = 6; // 속도 낮춤 (기존 14 → 6)
 
   function step() {
     const rect = scrollEl.getBoundingClientRect();
@@ -182,10 +182,8 @@ function startAutoScroll() {
 
     let speed = 0;
     if (distBottom < ZONE && distBottom > 0) {
-      // 하단 근처 → 아래로 스크롤
       speed = MAX_SPEED * (1 - distBottom / ZONE);
     } else if (distTop < ZONE && distTop > 0) {
-      // 상단 근처 → 위로 스크롤
       speed = -MAX_SPEED * (1 - distTop / ZONE);
     }
 
@@ -312,7 +310,7 @@ async function finishDrag(x, y) {
   if (target && target !== dragSrc) {
     const rect = target.getBoundingClientRect();
     const mid  = rect.top + rect.height / 2;
-    const insertBefore = y < mid; // 위쪽 절반이면 target 앞에, 아래쪽이면 target 뒤에
+    const insertBefore = y < mid;
 
     if (insertBefore) {
       target.before(dragSrc);
@@ -320,7 +318,7 @@ async function finishDrag(x, y) {
       target.after(dragSrc);
     }
 
-    // AppState 순서 업데이트 & DB 저장 (virtual 항목 제외)
+    const list = document.getElementById('todo-list');
     const newOrder = [...list.querySelectorAll('.todo-item:not(.done)')]
       .map(el => AppState.todos.find(t => String(t.id) === String(el.dataset.id)))
       .filter(t => t && !t._virtual);
@@ -334,4 +332,7 @@ async function finishDrag(x, y) {
   }
 
   dragSrc = null;
+
+  // 드래그 완료 후 중요도 순으로 즉시 재렌더링
+  renderTodos();
 }
