@@ -164,7 +164,11 @@ function renderWeekAllTodos(allRows, monday) {
     header.textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${dayNames[dow]})`;
     container.appendChild(header);
 
-    const active = dayTodos.filter(t => !t.is_done);
+    const active = dayTodos.filter(t => !t.is_done)
+      .sort((a, b) => {
+        if (b.importance !== a.importance) return b.importance - a.importance;
+        return a.sort_order - b.sort_order;
+      });
     const done   = dayTodos.filter(t => t.is_done);
     active.forEach(todo => container.appendChild(makeWeekTodoItem(todo, false)));
     if (done.length > 0) {
