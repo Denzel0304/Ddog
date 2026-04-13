@@ -126,21 +126,12 @@ function showRepeatDeleteOptions(todo, el) {
   const opts = document.createElement('div');
   opts.className = 'repeat-del-options';
 
-  const today = todayStr();
-
   const choices = [
     {
-      label: '이 날짜만 삭제',
+      label: '오늘 이후 삭제',
       action: async () => {
-        await deleteRepeatOnlyDate(todo.id, today);
-        showToast('이 날짜만 삭제했어요');
-      }
-    },
-    {
-      label: '이 날짜 이후 모두 삭제',
-      action: async () => {
-        await deleteRepeatFromDate(todo.id, today);
-        showToast('이후 반복을 삭제했어요');
+        await deleteRepeatFromDate(todo.id, todayStr());
+        showToast('오늘 이후 반복을 삭제했어요');
       }
     },
     {
