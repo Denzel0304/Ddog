@@ -167,6 +167,40 @@ async function handleToggleDone(todo) {
 // 드래그 정렬 (미완료 항목만)
 // =============================================
 let dragSrc = null;
+let autoScrollRAF = null;
+let dragCurrentY = 0;
+
+function startAutoScroll() {
+  const scrollEl = document.getElementById('todo-list-section');
+  const ZONE = 80;   // 상/하단 감지 영역 px
+  const MAX_SPEED = 14; // 최대 스크롤 속도 px/frame
+
+  function step() {
+    const rect = scrollEl.getBoundingClientRect();
+    const distTop    = dragCurrentY - rect.top;
+    const distBottom = rect.bottom - dragCurrentY;
+
+    let speed = 0;
+    if (distBottom < ZONE && distBottom > 0) {
+      // 하단 근처 → 아래로 스크롤
+      speed = MAX_SPEED * (1 - distBottom / ZONE);
+    } else if (distTop < ZONE && distTop > 0) {
+      // 상단 근처 → 위로 스크롤
+      speed = -MAX_SPEED * (1 - distTop / ZONE);
+    }
+
+    if (speed !== 0) scrollEl.scrollTop += speed;
+    autoScrollRAF = requestAnimationFrame(step);
+  }
+  autoScrollRAF = requestAnimationFrame(step);
+}
+
+function stopAutoScroll() {
+  if (autoScrollRAF) {
+    cancelAnimationFrame(autoScrollRAF);
+    autoScrollRAF = null;
+  }
+}
 
 function initDragSort() {
   const items = document.querySelectorAll('.todo-item:not(.done)');
@@ -189,8 +223,11 @@ function onMouseDragStart(e) {
   item.classList.add('dragging');
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
+  dragCurrentY = e.clientY;
+  startAutoScroll();
 
   const onMove = ev => {
+    dragCurrentY = ev.clientY;
     const target = getDragTarget(ev.clientX, ev.clientY);
     highlightDragOver(target, ev.clientY);
   };
@@ -199,6 +236,7 @@ function onMouseDragStart(e) {
     document.removeEventListener('mouseup', onUp);
     document.body.style.userSelect = '';
     document.body.style.webkitUserSelect = '';
+    stopAutoScroll();
     finishDrag(ev.clientX, ev.clientY);
   };
   document.addEventListener('mousemove', onMove);
@@ -213,9 +251,12 @@ function onTouchDragStart(e) {
   item.classList.add('dragging');
   document.body.style.userSelect = 'none';
   document.body.style.webkitUserSelect = 'none';
+  dragCurrentY = e.touches[0].clientY;
+  startAutoScroll();
 
   const onMove = ev => {
     const t = ev.touches[0];
+    dragCurrentY = t.clientY;
     const target = getDragTarget(t.clientX, t.clientY);
     highlightDragOver(target, t.clientY);
   };
@@ -224,6 +265,7 @@ function onTouchDragStart(e) {
     document.removeEventListener('touchend', onEnd);
     document.body.style.userSelect = '';
     document.body.style.webkitUserSelect = '';
+    stopAutoScroll();
     const t = ev.changedTouches[0];
     finishDrag(t.clientX, t.clientY);
   };
