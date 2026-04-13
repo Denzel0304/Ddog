@@ -340,13 +340,33 @@ async function deleteRepeatFromDate(masterId, dateStr) {
 
 // 3. 전체 삭제: 마스터 + 모든 예외 행
 async function deleteRepeatAll(masterId) {
+  // IDB에서 마스터 + 예외 행 모두 즉시 삭제
   const all = await idbGetAll();
   const toDeletes = all.filter(t =>
-    t.id === masterId || t.repeat_master_id === masterId
+    String(t.id) === String(masterId) || String(t.repeat_master_id) === String(masterId)
   );
   await Promise.all(toDeletes.map(t => idbDelete(t.id)));
-  await sbPush(`${TABLE_NAME}?id=eq.${masterId}`, 'DELETE', null);
-  await sbPush(`${TABLE_NAME}?repeat_master_id=eq.${masterId}`, 'DELETE', null);
+
+  // Supabase 삭제 — 예외 행 먼저, 마스터 나중에 (FK 순서)
+  if (AppState.isOnline) {
+    try {
+      await fetch(`${DB.url}/rest/v1/${TABLE_NAME}?repeat_master_id=eq.${masterId}`, {
+        method: 'DELETE',
+        headers: DB.headers,
+      });
+      await fetch(`${DB.url}/rest/v1/${TABLE_NAME}?id=eq.${masterId}`, {
+        method: 'DELETE',
+        headers: DB.headers,
+      });
+    } catch(e) {
+      console.warn('[db] deleteRepeatAll Supabase 실패, queue에 저장:', e);
+      await queuePush({ path: `${TABLE_NAME}?repeat_master_id=eq.${masterId}`, method: 'DELETE', body: null });
+      await queuePush({ path: `${TABLE_NAME}?id=eq.${masterId}`, method: 'DELETE', body: null });
+    }
+  } else {
+    await queuePush({ path: `${TABLE_NAME}?repeat_master_id=eq.${masterId}`, method: 'DELETE', body: null });
+    await queuePush({ path: `${TABLE_NAME}?id=eq.${masterId}`, method: 'DELETE', body: null });
+  }
 }
 
 async function insertRepeatException(masterId, dateStr, isDone = false) {
