@@ -197,7 +197,7 @@ function makeWeekTodoItem(todo, isDone) {
   el.className = 'week-todo-item' + (isDone ? ' done' : '');
 
   const bar = document.createElement('div');
-  const isRepeat = todo.repeat_type && todo.repeat_type !== 'none';
+  const isRepeat = (todo.repeat_type && todo.repeat_type !== 'none') || !!todo.repeat_master_id;
   if (isRepeat) {
     bar.className = 'imp-badge imp-repeat';
     const star = document.createElement('span');
@@ -212,23 +212,13 @@ function makeWeekTodoItem(todo, isDone) {
   check.className = 'todo-check' + (isDone ? ' checked' : '');
   check.addEventListener('click', async (e) => {
     e.stopPropagation();
-    const newDone = !todo.is_done;
     try {
       if (todo._virtual) {
-        const all = await idbGetAll();
-        const existingEx = all.find(t =>
-          String(t.repeat_master_id) === String(todo._masterId) &&
-          t.date === todo.date &&
-          t.repeat_exception === true &&
-          !t.repeat_deleted
-        );
-        if (existingEx) {
-          await toggleDone(existingEx.id, newDone);
-        } else {
-          await insertRepeatException(todo._masterId, todo.date, newDone);
-        }
+        // 가상 반복 항목 → 예외 행 생성
+        await insertRepeatException(todo._masterId, todo.date, !todo.is_done);
       } else {
-        await toggleDone(todo.id, newDone);
+        // 일반 항목 또는 이미 예외 행 → toggleDone만
+        await toggleDone(todo.id, !todo.is_done);
       }
       loadWeekly();
     } catch(e) { showToast('오류가 발생했어요'); }
@@ -297,18 +287,7 @@ function initWeekItemGesture(el, todo) {
       setTimeout(async () => {
         try {
           if (todo._virtual) {
-            const all = await idbGetAll();
-            const existingEx = all.find(t =>
-              String(t.repeat_master_id) === String(todo._masterId) &&
-              t.date === todo.date &&
-              t.repeat_exception === true &&
-              !t.repeat_deleted
-            );
-            if (existingEx) {
-              await toggleDone(existingEx.id, true);
-            } else {
-              await insertRepeatException(todo._masterId, todo.date, true);
-            }
+            await insertRepeatException(todo._masterId, todo.date, true);
           } else {
             await toggleDone(todo.id, true);
           }

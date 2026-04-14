@@ -474,12 +474,18 @@ async function deleteRepeatAll(masterId) {
 }
 
 async function insertRepeatException(masterId, dateStr, isDone = false) {
-  const master = AppState.todos.find(t => t.id === masterId || t._masterId === masterId);
+  // 마스터 행은 AppState 또는 IDB에서 찾기
+  let master = AppState.todos.find(t => t.id === masterId || t._masterId === masterId);
+  if (!master) {
+    // AppState에 없으면 IDB에서 직접 조회
+    try { master = await idbGet(masterId); } catch(e) {}
+  }
   const now = new Date().toISOString();
   const payload = {
     title:            master?.title || '',
     memo:             master?.memo  || '',
     importance:       master?.importance || 0,
+    weekly_flag:      master?.weekly_flag || false,
     date:             dateStr,
     remind_days:      0,
     is_done:          isDone,

@@ -88,9 +88,9 @@ function makeTodoItem(todo) {
   li.className = 'todo-item' + (todo.is_done ? ' done' : '');
   li.dataset.id = todo.id;
 
-  // 중요도 바 (반복 일정이면 빨간선 + 별)
+  // 중요도 바 (반복 일정이면 빨간선 + 별) — 예외 행(repeat_master_id 있음)도 반복 표시 유지
   const impBar = document.createElement('div');
-  const isRepeat = todo.repeat_type && todo.repeat_type !== 'none';
+  const isRepeat = (todo.repeat_type && todo.repeat_type !== 'none') || !!todo.repeat_master_id;
   if (isRepeat) {
     impBar.className = 'imp-badge imp-repeat';
     const star = document.createElement('span');
@@ -160,24 +160,16 @@ async function handleToggleDone(todo) {
   const newDone = !todo.is_done;
   try {
     if (todo._virtual) {
-      // 반복 가상 항목 → 이미 예외 행이 있으면 업데이트, 없으면 새로 생성
-      const all = await idbGetAll();
-      const existingEx = all.find(t =>
-        String(t.repeat_master_id) === String(todo._masterId) &&
-        t.date === AppState.selectedDate &&
-        t.repeat_exception === true &&
-        !t.repeat_deleted
-      );
-      let exRow;
-      if (existingEx) {
-        await toggleDone(existingEx.id, newDone);
-        exRow = { ...existingEx, is_done: newDone, done_at: newDone ? new Date().toISOString() : null };
-      } else {
-        exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
-      }
-      // 로컬에 예외 행으로 교체
+      // 반복 가상 항목 → 예외 행 생성 (완료/미완료 모두)
+      const exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
+      // 로컬에 예외 행으로 교체 (반복 표시 유지를 위해 repeat_master_id 보존)
       const idx = AppState.todos.findIndex(t => t._masterId === todo._masterId && t._virtual);
       if (idx !== -1) AppState.todos[idx] = { ...exRow, _wasVirtual: true };
+    } else if (todo.repeat_master_id) {
+      // 이미 예외 행 → toggleDone만 호출 (새 예외 행 생성 X)
+      await toggleDone(todo.id, newDone);
+      const t = AppState.todos.find(t => t.id === todo.id);
+      if (t) { t.is_done = newDone; t.done_at = newDone ? new Date().toISOString() : null; }
     } else {
       await toggleDone(todo.id, newDone);
       const t = AppState.todos.find(t => t.id === todo.id);
