@@ -183,6 +183,12 @@ function initItemGesture(el, todo) {
     if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) { resetItemStyle(el); return; }
 
     if (dx > 0 && !todo.is_done) {
+      // 체크리스트가 있으면 스와이프 완료 차단
+      if (hasChecklist(todo)) {
+        resetItemStyle(el);
+        showToast('상세보기에서 체크리스트를 완료해주세요');
+        return;
+      }
       el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
       el.style.transform = 'translateX(110%)';
       el.style.opacity = '0';

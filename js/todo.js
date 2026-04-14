@@ -112,13 +112,26 @@ function makeTodoItem(todo) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'todo-title';
-  // 반복 아이콘은 imp-badge 영역에서 처리 (아래에서 별도 처리)
   // weekly_flag 별표
   if (todo.weekly_flag) {
     const flag = document.createElement('span');
     flag.className = 'weekly-flag-icon';
     flag.textContent = '★ ';
     titleEl.appendChild(flag);
+  }
+  // 체크리스트 아이콘 + 진행도
+  if (hasChecklist(todo)) {
+    const clIcon = document.createElement('span');
+    clIcon.className = 'checklist-icon';
+    clIcon.textContent = '☑';
+    titleEl.appendChild(clIcon);
+    const prog = getChecklistProgress(todo);
+    if (prog) {
+      const progEl = document.createElement('span');
+      progEl.className = 'checklist-progress';
+      progEl.textContent = ` (${prog.done}/${prog.total}) `;
+      titleEl.appendChild(progEl);
+    }
   }
   titleEl.appendChild(document.createTextNode(todo.title));
 
@@ -157,16 +170,20 @@ function makeTodoItem(todo) {
 
 // 완료 토글 처리 (반복 가상 항목 포함)
 async function handleToggleDone(todo) {
+  // 체크리스트가 있으면 토글 불가
+  if (hasChecklist(todo)) {
+    showToast('상세보기에서 체크리스트를 완료해주세요');
+    return;
+  }
   const newDone = !todo.is_done;
+  // 이미 완료된 체크리스트 항목은 미완료 복귀도 차단
+  // (체크리스트 없는 일반 할일은 자유롭게 토글)
   try {
     if (todo._virtual) {
-      // 반복 가상 항목 → 예외 행 생성 (완료/미완료 모두)
       const exRow = await insertRepeatException(todo._masterId, AppState.selectedDate, newDone);
-      // 로컬에 예외 행으로 교체 (반복 표시 유지를 위해 repeat_master_id 보존)
       const idx = AppState.todos.findIndex(t => t._masterId === todo._masterId && t._virtual);
       if (idx !== -1) AppState.todos[idx] = { ...exRow, _wasVirtual: true };
     } else if (todo.repeat_master_id) {
-      // 이미 예외 행 → toggleDone만 호출 (새 예외 행 생성 X)
       await toggleDone(todo.id, newDone);
       const t = AppState.todos.find(t => t.id === todo.id);
       if (t) { t.is_done = newDone; t.done_at = newDone ? new Date().toISOString() : null; }

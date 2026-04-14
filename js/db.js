@@ -192,6 +192,7 @@ async function insertTodo(data) {
     repeat_meta:      data.repeat_meta     || null,
     repeat_master_id: null,
     repeat_exception: false,
+    checklist:        data.checklist       || null,
     created_at:       now,
     updated_at:       now,
   };
@@ -486,6 +487,7 @@ async function insertRepeatException(masterId, dateStr, isDone = false) {
     memo:             master?.memo  || '',
     importance:       master?.importance || 0,
     weekly_flag:      master?.weekly_flag || false,
+    checklist:        master?.checklist   || null,
     date:             dateStr,
     remind_days:      0,
     is_done:          isDone,
@@ -518,4 +520,164 @@ async function insertRepeatException(masterId, dateStr, isDone = false) {
   await idbPut(localTodo);
   await queuePush({ path: TABLE_NAME, method: 'POST', body: payload });
   return localTodo;
+}
+
+// ── 반복 수정 3종 ──
+
+// 1. 이 날짜만 수정: 예외 행 생성/업데이트
+async function updateRepeatOnlyDate(masterId, dateStr, data) {
+  const all = await idbGetAll();
+  const existing = all.find(t =>
+    String(t.repeat_master_id) === String(masterId) && t.date === dateStr && t.repeat_exception
+  );
+
+  if (existing) {
+    await updateTodo(existing.id, data);
+  } else {
+    const master = all.find(t => String(t.id) === String(masterId));
+    const now = new Date().toISOString();
+    const payload = {
+      title:            data.title            ?? master?.title ?? '',
+      memo:             data.memo             ?? master?.memo  ?? '',
+      importance:       data.importance       ?? master?.importance ?? 0,
+      weekly_flag:      data.weekly_flag      ?? master?.weekly_flag ?? false,
+      checklist:        data.checklist        ?? master?.checklist ?? null,
+      date:             dateStr,
+      remind_days:      data.remind_days      ?? 0,
+      is_done:          false,
+      sort_order:       0,
+      repeat_type:      'none',
+      repeat_master_id: masterId,
+      repeat_exception: true,
+      created_at:       now,
+      updated_at:       now,
+    };
+
+    if (AppState.isOnline) {
+      try {
+        const res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
+          method: 'POST',
+          headers: DB.headers,
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          await idbPut(rows[0]);
+          return rows[0];
+        }
+      } catch(e) {}
+    }
+    const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    await idbPut({ ...payload, id: tempId });
+    await queuePush({ path: TABLE_NAME, method: 'POST', body: payload });
+  }
+}
+
+// 2. 이 날짜 이후 모두 수정: 마스터 종료일을 dateStr-1로 자르고, 새 마스터 생성
+async function updateRepeatFromDate(masterId, dateStr, data) {
+  const all = await idbGetAll();
+  const master = all.find(t => String(t.id) === String(masterId));
+  if (!master) return;
+
+  // 현재 마스터를 dateStr 하루 전으로 종료
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const endDate = toLocalDateStr(d);
+
+  if (dateStr <= master.date) {
+    // 이 날짜가 시작일 이전이면 전체 수정과 동일
+    await updateRepeatAll(masterId, data);
+    return;
+  }
+
+  await updateTodo(masterId, { repeat_end_date: endDate });
+
+  // dateStr 이후 예외 행 삭제
+  const all2 = await idbGetAll();
+  const toDeletes = all2.filter(t =>
+    String(t.repeat_master_id) === String(masterId) && t.date >= dateStr
+  );
+  await Promise.all(toDeletes.map(t => deleteTodo(t.id)));
+
+  // 새 마스터 행 생성
+  const now = new Date().toISOString();
+  const newPayload = {
+    title:           data.title           ?? master.title,
+    memo:            data.memo            ?? master.memo ?? '',
+    importance:      data.importance      ?? master.importance ?? 0,
+    weekly_flag:     data.weekly_flag     ?? master.weekly_flag ?? false,
+    checklist:       data.checklist       ?? master.checklist ?? null,
+    date:            dateStr,
+    remind_days:     data.remind_days     ?? master.remind_days ?? 0,
+    is_done:         false,
+    sort_order:      master.sort_order ?? 0,
+    repeat_type:     data.repeat_type     ?? master.repeat_type,
+    repeat_interval: data.repeat_interval ?? master.repeat_interval ?? 1,
+    repeat_day:      data.repeat_day      ?? master.repeat_day ?? null,
+    repeat_end_date: data.repeat_end_date ?? master.repeat_end_date ?? null,
+    repeat_meta:     data.repeat_meta     ?? master.repeat_meta ?? null,
+    repeat_master_id: null,
+    repeat_exception: false,
+    created_at:      now,
+    updated_at:      now,
+  };
+
+  if (AppState.isOnline) {
+    try {
+      const res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
+        method: 'POST',
+        headers: DB.headers,
+        body: JSON.stringify(newPayload)
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        await idbPut(rows[0]);
+        return rows[0];
+      }
+    } catch(e) {}
+  }
+  const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  await idbPut({ ...newPayload, id: tempId });
+  await queuePush({ path: TABLE_NAME, method: 'POST', body: newPayload });
+}
+
+// 3. 전체 수정: 마스터 업데이트 + 모든 예외 행 삭제 후 재생성 없이 마스터만 업데이트
+async function updateRepeatAll(masterId, data) {
+  const all = await idbGetAll();
+
+  // 모든 예외 행 삭제
+  const exceptions = all.filter(t => String(t.repeat_master_id) === String(masterId));
+  await Promise.all(exceptions.map(t => deleteTodo(t.id)));
+
+  // 마스터 업데이트
+  await updateTodo(masterId, data);
+}
+
+// ── 체크리스트 완료 여부 판단 ──
+function hasChecklist(todo) {
+  if (!todo.checklist) return false;
+  try {
+    const items = JSON.parse(todo.checklist);
+    return Array.isArray(items) && items.some(it => it.text && it.text.trim());
+  } catch(e) { return false; }
+}
+
+function isChecklistComplete(todo) {
+  if (!hasChecklist(todo)) return true;
+  try {
+    const items = JSON.parse(todo.checklist);
+    const valid = items.filter(it => it.text && it.text.trim());
+    return valid.length > 0 && valid.every(it => it.checked);
+  } catch(e) { return false; }
+}
+
+function getChecklistProgress(todo) {
+  if (!hasChecklist(todo)) return null;
+  try {
+    const items = JSON.parse(todo.checklist);
+    const valid = items.filter(it => it.text && it.text.trim());
+    if (!valid.length) return null;
+    const done = valid.filter(it => it.checked).length;
+    return { done, total: valid.length };
+  } catch(e) { return null; }
 }

@@ -203,12 +203,15 @@ function makeWeekTodoItem(todo, isDone) {
   check.className = 'todo-check' + (isDone ? ' checked' : '');
   check.addEventListener('click', async (e) => {
     e.stopPropagation();
+    // 체크리스트가 있으면 완료 토글 차단
+    if (hasChecklist(todo)) {
+      showToast('상세보기에서 체크리스트를 완료해주세요');
+      return;
+    }
     try {
       if (todo._virtual) {
-        // 가상 반복 항목 → 예외 행 생성
         await insertRepeatException(todo._masterId, todo.date, !todo.is_done);
       } else {
-        // 일반 항목 또는 이미 예외 행 → toggleDone만
         await toggleDone(todo.id, !todo.is_done);
       }
       loadWeekly();
@@ -225,6 +228,20 @@ function makeWeekTodoItem(todo, isDone) {
     flag.className = 'weekly-flag-icon';
     flag.textContent = '★ ';
     title.appendChild(flag);
+  }
+  // 체크리스트 아이콘 + 진행도
+  if (hasChecklist(todo)) {
+    const clIcon = document.createElement('span');
+    clIcon.className = 'checklist-icon';
+    clIcon.textContent = '☑';
+    title.appendChild(clIcon);
+    const prog = getChecklistProgress(todo);
+    if (prog) {
+      const progEl = document.createElement('span');
+      progEl.className = 'checklist-progress';
+      progEl.textContent = ` (${prog.done}/${prog.total}) `;
+      title.appendChild(progEl);
+    }
   }
   const titleText = document.createTextNode(todo.title || '(제목 없음)');
   title.appendChild(titleText);
@@ -273,6 +290,12 @@ function initWeekItemGesture(el, todo) {
     const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) { resetWeekItemStyle(el); return; }
     if (dx > 0 && !todo.is_done) {
+      // 체크리스트가 있으면 스와이프 완료 차단
+      if (hasChecklist(todo)) {
+        resetWeekItemStyle(el);
+        showToast('상세보기에서 체크리스트를 완료해주세요');
+        return;
+      }
       el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
       el.style.transform = 'translateX(110%)'; el.style.opacity = '0';
       setTimeout(async () => {

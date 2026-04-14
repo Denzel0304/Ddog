@@ -57,12 +57,20 @@ function hasOpenPopup() {
   if (!document.getElementById('year-popup').classList.contains('hidden')) return true;
   if (!document.getElementById('month-popup').classList.contains('hidden')) return true;
   if (!document.getElementById('modal-overlay').classList.contains('hidden')) return true;
+  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) return true;
+  if (!document.getElementById('repeat-edit-overlay').classList.contains('hidden')) return true;
   if (document.getElementById('repeats-panel').classList.contains('open')) return true;
   if (document.getElementById('settings-panel').classList.contains('open')) return true;
   return false;
 }
 
 function closeTopPopup() {
+  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) {
+    closeChecklistModal(false); return;
+  }
+  if (!document.getElementById('repeat-edit-overlay').classList.contains('hidden')) {
+    closeRepeatEditOverlay(); return;
+  }
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) {
     document.getElementById('repeat-overlay').classList.add('hidden');
     return;
