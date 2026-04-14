@@ -2,7 +2,7 @@
 // weekly.js — 주간 일정 탭
 // =============================================
 
-let weekOffset = 0;
+let weekOffset = 1;
 let selectedWeekDay = null;
 let weekAllRows = [];
 let weekImportantOnly = false;
@@ -24,7 +24,7 @@ function getWeekRange(offset) {
   const thisMonday = new Date(today);
   thisMonday.setDate(today.getDate() + diffToMon);
   const monday = new Date(thisMonday);
-  monday.setDate(thisMonday.getDate() + 7 * (offset + 1));
+  monday.setDate(thisMonday.getDate() + 7 * offset);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return { monday, sunday };
@@ -34,10 +34,6 @@ async function loadWeekly() {
   const { monday, sunday } = getWeekRange(weekOffset);
   const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
   document.getElementById('week-range-label').textContent = `${fmt(monday)} ~ ${fmt(sunday)}`;
-
-  if (!selectedWeekDay || !isInWeek(selectedWeekDay, monday)) {
-    selectedWeekDay = toLocalDateStr(monday);
-  }
 
   const fromStr = toLocalDateStr(monday);
   const toStr   = toLocalDateStr(sunday);
@@ -112,6 +108,7 @@ function renderWeekDayCards(monday, hasTodo) {
   const row = document.getElementById('week-day-row');
   row.innerHTML = '';
   const dayNames = ['일','월','화','수','목','금','토'];
+  const todayDateStr = toLocalDateStr(new Date());
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     const dateStr = toLocalDateStr(d);
@@ -120,15 +117,9 @@ function renderWeekDayCards(monday, hasTodo) {
     card.className = 'week-day-card';
     if (dow === 6) card.classList.add('sat');
     if (dow === 0) card.classList.add('sun');
-    if (dateStr === selectedWeekDay) card.classList.add('selected');
+    if (dateStr === todayDateStr) card.classList.add('today');
     if (hasTodo[dateStr]) card.classList.add('has-todo');
     card.innerHTML = `<span class="wdc-name">${dayNames[dow]}</span><span class="wdc-num">${d.getDate()}</span>`;
-    card.addEventListener('click', () => {
-      selectedWeekDay = dateStr;
-      document.querySelectorAll('.week-day-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      renderWeekAllTodos(weekAllRows, monday);
-    });
     row.appendChild(card);
   }
 }

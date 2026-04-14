@@ -104,7 +104,7 @@ function switchTab(tabName) {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
   if (tabName === 'todo') { loadTodos(); updateMonthDots(); }
-  else if (tabName === 'weekly') { weekOffset = 0; loadWeekly(); }
+  else if (tabName === 'weekly') { weekOffset = 1; loadWeekly(); }
   else if (tabName === 'search') { setTimeout(() => document.getElementById('search-input').focus(), 200); }
 }
 
