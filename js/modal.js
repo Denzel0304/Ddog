@@ -104,7 +104,6 @@ function openEditModal(todo) {
   }
 
   document.getElementById('modal-overlay').classList.remove('hidden');
-  setTimeout(() => document.getElementById('input-title').focus(), 300);
 }
 
 function closeModal() {
@@ -198,7 +197,11 @@ function openChecklistModal() {
 
   renderChecklistItems();
   document.getElementById('checklist-overlay').classList.remove('hidden');
-  setTimeout(() => document.getElementById('checklist-input').focus(), 200);
+  // 기존 항목이 없을 때만 입력창에 포커스 (항목 있으면 키보드 안 띄움)
+  const validItems = checklistItems.filter(it => it.text && it.text.trim());
+  if (validItems.length === 0) {
+    setTimeout(() => document.getElementById('checklist-input').focus(), 200);
+  }
 }
 
 function closeChecklistModal(save) {
