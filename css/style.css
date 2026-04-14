@@ -1130,3 +1130,25 @@ select:focus { border-color: var(--accent); }
   display: flex; flex-direction: column; gap: 6px;
   animation: slideUp 0.2s ease;
 }
+
+/* ─── 체크리스트 열기 버튼 (항목 있을 때) ─── */
+.checklist-open-btn {
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: var(--font-main);
+}
+.checklist-open-btn:hover { background: var(--accent-glow); }
+.checklist-open-btn.active {
+  background: var(--accent);
+  color: #1a1a2e;
+  font-weight: 600;
+}
+.checklist-open-btn.hidden { display: none; }
+#checklist-toggle-label.hidden { display: none; }
