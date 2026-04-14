@@ -188,6 +188,10 @@
         <input type="number" id="input-remind" placeholder="0" min="0" max="30" value="0" />
         <span class="detail-unit">일 전에도 추가</span>
         <button id="repeat-btn" class="repeat-btn" title="반복 설정">🔁 반복</button>
+        <label id="checklist-toggle-label">
+          <input type="checkbox" id="checklist-toggle" />
+          <span>리스트</span>
+        </label>
       </div>
     </div>
     <button id="modal-save">저장</button>
@@ -339,6 +343,36 @@
       <button class="month-btn" data-m="9">9월</button><button class="month-btn" data-m="10">10월</button>
       <button class="month-btn" data-m="11">11월</button><button class="month-btn" data-m="12">12월</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== 체크리스트 모달 ===== -->
+<div id="checklist-overlay" class="hidden">
+  <div id="checklist-box">
+    <div id="checklist-header">
+      <span>체크리스트</span>
+      <button id="checklist-modal-close">✕</button>
+    </div>
+    <div id="checklist-items"></div>
+    <div id="checklist-add-row">
+      <input type="text" id="checklist-input" placeholder="항목 입력 후 Enter..." autocomplete="off" />
+      <button id="checklist-add-btn">＋</button>
+    </div>
+    <div id="checklist-footer">
+      <button id="checklist-cancel-btn" class="checklist-footer-btn cancel">취소</button>
+      <button id="checklist-confirm-btn" class="checklist-footer-btn confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 반복 수정 시트 (action-box 내부 오버레이와 별도) ===== -->
+<div id="repeat-edit-overlay" class="hidden">
+  <div id="repeat-edit-box">
+    <div class="rds-title">반복 일정 수정</div>
+    <button class="rds-btn" id="repeat-edit-only">이 날짜만 수정</button>
+    <button class="rds-btn" id="repeat-edit-from">이 날짜 이후 모두 수정</button>
+    <button class="rds-btn" id="repeat-edit-all">전체 수정</button>
+    <button class="rds-btn cancel" id="repeat-edit-cancel">취소</button>
   </div>
 </div>
 
