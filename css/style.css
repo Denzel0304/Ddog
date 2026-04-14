@@ -80,6 +80,7 @@ ul { list-style: none; }
   font-size: 13px; border-radius: 6px; cursor: pointer;
   transition: background 0.12s, color 0.12s;
   position: relative; color: var(--text-primary);
+  overflow: visible;
 }
 .cal-day:hover { background: var(--bg-hover); }
 .cal-day.other-month { color: var(--text-muted); }
@@ -99,10 +100,15 @@ ul { list-style: none; }
 .cal-day.today::before { background: var(--accent-glow); border: 1.5px solid var(--accent); }
 .cal-day.selected::before { background: var(--accent); }
 .cal-day.selected { color: #1a1a2e; position: relative; }
-.cal-day span { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-/* 점은 span 안에 넣어서 원 안에 포함되도록 */
+.cal-day span { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; }
+/* 점은 span 아래 절대 위치로 고정 — 숫자 위치에 영향 없음 */
 .cal-day.has-todo span::after {
   content: '';
+  position: absolute;
+  top: 100%;
+  margin-top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 4px; height: 4px;
   border-radius: 50%;
   background: var(--accent);
@@ -259,7 +265,7 @@ ul { list-style: none; }
 /* ── 액션 팝업 ── */
 #action-popup { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 90; display: flex; align-items: flex-end; backdrop-filter: blur(3px); }
 #action-popup.hidden { display: none; }
-#action-box { background: var(--bg-elevated); width: 100%; max-width: 480px; margin: 0 auto; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 16px 32px; display: flex; flex-direction: column; gap: 4px; animation: slideUp 0.2s ease; position: relative; overflow: hidden; }
+#action-box { background: var(--bg-elevated); width: 100%; max-width: 480px; margin: 0 auto; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 4px; animation: slideUp 0.2s ease; position: relative; overflow: hidden; }
 .action-btn { padding: 15px 20px; border-radius: var(--radius-sm); font-size: 15px; text-align: left; color: var(--text-primary); transition: background 0.15s; }
 .action-btn:hover { background: var(--bg-hover); }
 .action-btn.danger { color: var(--danger); }
@@ -346,19 +352,24 @@ ul { list-style: none; }
   gap: 4px;
   padding: 8px 4px;
   border-radius: 10px;
-  cursor: pointer;
+  cursor: default;
   transition: background 0.15s;
   border: 1px solid var(--border);
   background: var(--bg-elevated);
   position: relative;
 }
-.week-day-card:hover { border-color: var(--accent); }
 .week-day-card.selected {
   background: var(--accent);
   border-color: var(--accent);
 }
 .week-day-card.selected .wdc-name,
 .week-day-card.selected .wdc-num { color: #1a1a2e !important; }
+.week-day-card.today {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.week-day-card.today .wdc-name,
+.week-day-card.today .wdc-num { color: #1a1a2e !important; }
 
 .wdc-name {
   font-size: 10px;
@@ -387,6 +398,7 @@ ul { list-style: none; }
   background: var(--accent);
 }
 .week-day-card.selected.has-todo::after { background: #1a1a2e; }
+.week-day-card.today.has-todo::after { background: #1a1a2e; }
 
 /* 선택 날짜 바 */
 #week-selected-bar {
@@ -675,12 +687,12 @@ ul { list-style: none; }
    주간 필터 버튼
    ============================================= */
 #week-header-right {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 12px;
 }
 .week-filter-btn {
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 14px;
-  font-size: 11px; font-weight: 500;
+  font-size: 12px; font-weight: 500;
   border: 1px solid var(--border-light);
   color: var(--text-secondary);
   transition: all 0.15s;
@@ -870,35 +882,38 @@ select:focus { border-color: var(--accent); }
   inset: 0;
   background: var(--bg-elevated, #1e1e2e);
   border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
-  padding: 16px 12px 32px;
+  padding: 12px 12px 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   animation: slideUp 0.18s ease;
+  overflow-y: auto;
 }
 
 .rds-title {
   font-size: 13px;
   color: var(--text-muted, #888);
   text-align: center;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border, #333);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  flex-shrink: 0;
 }
 
 .rds-btn {
   width: 100%;
-  padding: 13px 16px;
+  padding: 11px 16px;
   background: var(--surface2, #2a2a3e);
   border: none;
   border-radius: 10px;
   color: var(--text, #eee);
-  font-size: 15px;
+  font-size: 14px;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
   transition: background 0.15s;
+  flex-shrink: 0;
 }
 .rds-btn:active { background: var(--surface3, #333); }
 .rds-btn.danger { color: var(--danger, #e05c6a); }
