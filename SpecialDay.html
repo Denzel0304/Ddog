@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="기념일">
+<title>기념일</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --sky: #D6ECFA; --white: #FFFFFF;
+  --text: #2C4A5A; --text-muted: #5A7A8A; --text-light: #8AAABB;
+  --border: rgba(44,74,90,0.15); --border-mid: rgba(44,74,90,0.25);
+  --radius: 12px; --radius-sm: 8px;
+  --shadow-sm: 0 1px 4px rgba(44,74,90,0.08);
+  --accent: #E8845A;
+  --accent-light: #FDE8D8;
+  --accent-mid: #F9A870;
+  --accent-btn: #C8623C;
+}
+html, body { height: 100%; overflow: hidden; background: var(--sky); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 480px; margin: 0 auto; background: var(--sky); }
+.app-header { height: 52px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.app-title { font-size: 18px; font-weight: 700; color: var(--text); }
+.tab-content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+/* ITEM LIST */
+.panel { padding: 0 12px 20px; }
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+.item-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 10px 10px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); user-select: none; }
+.item-body { flex: 1; min-width: 0; }
+.item-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.item-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.edit-btn { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border-mid); background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.del-btn { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid #FFB3B3; background: transparent; color: #A83232; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dday-badge { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: var(--accent-light); color: var(--accent-btn); flex-shrink: 0; min-width: 56px; text-align: center; }
+.dday-today { background: #E6FFE6; color: #1A6B1A; }
+.lunar-tag { font-size: 9px; background: #EEE8FF; color: #5533AA; border-radius: 4px; padding: 1px 4px; margin-left: 3px; font-weight: 600; vertical-align: middle; }
+.panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 10px; }
+.panel-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.add-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-mid); color: white; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.io-btn { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--white); color: var(--accent-btn); border: 1.5px solid var(--accent-mid); font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
+.io-btn-label { font-size: 11px; font-weight: 600; color: var(--accent-btn); }
+.panel-hd-right { display: flex; align-items: center; gap: 10px; }
+.empty-msg { text-align: center; padding: 32px 0; color: var(--text-light); font-size: 13px; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(44,74,90,0.45); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+.modal-overlay.hidden { display: none; }
+.modal-box { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; padding: 20px 20px 36px; max-height: 85vh; overflow-y: auto; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; display: block; }
+.form-input { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-mid); background: var(--accent-light); font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+.form-input:focus { border-color: var(--accent-mid); }
+.date-row { display: flex; gap: 6px; align-items: center; }
+.date-row .form-input { text-align: center; }
+.date-sep { color: var(--text-muted); font-weight: 600; font-size: 15px; flex-shrink: 0; }
+.cal-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.cal-opt { flex: 1; padding: 9px 0; border-radius: var(--radius-sm); border: 1.5px solid var(--border-mid); background: var(--accent-light); font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; color: var(--text-muted); }
+.cal-opt.sel { background: var(--accent-mid); border-color: var(--accent); color: white; }
+.modal-acts { display: flex; gap: 8px; margin-top: 18px; }
+.btn-cancel { flex: 1; padding: 13px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-mid); background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-save { flex: 2; padding: 13px; border-radius: var(--radius-sm); border: none; background: var(--accent-btn); color: white; font-size: 14px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-header"><span style="display:flex;align-items:center;gap:7px;"><span style="font-size:22px;line-height:1">🎉</span><span class="app-title">기념일</span></span></div>
+  <div class="tab-content">
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">기념일</span>
+        <div class="panel-hd-right">
+          <button class="io-btn" id="import-an">📥<span class="io-btn-label">불러오기</span></button>
+          <button class="io-btn" id="export-an">📤<span class="io-btn-label">내보내기</span></button>
+          <button class="add-btn" id="add-an">+</button>
+        </div>
+      </div>
+      <div class="item-list" id="an-list"></div>
+    </div>
+    <input type="file" id="file-import-an" accept=".json" style="display:none">
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="m-title">기념일 추가</div>
+    <div class="form-group">
+      <label class="form-label">제목</label>
+      <input class="form-input" id="f-name" type="text" placeholder="제목을 입력하세요" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">날짜 유형</label>
+      <div class="cal-row">
+        <div class="cal-opt sel" id="cal-solar">양력</div>
+        <div class="cal-opt" id="cal-lunar">음력</div>
+      </div>
+      <label class="form-label">날짜</label>
+      <div class="date-row">
+        <input class="form-input" id="f-am" type="number" placeholder="월" min="1" max="12" style="width:70px" inputmode="numeric" />
+        <span class="date-sep">월</span>
+        <input class="form-input" id="f-ad" type="number" placeholder="일" min="1" max="30" style="width:70px" inputmode="numeric" />
+        <span class="date-sep">일</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모 <span style="color:var(--text-light);font-weight:400">(선택)</span></label>
+      <input class="form-input" id="f-memo" type="text" placeholder="간단한 메모" />
+    </div>
+    <div class="modal-acts">
+      <button class="btn-cancel" id="m-cancel">취소</button>
+      <button class="btn-save" id="m-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 음력→양력 변환 (1900~2050) ─────────────────────────────────────────
+const LI=[0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06aa0,0x0a6b6,0x056a0,0x02b60,0x09373,0x092e0,0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0f930,0x0aa70,0x0a9b8,0x0aad0,0x17095,0x04bd0,0x096d0,0x0d4d4,0x0d130,0x0d950,0x156d5,0x055a0,0x0aba0,0x1a5b3,0x04b60,0x0aa60,0x0aa55,0x0a570,0x05260,0x0f265,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a2d0,0x0d150,0x0f252,0x0d520];
+function lLeap(y){return LI[y-1900]&0xf;}
+function lLeapDays(y){if(lLeap(y))return(LI[y-1900]&0x10000)?30:29;return 0;}
+function lMonthDays(y,m){return(LI[y-1900]&(0x10000>>m))?30:29;}
+function lYearDays(y){let s=348;for(let i=0x8000;i>0x8;i>>=1)s+=(LI[y-1900]&i)?1:0;return s+lLeapDays(y);}
+function lunarToSolar(ly,lm,ld){
+  let offset=0;
+  for(let i=1900;i<ly;i++)offset+=lYearDays(i);
+  for(let i=1;i<lm;i++)offset+=lMonthDays(ly,i);
+  offset+=ld-1;
+  const base=new Date(1900,0,31);
+  base.setDate(base.getDate()+offset);
+  return base;
+}
+function lunarMDtoSolar(lm,ld){
+  const now=new Date();now.setHours(0,0,0,0);
+  const curY=now.getFullYear();
+  const cands=[];
+  for(let y=curY-1;y<=curY+1;y++){
+    try{const d=lunarToSolar(y,lm,ld);d.setHours(0,0,0,0);cands.push(d);}catch(e){}
+  }
+  const future=cands.filter(d=>d>=now);
+  if(future.length)return future.reduce((a,b)=>a<b?a:b);
+  return cands.reduce((a,b)=>a>b?a:b);
+}
+
+const $=id=>document.getElementById(id);
+
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function annivLeft(it){
+  const now=today0();
+  let dt;
+  if(it.lunar){dt=lunarMDtoSolar(it.month,it.day);}
+  else{const y=now.getFullYear();dt=new Date(y,it.month-1,it.day);if(dt<now)dt=new Date(y+1,it.month-1,it.day);}
+  return Math.round((dt-now)/86400000);
+}
+
+let S={an:[]};
+function load(){try{S.an=JSON.parse(localStorage.getItem('ss_an')||'[]');}catch(e){S.an=[];}}
+function save(){localStorage.setItem('ss_an',JSON.stringify(S.an));}
+
+function renderAn(){
+  const list=$('an-list');list.innerHTML='';
+  const sorted=[...S.an].sort((a,b)=>annivLeft(a)-annivLeft(b));
+  if(!sorted.length){list.innerHTML='<div class="empty-msg">기념일을 추가해보세요</div>';return;}
+  sorted.forEach((it,i)=>list.appendChild(makeCard(it,i)));
+}
+
+function makeCard(it,idx){
+  const card=document.createElement('div');
+  card.className='item-card';
+  card.dataset.idx=idx;
+
+  const body=document.createElement('div');body.className='item-body';
+  const nameEl=document.createElement('div');nameEl.className='item-name';
+  nameEl.textContent=it.name;
+  if(it.lunar){
+    const tag=document.createElement('span');tag.className='lunar-tag';tag.textContent='음력';
+    nameEl.appendChild(tag);
+  }
+  body.appendChild(nameEl);
+  if(it.memo){const m=document.createElement('div');m.className='item-meta';m.textContent=it.memo;body.appendChild(m);}
+  const m2=document.createElement('div');m2.className='item-meta';m2.textContent=`${it.month}월 ${it.day}일`;
+  body.appendChild(m2);
+
+  const acts=document.createElement('div');acts.className='item-actions';
+  const left=annivLeft(it);
+  const b=document.createElement('span');
+  b.className=`dday-badge${left===0?' dday-today':''}`;
+  b.textContent=left===0?'D-DAY':`-${left}일`;
+  acts.appendChild(b);
+  const eb=document.createElement('button');eb.className='edit-btn';eb.textContent='✏️';
+  eb.onclick=()=>{
+    const oi=S.an.findIndex(x=>x.id===it.id);
+    openModal(it,oi);
+  };
+  const db=document.createElement('button');db.className='del-btn';db.textContent='✕';
+  db.onclick=()=>delItem(it.id);
+  acts.appendChild(eb);acts.appendChild(db);
+  card.appendChild(body);card.appendChild(acts);
+  return card;
+}
+
+let mCtx={item:null,idx:null};
+let selCal='solar';
+
+function openModal(item,idx){
+  mCtx={item,idx};
+  const isE=item!==null;
+  $('m-title').textContent=isE?'수정':'기념일 추가';
+  $('f-name').value=isE?item.name:'';
+  $('f-memo').value=isE?(item.memo||''):'';
+  selCal=isE?(item.lunar?'lunar':'solar'):'solar';
+  updCal();
+  $('f-am').value=isE?item.month:'';
+  $('f-ad').value=isE?item.day:'';
+  $('modal').classList.remove('hidden');
+  setTimeout(()=>$('f-name').focus(),100);
+}
+
+function updCal(){
+  $('cal-solar').className='cal-opt'+(selCal==='solar'?' sel':'');
+  $('cal-lunar').className='cal-opt'+(selCal==='lunar'?' sel':'');
+}
+$('cal-solar').onclick=()=>{selCal='solar';updCal();};
+$('cal-lunar').onclick=()=>{selCal='lunar';updCal();};
+$('m-cancel').onclick=()=>$('modal').classList.add('hidden');
+$('modal').onclick=e=>{if(e.target===$('modal'))$('modal').classList.add('hidden');};
+$('m-save').onclick=()=>{
+  const name=$('f-name').value.trim();
+  if(!name){$('f-name').focus();return;}
+  const{item,idx}=mCtx;
+  const obj={id:item?.id||Date.now(),name,memo:$('f-memo').value.trim()};
+  const mon=+$('f-am').value,day=+$('f-ad').value;
+  if(!mon||!day){alert('월과 일을 입력해주세요');return;}
+  obj.month=mon;obj.day=day;obj.lunar=selCal==='lunar';
+  if(idx!==null&&idx>=0)S.an[idx]=obj;else S.an.push(obj);
+  save();renderAn();$('modal').classList.add('hidden');
+};
+
+function delItem(id){
+  if(!confirm('삭제할까요?'))return;
+  S.an=S.an.filter(x=>x.id!==id);
+  save();renderAn();
+}
+
+function exportData(){
+  const date=new Date();
+  const ds=`${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
+  const filename=`soso_anniversary_${ds}.json`;
+  const blob=new Blob([JSON.stringify(S.an,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(file){
+  if(!file)return;
+  const fname=file.name.toLowerCase();
+  if(fname.includes('dday')||fname.includes('diday')){alert('형식이 다릅니다. 기념일 파일을 선택해주세요.\n(파일명에 anniversary가 포함된 파일)');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data)){alert('올바른 파일이 아니에요.');return;}
+      const hasDdayFields=data.length>0&&data[0].date!==undefined&&data[0].month===undefined;
+      if(hasDdayFields){alert('형식이 다릅니다. 기념일 파일을 선택해주세요.');return;}
+      if(confirm(`기념일 ${data.length}개를 불러올까요?\n기존 데이터는 덮어씌워져요.`)){
+        S.an=data;save();renderAn();alert('불러오기 완료!');
+      }
+    }catch(err){alert('파일을 읽을 수 없어요. JSON 파일인지 확인해주세요.');}
+  };
+  reader.readAsText(file);
+}
+
+$('add-an').onclick=()=>openModal(null,null);
+$('export-an').onclick=()=>exportData();
+$('import-an').onclick=()=>$('file-import-an').click();
+$('file-import-an').onchange=e=>{importData(e.target.files[0]);e.target.value='';};
+
+load();renderAn();
+</script>
+</body>
+</html>
