@@ -276,6 +276,10 @@
       <span class="settings-menu-label">반복함</span>
       <span class="settings-menu-arrow">›</span>
     </button>
+    <button class="settings-menu-item" id="menu-logout">
+      <span class="settings-menu-icon">🚪</span>
+      <span class="settings-menu-label">로그아웃</span>
+    </button>
   </div>
 </div>
 
@@ -479,6 +483,17 @@
   </div>
 </div>
 
+<!-- ===== 로그아웃 확인 모달 ===== -->
+<div id="logout-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:#1e2028;border-radius:16px;padding:28px 24px 20px;width:280px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <div style="font-size:16px;font-weight:600;color:#e0e0e0;text-align:center;">로그아웃 하시겠어요?</div>
+    <div style="display:flex;gap:10px;">
+      <button id="logout-cancel" style="flex:1;padding:11px;border-radius:10px;border:none;background:#2e3240;color:#e0e0e0;font-size:15px;cursor:pointer;">취소</button>
+      <button id="logout-confirm" style="flex:1;padding:11px;border-radius:10px;border:none;background:#e05c6a;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">로그아웃</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 반복 수정 시트 ===== -->
 <div id="repeat-edit-overlay" class="hidden">
   <div id="repeat-edit-box">
@@ -501,7 +516,6 @@
 <script src="js/search.js"></script>
 <script src="js/weekly.js"></script>
 <script src="js/settings.js"></script>
-<script src="js/sound.js"></script>  
 <script src="js/app.js"></script>
 
 </body>
