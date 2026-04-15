@@ -16,25 +16,21 @@
     #splash-screen {
       position: fixed;
       inset: 0;
-      background: #1a1a2e;
+      background: #16181d;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      gap: 24px;
+      gap: 0;
     }
     #splash-logo {
-      width: 120px;
-      height: 120px;
+      width: 140px;
+      height: 140px;
       animation: splash-pulse 1.8s ease-in-out infinite;
     }
     #splash-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.85);
-      letter-spacing: 2px;
-      font-family: 'Noto Sans KR', sans-serif;
+      display: none;
     }
     @keyframes splash-pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -45,7 +41,7 @@
     #login-screen {
       position: fixed;
       inset: 0;
-      background: #1a1a2e;
+      background: #16181d;
       display: none;
       flex-direction: column;
       align-items: center;
@@ -56,7 +52,7 @@
       width: 100%;
       max-width: 340px;
       padding: 40px 28px 36px;
-      background: #16213e;
+      background: #1e2028;
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       display: flex;
@@ -84,8 +80,8 @@
       width: 100%;
       padding: 13px 16px;
       border-radius: 10px;
-      border: 1.5px solid #2a2a4a;
-      background: #0f0f23;
+      border: 1.5px solid #2e3240;
+      background: #16181d;
       color: #e0e0e0;
       font-size: 15px;
       outline: none;
@@ -93,13 +89,13 @@
       transition: border-color 0.2s;
       font-family: 'Noto Sans KR', sans-serif;
     }
-    #login-box input:focus { border-color: #7b68ee; }
+    #login-box input:focus { border-color: #7c6ef5; }
     #login-btn {
       width: 100%;
       padding: 13px;
       border-radius: 10px;
       border: none;
-      background: #7b68ee;
+      background: #7c6ef5;
       color: #fff;
       font-size: 16px;
       font-weight: 600;
@@ -114,9 +110,9 @@
     }
     #login-btn:hover  { background: #6a5acd; }
     #login-btn:active { background: #5a4abf; }
-    #login-btn:disabled { background: #4a4a6a; cursor: not-allowed; }
+    #login-btn:disabled { background: #2e3240; cursor: not-allowed; }
     #login-error {
-      color: #ff6b7a;
+      color: #e05c6a;
       font-size: 13px;
       text-align: center;
       min-height: 16px;
@@ -138,15 +134,14 @@
 
 <!-- ===== 스플래시 화면 (항상 먼저 표시) ===== -->
 <div id="splash-screen">
-  <img id="splash-logo" src="똑비서_로고_1.png" alt="똑비서" />
-  <div id="splash-title">똑비서</div>
+  <img id="splash-logo" src="logo.png" alt="똑비서" />
 </div>
 
 <!-- ===== 로그인 화면 (세션 없을 때만 표시) ===== -->
 <div id="login-screen">
   <div id="login-box">
     <div id="login-logo-wrap">
-      <img id="login-logo" src="똑비서_로고_1.png" alt="똑비서" />
+      <img id="login-logo" src="logo.png" alt="똑비서" />
       <div id="login-title">똑비서</div>
     </div>
     <form id="login-form" autocomplete="off">
