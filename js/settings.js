@@ -8,6 +8,9 @@ function initSettings() {
   document.getElementById('settings-overlay').addEventListener('click', closeSettingsPanel);
   document.getElementById('menu-repeats').addEventListener('click', openRepeatsPanel);
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
+  document.getElementById('menu-logout').addEventListener('click', openLogoutConfirm);
+  document.getElementById('logout-cancel').addEventListener('click', closeLogoutConfirm);
+  document.getElementById('logout-confirm').addEventListener('click', doLogout);
 }
 
 function openSettingsPanel() {
@@ -118,6 +121,28 @@ function getRepeatDescFromTodo(todo) {
     case 'custom': return '매주 ' + (meta.customDays || []).map(d => days[d]).join(',');
     default: return '';
   }
+}
+
+function openLogoutConfirm() {
+  const m = document.getElementById('logout-modal');
+  m.classList.remove('hidden');
+  m.style.display = 'flex';
+}
+
+function closeLogoutConfirm() {
+  const m = document.getElementById('logout-modal');
+  m.classList.add('hidden');
+  m.style.display = '';
+}
+
+async function doLogout() {
+  closeLogoutConfirm();
+  closeSettingsPanel();
+  try { await getSupabaseClient().auth.signOut(); } catch(e) {}
+  clearSession();
+  await idbClear();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
 }
 
 function showRepeatDeleteOptions(todo, el) {
