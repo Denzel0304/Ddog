@@ -211,9 +211,20 @@ function closeChecklistModal(save) {
     const checklistJson = validItems.length > 0 ? JSON.stringify(validItems) : null;
 
     if (AppState.editingId && !String(AppState.editingId).startsWith('tmp_')) {
-      // 체크리스트 완료 여부도 함께 업데이트
       const isDone = checklistJson ? validItems.every(it => it.checked) : false;
       const patch = { checklist: checklistJson, is_done: isDone, done_at: isDone ? new Date().toISOString() : null };
+
+      // ── 내용 변경 여부 판단 (구조 변경 = 추가/삭제/텍스트수정/순서변경) ──
+      // 체크 상태(checked)만 바뀐 경우는 내용 변경 아님
+      const isContentChanged = (() => {
+        const backup = _checklistBackup.filter(it => it.text && it.text.trim());
+        if (backup.length !== validItems.length) return true;
+        for (let i = 0; i < validItems.length; i++) {
+          if (validItems[i].id !== backup[i].id) return true;
+          if (validItems[i].text !== backup[i].text) return true;
+        }
+        return false;
+      })();
 
       // 반복 일정인지 확인
       const editingTodo = AppState.editingTodo;
@@ -222,16 +233,60 @@ function closeChecklistModal(save) {
         editingTodo.repeat_type && editingTodo.repeat_type !== 'none' &&
         !editingTodo.repeat_master_id && !editingTodo.repeat_exception && !isVirtual;
       const isRepeatException = editingTodo && !!editingTodo.repeat_master_id;
+      const isRepeat = isRepeatMaster || isRepeatException || isVirtual;
 
-      if (isRepeatMaster || isVirtual) {
-        // 반복 마스터/가상 → 이 날짜만 수정 (예외 행 생성)
-        const masterId = isVirtual ? editingTodo._masterId : editingTodo.id;
+      if (isRepeat && isContentChanged) {
+        // 내용 변경 + 반복 일정 → 반복 옵션 3가지 모달 띄우기
+        const masterId = isVirtual ? editingTodo._masterId :
+                         isRepeatException ? editingTodo.repeat_master_id : editingTodo.id;
         const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) : editingTodo.date;
-        updateRepeatOnlyDate(masterId, dateStr, patch)
-          .then(() => { if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots(); })
-          .catch(e => console.error(e));
+
+        updateChecklistUI();
+        document.getElementById('checklist-overlay').classList.add('hidden');
+
+        openRepeatEditOverlay(async (mode) => {
+          try {
+            if (mode === 'only') {
+              await updateRepeatOnlyDate(masterId, dateStr, patch);
+            } else if (mode === 'from') {
+              await updateRepeatFromDate(masterId, dateStr, patch);
+            } else {
+              await updateRepeatAll(masterId, patch);
+            }
+            if (isDone) playCompleteSound();
+            refreshCurrentTab();
+            updateMonthDots();
+            showToast('체크리스트 저장됐어요 ✓');
+          } catch(e) {
+            showToast('저장 실패. 다시 시도해주세요');
+            console.error(e);
+          }
+        });
+        return; // 아래 공통 처리 건너뜀 (위에서 이미 overlay 닫음)
+
+      } else if (isRepeat && !isContentChanged) {
+        // 체크 상태만 변경 + 반복 일정 → 이 날짜만 조용히 저장 (옵션 모달 없음)
+        if (isRepeatMaster || isVirtual) {
+          const masterId = isVirtual ? editingTodo._masterId : editingTodo.id;
+          const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) : editingTodo.date;
+          updateRepeatOnlyDate(masterId, dateStr, patch)
+            .then(() => { if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots(); })
+            .catch(e => console.error(e));
+        } else {
+          // 예외 행(repeat_master_id 있음)
+          updateTodo(AppState.editingId, patch)
+            .then(() => {
+              const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
+              if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
+              if (isDone) playCompleteSound();
+              refreshCurrentTab(); updateMonthDots();
+            })
+            .catch(e => console.error(e));
+        }
+        showToast('체크리스트 저장됐어요 ✓');
+
       } else {
-        // 일반 할일 또는 예외 행
+        // 일반 할일 (반복 아님)
         updateTodo(AppState.editingId, patch)
           .then(() => {
             const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
@@ -240,8 +295,8 @@ function closeChecklistModal(save) {
             refreshCurrentTab(); updateMonthDots();
           })
           .catch(e => console.error(e));
+        showToast('체크리스트 저장됐어요 ✓');
       }
-      showToast('체크리스트 저장됐어요 ✓');
     }
     // 신규일 때는 임시 보관만 (할일 모달 저장 시 함께 저장)
   } else {
@@ -477,6 +532,11 @@ async function handleSave() {
   }
 
   // 체크리스트 직렬화
+  // 수정 모드일 때는 체크리스트를 data에 포함하지 않음:
+  // 리스트 모달에서 저장 버튼을 눌렀을 때 이미 독립적으로 저장되므로
+  // 여기서 다시 포함하면 리스트 모달에서 저장한 내용을 덮어쓰게 됨.
+  // 신규 추가일 때는 리스트 모달에 저장 경로가 없으므로 여기서 함께 저장.
+  const isEditing = !!AppState.editingId;
   const validItems = checklistItems.filter(it => it.text && it.text.trim());
   const checklistJson = validItems.length > 0 ? JSON.stringify(validItems) : null;
   const checklistDone = checklistJson ? validItems.every(it => it.checked) : false;
@@ -487,10 +547,10 @@ async function handleSave() {
     date,
     remind_days: remind,
     weekly_flag: weeklyFlag,
-    checklist:   checklistJson,
+    ...(!isEditing ? { checklist: checklistJson } : {}),
     ...repeatData,
   };
-  if (checklistJson) {
+  if (!isEditing && checklistJson) {
     data.is_done = checklistDone;
     data.done_at = checklistDone ? new Date().toISOString() : null;
   }
