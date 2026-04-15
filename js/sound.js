@@ -13,14 +13,16 @@ async function _loadCompleteSound() {
   _audioLoading = true;
   try {
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const response = await fetch('effect 1.mp3');
+    const response = await fetch('effect%201.mp3');
     if (!response.ok) throw new Error('fetch failed');
     const arrayBuffer = await response.arrayBuffer();
     _audioBuffer = await _audioCtx.decodeAudioData(arrayBuffer);
     _audioLoaded = true;
+    _audioLoading = false;
   } catch(e) {
     // 로드 실패 시 다음 시도를 위해 플래그 초기화
     _audioLoading = false;
+    _audioLoaded = false;
     _audioCtx = null;
     _audioBuffer = null;
   }
@@ -34,9 +36,12 @@ function playCompleteSound() {
   try {
     if (!_audioLoaded || !_audioCtx || !_audioBuffer) {
       // 아직 로드 안 됐으면 로드 후 재생
-      _loadCompleteSound().then(() => {
-        if (_audioLoaded && _audioCtx && _audioBuffer) _playBuffer();
-      });
+      const p = _loadCompleteSound();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          if (_audioLoaded && _audioCtx && _audioBuffer) _playBuffer();
+        }).catch(() => {});
+      }
       return;
     }
     _playBuffer();
