@@ -10,18 +10,47 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <!-- Supabase JS SDK (Realtime용) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
+    /* ── 스플래시 화면 ── */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 24px;
+    }
+    #splash-logo {
+      width: 120px;
+      height: 120px;
+      animation: splash-pulse 1.8s ease-in-out infinite;
+    }
+    #splash-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 2px;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    @keyframes splash-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.75; transform: scale(0.96); }
+    }
+
     /* ── 로그인 화면 ── */
     #login-screen {
       position: fixed;
       inset: 0;
       background: #1a1a2e;
-      display: flex;
+      display: none;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: 9998;
     }
     #login-box {
       width: 100%;
@@ -32,15 +61,24 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+    }
+    #login-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    #login-logo {
+      width: 72px;
+      height: 72px;
     }
     #login-title {
-      text-align: center;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
       color: #e0e0e0;
-      margin-bottom: 4px;
-      letter-spacing: -0.5px;
+      letter-spacing: 1px;
     }
     #login-box input {
       width: 100%;
@@ -53,10 +91,9 @@
       outline: none;
       box-sizing: border-box;
       transition: border-color 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
     }
-    #login-box input:focus {
-      border-color: #7b68ee;
-    }
+    #login-box input:focus { border-color: #7b68ee; }
     #login-btn {
       width: 100%;
       padding: 13px;
@@ -72,14 +109,18 @@
       justify-content: center;
       gap: 8px;
       transition: background 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
+      margin-top: 4px;
     }
-    #login-btn:hover { background: #6a5acd; }
+    #login-btn:hover  { background: #6a5acd; }
     #login-btn:active { background: #5a4abf; }
+    #login-btn:disabled { background: #4a4a6a; cursor: not-allowed; }
     #login-error {
       color: #ff6b7a;
       font-size: 13px;
       text-align: center;
-      min-height: 18px;
+      min-height: 16px;
+      line-height: 1.4;
     }
     #login-spinner {
       display: none;
@@ -95,10 +136,19 @@
 </head>
 <body>
 
-<!-- ===== 로그인 화면 ===== -->
+<!-- ===== 스플래시 화면 (항상 먼저 표시) ===== -->
+<div id="splash-screen">
+  <img id="splash-logo" src="똑비서_로고_1.png" alt="똑비서" />
+  <div id="splash-title">똑비서</div>
+</div>
+
+<!-- ===== 로그인 화면 (세션 없을 때만 표시) ===== -->
 <div id="login-screen">
   <div id="login-box">
-    <div id="login-title">똑비서</div>
+    <div id="login-logo-wrap">
+      <img id="login-logo" src="똑비서_로고_1.png" alt="똑비서" />
+      <div id="login-title">똑비서</div>
+    </div>
     <form id="login-form" autocomplete="off">
       <input type="email" id="login-email" placeholder="이메일" required autocomplete="username" />
       <input type="password" id="login-password" placeholder="비밀번호" required autocomplete="current-password" />
@@ -132,7 +182,7 @@
     </div>
     <div id="selected-date-bar">
       <span id="selected-date-label"></span>
-      <div id="date-bar-actions">
+      <div id="date-bar-actions" style="visibility:hidden">
         <button id="cal-toggle-btn" title="달력 접기/펴기">
           <svg id="cal-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="18 15 12 9 6 15"></polyline>
@@ -302,8 +352,6 @@
       <span>반복 설정</span>
       <button id="repeat-modal-close">✕</button>
     </div>
-
-    <!-- 반복 타입 선택 -->
     <div id="rtype-row">
       <button class="rtype-btn active" data-type="none">없음</button>
       <button class="rtype-btn" data-type="daily">매일</button>
@@ -312,22 +360,15 @@
       <button class="rtype-btn" data-type="yearly">매년</button>
       <button class="rtype-btn" data-type="custom">커스텀</button>
     </div>
-
-    <!-- 매주: 요일 선택 -->
     <div id="repeat-weekly-wrap" class="repeat-detail hidden">
       <label class="repeat-sub-label">요일 선택</label>
       <div id="repeat-weekday-btns">
-        <button class="rday-btn" data-d="0">일</button>
-        <button class="rday-btn" data-d="1">월</button>
-        <button class="rday-btn" data-d="2">화</button>
-        <button class="rday-btn" data-d="3">수</button>
-        <button class="rday-btn" data-d="4">목</button>
-        <button class="rday-btn" data-d="5">금</button>
+        <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
+        <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
+        <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
         <button class="rday-btn" data-d="6">토</button>
       </div>
     </div>
-
-    <!-- 매월: N일 or X째주 Y요일 -->
     <div id="repeat-monthly-wrap" class="repeat-detail hidden">
       <div id="repeat-monthly-mode-row">
         <button class="rmonth-mode-btn active" data-mode="day">N일</button>
@@ -340,56 +381,38 @@
       </div>
       <div id="repeat-monthly-week-wrap" class="repeat-option hidden">
         <select id="repeat-monthly-week">
-          <option value="1">첫째</option>
-          <option value="2">둘째</option>
-          <option value="3">셋째</option>
-          <option value="4">넷째</option>
-          <option value="5">마지막</option>
+          <option value="1">첫째</option><option value="2">둘째</option>
+          <option value="3">셋째</option><option value="4">넷째</option><option value="5">마지막</option>
         </select>
         <select id="repeat-monthly-weekday">
-          <option value="0">일요일</option>
-          <option value="1">월요일</option>
-          <option value="2">화요일</option>
-          <option value="3">수요일</option>
-          <option value="4">목요일</option>
-          <option value="5">금요일</option>
+          <option value="0">일요일</option><option value="1">월요일</option><option value="2">화요일</option>
+          <option value="3">수요일</option><option value="4">목요일</option><option value="5">금요일</option>
           <option value="6">토요일</option>
         </select>
       </div>
     </div>
-
-    <!-- 매년: 월/일 선택 -->
     <div id="repeat-yearly-wrap" class="repeat-detail hidden">
       <div class="repeat-option">
         <label>매년</label>
         <select id="repeat-yearly-month">
-          <option value="1">1월</option><option value="2">2월</option>
-          <option value="3">3월</option><option value="4">4월</option>
-          <option value="5">5월</option><option value="6">6월</option>
-          <option value="7">7월</option><option value="8">8월</option>
-          <option value="9">9월</option><option value="10">10월</option>
-          <option value="11">11월</option><option value="12">12월</option>
+          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+          <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+          <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
         </select>
         <input type="number" id="repeat-yearly-day" min="1" max="31" placeholder="1" />
         <span>일</span>
       </div>
     </div>
-
-    <!-- 커스텀: 요일 복수 선택 -->
     <div id="repeat-custom-wrap" class="repeat-detail hidden">
       <label class="repeat-sub-label">요일 선택 (복수)</label>
       <div id="repeat-custom-day-btns">
-        <button class="rday-btn" data-d="0">일</button>
-        <button class="rday-btn" data-d="1">월</button>
-        <button class="rday-btn" data-d="2">화</button>
-        <button class="rday-btn" data-d="3">수</button>
-        <button class="rday-btn" data-d="4">목</button>
-        <button class="rday-btn" data-d="5">금</button>
+        <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
+        <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
+        <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
         <button class="rday-btn" data-d="6">토</button>
       </div>
     </div>
-
-    <!-- 종료일 -->
     <div class="repeat-option">
       <label class="repeat-end-label">
         <input type="checkbox" id="repeat-end-toggle" />
@@ -399,7 +422,6 @@
         <input type="date" id="repeat-end-date" />
       </div>
     </div>
-
     <div id="repeat-footer">
       <button id="repeat-cancel-btn" class="repeat-footer-btn cancel">취소</button>
       <button id="repeat-confirm-btn" class="repeat-footer-btn confirm">확인</button>
@@ -462,7 +484,7 @@
   </div>
 </div>
 
-<!-- ===== 반복 수정 시트 (action-box 내부 오버레이와 별도) ===== -->
+<!-- ===== 반복 수정 시트 ===== -->
 <div id="repeat-edit-overlay" class="hidden">
   <div id="repeat-edit-box">
     <div class="rds-title">반복 일정 수정</div>
