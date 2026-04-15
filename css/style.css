@@ -157,7 +157,7 @@ ul { list-style: none; }
 .todo-meta { display: flex; gap: 6px; margin-top: 3px; align-items: center; }
 .todo-memo { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.imp-badge { width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+.imp-badge { width: 4px; align-self: stretch; min-height: 28px; border-radius: 2px; flex-shrink: 0; }
 .imp-0 { background: transparent; }
 .imp-1 { background: var(--imp-1); }
 .imp-2 { background: var(--imp-2); }
@@ -166,7 +166,8 @@ ul { list-style: none; }
 /* 반복 일정 배지: 빨간 세로선 + 샛노란 별 */
 .imp-repeat {
   width: 4px;
-  height: 32px;
+  align-self: stretch;
+  min-height: 28px;
   border-radius: 2px;
   flex-shrink: 0;
   background: #e05c6a;
@@ -707,7 +708,7 @@ ul { list-style: none; }
 /* =============================================
    주간 체크 표시 아이콘
    ============================================= */
-.weekly-flag-icon { color: var(--accent); font-size: 11px; }
+.weekly-flag-icon { color: var(--accent); font-size: 14px; }
 #weekly-flag-label {
   display: flex; align-items: center; gap: 4px;
   font-size: 11px; color: var(--text-secondary);
@@ -1100,7 +1101,7 @@ select:focus { border-color: var(--accent); }
    체크리스트 아이콘 & 진행도 (할일/주간 탭)
    ============================================= */
 .checklist-icon {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--accent);
   margin-right: 2px;
 }
