@@ -214,6 +214,7 @@ function makeWeekTodoItem(todo, isDone) {
       } else {
         await toggleDone(todo.id, !todo.is_done);
       }
+      if (!todo.is_done) playCompleteSound(); // 완료 방향일 때만
       loadWeekly();
     } catch(e) { showToast('오류가 발생했어요'); }
   });
@@ -305,6 +306,7 @@ function initWeekItemGesture(el, todo) {
           } else {
             await toggleDone(todo.id, true);
           }
+          playCompleteSound();
           loadWeekly();
         }
         catch(e) { resetWeekItemStyle(el); showToast('오류가 발생했어요'); }

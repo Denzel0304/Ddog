@@ -228,7 +228,7 @@ function closeChecklistModal(save) {
         const masterId = isVirtual ? editingTodo._masterId : editingTodo.id;
         const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) : editingTodo.date;
         updateRepeatOnlyDate(masterId, dateStr, patch)
-          .then(() => { refreshCurrentTab(); updateMonthDots(); })
+          .then(() => { if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots(); })
           .catch(e => console.error(e));
       } else {
         // 일반 할일 또는 예외 행
@@ -236,6 +236,7 @@ function closeChecklistModal(save) {
           .then(() => {
             const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
             if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
+            if (isDone) playCompleteSound();
             refreshCurrentTab(); updateMonthDots();
           })
           .catch(e => console.error(e));

@@ -195,6 +195,7 @@ function initItemGesture(el, todo) {
       setTimeout(async () => {
         try {
           await toggleDone(todo.id, true);
+          playCompleteSound();
           const t = AppState.todos.find(t => t.id === todo.id);
           if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
           await loadTodos();

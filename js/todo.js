@@ -192,6 +192,7 @@ async function handleToggleDone(todo) {
       const t = AppState.todos.find(t => t.id === todo.id);
       if (t) { t.is_done = newDone; t.done_at = newDone ? new Date().toISOString() : null; }
     }
+    if (newDone) playCompleteSound();
     renderTodos();
     updateMonthDots();
   } catch(e) {
