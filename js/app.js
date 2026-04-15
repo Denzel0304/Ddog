@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     // 로그인 화면 표시
     document.getElementById('splash-screen').style.display = 'none';
-    document.getElementById('login-screen').style.display = '';
+    document.getElementById('login-screen').style.display = 'flex';
   }
 });
 
