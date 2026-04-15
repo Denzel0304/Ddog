@@ -8,6 +8,22 @@ function initSettings() {
   document.getElementById('settings-overlay').addEventListener('click', closeSettingsPanel);
   document.getElementById('menu-repeats').addEventListener('click', openRepeatsPanel);
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
+  document.getElementById('menu-logout').addEventListener('click', openLogoutConfirm);
+}
+
+function openLogoutConfirm() {
+  document.getElementById('logout-modal').style.display = 'flex';
+}
+
+function closeLogoutConfirm() {
+  document.getElementById('logout-modal').style.display = 'none';
+}
+
+async function doLogout() {
+  closeLogoutConfirm();
+  try { await getSupabaseClient().auth.signOut(); } catch(e) {}
+  clearSession();
+  location.reload();
 }
 
 function openSettingsPanel() {
