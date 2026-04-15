@@ -388,6 +388,7 @@ async function deleteRepeatOnlyDate(masterId, dateStr) {
       repeat_deleted:   true,
       created_at:       now,
       updated_at:       now,
+      user_id:          getCurrentUserId(),
     };
 
     if (AppState.isOnline) {
