@@ -6,8 +6,7 @@ const SUPABASE_URL  = 'https://rcfayyhlgxubuakxhrxy.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjZmF5eWhsZ3h1YnVha3hocnh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDQ4MjYsImV4cCI6MjA5MTQyMDgyNn0.j7YtqXfN0zxM-35RLGcjcw47uq83etMjJbHip4td4xg';
 const TABLE_NAME    = 'ddog';
 
-// Supabase REST 클라이언트 (직접 fetch)
-// 로그인 전: anon 키 사용 / 로그인 후: JWT 토큰으로 교체됨
+// Supabase REST 클라이언트
 const DB = {
   url: SUPABASE_URL,
   key: SUPABASE_KEY,
@@ -24,6 +23,16 @@ function setAuthToken(jwt) {
   DB.headers['Authorization'] = `Bearer ${jwt}`;
 }
 
+// JWT 페이로드에서 현재 유저 UUID 추출
+function getCurrentUserId() {
+  const session = loadSession();
+  if (!session || !session.access_token) return null;
+  try {
+    const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+    return payload.sub;
+  } catch(e) { return null; }
+}
+
 // Supabase JS SDK 클라이언트 (Realtime용)
 let supabaseClient = null;
 function getSupabaseClient() {
@@ -33,55 +42,58 @@ function getSupabaseClient() {
   return supabaseClient;
 }
 
-// ── 로그인 / 세션 관리 ──
+// ── 브루트포스 방어: 5회 실패 → 10분 잠금 ──
+const LOGIN_FAIL_KEY  = 'login_fails';
+const LOGIN_LOCK_KEY  = 'login_lock_until';
+const MAX_FAILS       = 5;
+const LOCK_MINUTES    = 10;
 
-// 로그인 처리: 이메일 + 비밀번호로 Supabase Auth에 요청
-async function signIn(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || '로그인 실패');
-  return data; // { access_token, refresh_token, expires_in, ... }
+function getLoginFails()   { return parseInt(localStorage.getItem(LOGIN_FAIL_KEY) || '0'); }
+function getLockUntil()    { return parseInt(localStorage.getItem(LOGIN_LOCK_KEY) || '0'); }
+
+function recordLoginFail() {
+  const fails = getLoginFails() + 1;
+  localStorage.setItem(LOGIN_FAIL_KEY, fails);
+  if (fails >= MAX_FAILS) {
+    localStorage.setItem(LOGIN_LOCK_KEY, Date.now() + LOCK_MINUTES * 60 * 1000);
+    localStorage.setItem(LOGIN_FAIL_KEY, '0');
+  }
 }
 
-// 세션 저장 (localStorage)
+function clearLoginFails() {
+  localStorage.removeItem(LOGIN_FAIL_KEY);
+  localStorage.removeItem(LOGIN_LOCK_KEY);
+}
+
+function getLoginLockRemaining() {
+  const until = getLockUntil();
+  if (!until) return 0;
+  const remaining = Math.ceil((until - Date.now()) / 1000);
+  return remaining > 0 ? remaining : 0;
+}
+
+// ── 세션 저장 / 로드 / 삭제 ──
 function saveSession(session) {
+  if (!session.expires_at && session.expires_in) {
+    session.expires_at = Math.floor(Date.now() / 1000) + session.expires_in;
+  }
   localStorage.setItem('sb_session', JSON.stringify(session));
 }
-
-// 세션 불러오기
 function loadSession() {
-  try {
-    return JSON.parse(localStorage.getItem('sb_session'));
-  } catch(e) { return null; }
+  try { return JSON.parse(localStorage.getItem('sb_session')); }
+  catch(e) { return null; }
 }
+function clearSession() { localStorage.removeItem('sb_session'); }
 
-// 세션 삭제 (로그아웃)
-function clearSession() {
-  localStorage.removeItem('sb_session');
-}
-
-// JWT 만료 여부 확인
 function isTokenExpired(session) {
   if (!session || !session.expires_at) return true;
-  // expires_at은 unix timestamp(초)
-  return Date.now() / 1000 > session.expires_at - 60; // 1분 여유
+  return Date.now() / 1000 > session.expires_at - 60;
 }
 
-// refresh_token으로 새 access_token 발급
 async function refreshSession(session) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
     method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: session.refresh_token })
   });
   const data = await res.json();
@@ -89,90 +101,92 @@ async function refreshSession(session) {
   return data;
 }
 
-// 앱 시작 시 세션 확인 → 유효하면 토큰 세팅 후 앱 진입, 없으면 로그인 화면 표시
+// ── 앱 시작 시 인증 확인 ──
+// 로컬 세션이 유효하면 즉시 true 반환 (스플래시만 잠깐 보임)
+// 만료된 경우만 Supabase에 refresh 요청
 async function initAuth() {
-  const loginScreen = document.getElementById('login-screen');
-  const app = document.getElementById('app');
-
   let session = loadSession();
+  if (!session || !session.access_token) return false;
 
-  if (session) {
-    // 만료됐으면 갱신 시도
-    if (isTokenExpired(session)) {
-      try {
-        session = await refreshSession(session);
-        saveSession(session);
-      } catch(e) {
-        clearSession();
-        session = null;
-      }
+  if (isTokenExpired(session)) {
+    try {
+      session = await refreshSession(session);
+      saveSession(session);
+    } catch(e) {
+      clearSession();
+      return false;
     }
   }
 
-  if (session && session.access_token) {
-    // 세션 유효 → JWT로 헤더 교체 후 앱 표시
-    setAuthToken(session.access_token);
-    // Supabase SDK도 세션 세팅
+  setAuthToken(session.access_token);
+  try {
     await getSupabaseClient().auth.setSession({
       access_token: session.access_token,
       refresh_token: session.refresh_token
     });
-    loginScreen.style.display = 'none';
-    app.style.display = '';
-    return true;
-  } else {
-    // 세션 없음 → 로그인 화면 표시
-    loginScreen.style.display = '';
-    app.style.display = 'none';
-    return false;
-  }
+  } catch(e) {}
+  return true;
 }
 
-// 로그인 폼 이벤트 연결
+// ── 로그인 폼 이벤트 연결 ──
 function initLoginForm() {
-  const form = document.getElementById('login-form');
-  const emailInput = document.getElementById('login-email');
+  const emailInput    = document.getElementById('login-email');
   const passwordInput = document.getElementById('login-password');
-  const errorEl = document.getElementById('login-error');
-  const btnText = document.getElementById('login-btn-text');
-  const spinner = document.getElementById('login-spinner');
+  const errorEl       = document.getElementById('login-error');
+  const btnText       = document.getElementById('login-btn-text');
+  const spinner       = document.getElementById('login-spinner');
+  const submitBtn     = document.getElementById('login-btn');
 
-  form.addEventListener('submit', async (e) => {
+  function updateLockUI() {
+    const remaining = getLoginLockRemaining();
+    if (remaining > 0) {
+      const mins = Math.ceil(remaining / 60);
+      errorEl.textContent = `로그인 시도가 너무 많아요. ${mins}분 후 다시 시도해주세요.`;
+      submitBtn.disabled = true;
+      setTimeout(updateLockUI, 15000);
+    } else {
+      submitBtn.disabled = false;
+      if (errorEl.textContent.includes('분 후')) errorEl.textContent = '';
+    }
+  }
+  updateLockUI();
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    const lockRemaining = getLoginLockRemaining();
+    if (lockRemaining > 0) {
+      errorEl.textContent = `${Math.ceil(lockRemaining / 60)}분 후 다시 시도해주세요.`;
+      return;
+    }
+
     errorEl.textContent = '';
     btnText.textContent = '';
     spinner.style.display = 'inline-block';
+    submitBtn.disabled = true;
 
     try {
       const session = await signIn(emailInput.value.trim(), passwordInput.value);
+      clearLoginFails();
       saveSession(session);
       setAuthToken(session.access_token);
       await getSupabaseClient().auth.setSession({
         access_token: session.access_token,
         refresh_token: session.refresh_token
       });
-
-      // 앱 초기화 및 전환
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = '';
-      await initSync();
-      initCalendar();
-      initModal();
-      initRepeat();
-      initGesturePopup();
-      initSearch();
-      initWeekly();
-      initSettings();
-      initTabs();
-      loadTodos();
-      initBackButton();
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          document.getElementById('date-bar-actions').style.visibility = 'visible';
-        });
-      });
+      await showApp();
     } catch(err) {
-      errorEl.textContent = '이메일 또는 비밀번호가 올바르지 않아요';
+      recordLoginFail();
+      const lockRemain = getLoginLockRemaining();
+      if (lockRemain > 0) {
+        errorEl.textContent = `로그인 시도가 너무 많아요. ${LOCK_MINUTES}분 후 다시 시도해주세요.`;
+        submitBtn.disabled = true;
+        setTimeout(updateLockUI, 15000);
+      } else {
+        const left = MAX_FAILS - getLoginFails();
+        errorEl.textContent = `이메일 또는 비밀번호가 올바르지 않아요. (${left}회 남음)`;
+        submitBtn.disabled = false;
+      }
     } finally {
       btnText.textContent = '로그인';
       spinner.style.display = 'none';
@@ -180,23 +194,59 @@ function initLoginForm() {
   });
 }
 
+async function signIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || '로그인 실패');
+  return data;
+}
+
+// 스플래시 숨기고 앱 표시 (페이드 전환)
+async function showApp() {
+  const splash = document.getElementById('splash-screen');
+  const login  = document.getElementById('login-screen');
+  const app    = document.getElementById('app');
+
+  // 앱 먼저 준비 (숨긴 상태로)
+  app.style.display = '';
+  app.style.opacity = '0';
+
+  // bootApp 실행
+  await bootApp();
+
+  // 스플래시/로그인 페이드아웃, 앱 페이드인
+  if (splash) { splash.style.transition = 'opacity 0.3s'; splash.style.opacity = '0'; }
+  if (login)  { login.style.transition  = 'opacity 0.3s'; login.style.opacity  = '0'; }
+  app.style.transition = 'opacity 0.3s';
+  app.style.opacity = '1';
+
+  setTimeout(() => {
+    if (splash) splash.style.display = 'none';
+    if (login)  login.style.display  = 'none';
+    app.style.transition = '';
+    app.style.opacity = '';
+  }, 320);
+}
+
 // 전역 앱 상태
 const AppState = {
-  selectedDate: toLocalDateStr(new Date()),  // 'YYYY-MM-DD'
+  selectedDate: toLocalDateStr(new Date()),
   calYear:  new Date().getFullYear(),
-  calMonth: new Date().getMonth() + 1,       // 1~12
-  todos: [],           // 현재 날짜 할일 목록
-  dotDates: new Set(), // 달력 점 표시용 날짜 set
-  pastUndoneDates: new Set(), // 과거 미완료 날짜 set
-  editingId: null,     // 수정 중인 todo id
+  calMonth: new Date().getMonth() + 1,
+  todos: [],
+  dotDates: new Set(),
+  pastUndoneDates: new Set(),
+  editingId: null,
   isOnline: navigator.onLine,
 };
 
-// 온/오프라인 상태 감지
 window.addEventListener('online',  () => { AppState.isOnline = true;  onOnline(); });
 window.addEventListener('offline', () => { AppState.isOnline = false; });
 
-// 날짜를 로컬 기준 YYYY-MM-DD 문자열로 변환
 function toLocalDateStr(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -204,33 +254,19 @@ function toLocalDateStr(date) {
   return `${y}-${m}-${d}`;
 }
 
-// 오늘 날짜 문자열
-function todayStr() {
-  return toLocalDateStr(new Date());
-}
+function todayStr()    { return toLocalDateStr(new Date()); }
 
-// 내일 날짜 문자열
 function tomorrowStr() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return toLocalDateStr(d);
+  const d = new Date(); d.setDate(d.getDate() + 1); return toLocalDateStr(d);
 }
 
-// N일 전 날짜 문자열
 function daysBeforeStr(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() - n);
-  return toLocalDateStr(d);
+  const d = new Date(dateStr + 'T00:00:00'); d.setDate(d.getDate() - n); return toLocalDateStr(d);
 }
 
-// 토스트 알림
 function showToast(msg, duration = 2000) {
   let el = document.getElementById('toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'toast';
-    document.body.appendChild(el);
-  }
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), duration);

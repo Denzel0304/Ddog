@@ -5,17 +5,21 @@
 let currentTab = 'todo';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. 로그인 폼 이벤트 연결
+  // 로그인 폼 이벤트 연결 (로그인 화면이 표시될 경우를 위해)
   initLoginForm();
 
-  // 2. 세션 확인 → 유효하면 앱 초기화, 없으면 로그인 화면 표시
+  // 세션 확인 → 유효하면 즉시 앱 진입, 없으면 로그인 화면
   const authed = await initAuth();
-  if (!authed) return; // 로그인 화면에서 대기 (initLoginForm이 성공 시 앱 초기화)
-
-  // 3. 앱 초기화
-  await bootApp();
+  if (authed) {
+    await showApp();
+  } else {
+    // 로그인 화면 표시
+    document.getElementById('splash-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = '';
+  }
 });
 
+// 앱 전체 초기화 (로그인 성공 후 또는 세션 복원 후 호출)
 async function bootApp() {
   await initSync();
   initCalendar();
@@ -36,7 +40,7 @@ async function bootApp() {
   });
 }
 
-// ── 뒤로가기 → 팝업/패널 닫기, 탭 복귀, 종료 ──
+// ── 뒤로가기 처리 ──
 function initBackButton() {
   history.replaceState({ page: 'base' }, '');
   history.pushState({ page: 'app' }, '');
@@ -68,34 +72,15 @@ function hasOpenPopup() {
 }
 
 function closeTopPopup() {
-  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) {
-    closeChecklistModal(false); return;
-  }
-  if (!document.getElementById('repeat-edit-overlay').classList.contains('hidden')) {
-    closeRepeatEditOverlay(); return;
-  }
-  if (!document.getElementById('repeat-overlay').classList.contains('hidden')) {
-    document.getElementById('repeat-overlay').classList.add('hidden');
-    return;
-  }
-  if (!document.getElementById('action-popup').classList.contains('hidden')) {
-    closeActionPopup(); return;
-  }
-  if (!document.getElementById('year-popup').classList.contains('hidden')) {
-    closeYearPopup(); return;
-  }
-  if (!document.getElementById('month-popup').classList.contains('hidden')) {
-    closeMonthPopup(); return;
-  }
-  if (!document.getElementById('modal-overlay').classList.contains('hidden')) {
-    closeModal(); return;
-  }
-  if (document.getElementById('repeats-panel').classList.contains('open')) {
-    closeRepeatsPanel(); return;
-  }
-  if (document.getElementById('settings-panel').classList.contains('open')) {
-    closeSettingsPanelOnly(); return;
-  }
+  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) { closeChecklistModal(false); return; }
+  if (!document.getElementById('repeat-edit-overlay').classList.contains('hidden')) { closeRepeatEditOverlay(); return; }
+  if (!document.getElementById('repeat-overlay').classList.contains('hidden')) { document.getElementById('repeat-overlay').classList.add('hidden'); return; }
+  if (!document.getElementById('action-popup').classList.contains('hidden')) { closeActionPopup(); return; }
+  if (!document.getElementById('year-popup').classList.contains('hidden')) { closeYearPopup(); return; }
+  if (!document.getElementById('month-popup').classList.contains('hidden')) { closeMonthPopup(); return; }
+  if (!document.getElementById('modal-overlay').classList.contains('hidden')) { closeModal(); return; }
+  if (document.getElementById('repeats-panel').classList.contains('open')) { closeRepeatsPanel(); return; }
+  if (document.getElementById('settings-panel').classList.contains('open')) { closeSettingsPanelOnly(); return; }
 }
 
 function initTabs() {
@@ -114,12 +99,12 @@ function switchTab(tabName) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
-  if (tabName === 'todo') { loadTodos(); updateMonthDots(); }
+  if (tabName === 'todo')        { loadTodos(); updateMonthDots(); }
   else if (tabName === 'weekly') { weekOffset = 1; loadWeekly(); }
   else if (tabName === 'search') { setTimeout(() => document.getElementById('search-input').focus(), 200); }
 }
 
 function refreshCurrentTab() {
-  if (currentTab === 'todo') { loadTodos(); updateMonthDots(); }
+  if (currentTab === 'todo')        { loadTodos(); updateMonthDots(); }
   else if (currentTab === 'weekly') { loadWeekly(); }
 }

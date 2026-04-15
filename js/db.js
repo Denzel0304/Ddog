@@ -195,6 +195,7 @@ async function insertTodo(data) {
     checklist:        data.checklist       || null,
     created_at:       now,
     updated_at:       now,
+    user_id:          getCurrentUserId(),
   };
 
   if (AppState.isOnline) {
@@ -235,6 +236,7 @@ async function insertRemindCopy(original, remindDate, dateLabel) {
     sort_order:  0,
     created_at:  now,
     updated_at:  now,
+    user_id:     getCurrentUserId(),
   };
 
   if (AppState.isOnline) {
@@ -498,6 +500,7 @@ async function insertRepeatException(masterId, dateStr, isDone = false) {
     repeat_exception: true,
     created_at:       now,
     updated_at:       now,
+    user_id:          getCurrentUserId(),
   };
 
   if (AppState.isOnline) {
@@ -551,6 +554,7 @@ async function updateRepeatOnlyDate(masterId, dateStr, data) {
       repeat_exception: true,
       created_at:       now,
       updated_at:       now,
+      user_id:          getCurrentUserId(),
     };
 
     if (AppState.isOnline) {
@@ -620,6 +624,7 @@ async function updateRepeatFromDate(masterId, dateStr, data) {
     repeat_exception: false,
     created_at:      now,
     updated_at:      now,
+    user_id:         getCurrentUserId(),
   };
 
   if (AppState.isOnline) {
