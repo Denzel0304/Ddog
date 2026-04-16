@@ -69,10 +69,12 @@ function renderTodos() {
 }
 
 // 활성 할일 정렬: 반복일정 최상단(나중 추가순) → 중요도 높은순 → sort_order
+// ※ 반복 판정에 repeat_master_id를 포함 → 예외 행(repeat_type='none', repeat_master_id 있음)도
+//   반복 그룹으로 간주되어 항상 최상단에 위치 (중요도 높음보다도 위)
 function sortActiveTodos(todos) {
   return [...todos].sort((a, b) => {
-    const aIsRepeat = !!(a.repeat_type && a.repeat_type !== 'none');
-    const bIsRepeat = !!(b.repeat_type && b.repeat_type !== 'none');
+    const aIsRepeat = !!(a.repeat_type && a.repeat_type !== 'none') || !!a.repeat_master_id;
+    const bIsRepeat = !!(b.repeat_type && b.repeat_type !== 'none') || !!b.repeat_master_id;
     if (aIsRepeat !== bIsRepeat) return aIsRepeat ? -1 : 1;
     if (aIsRepeat && bIsRepeat) {
       // 둘 다 반복: 나중에 추가한 것이 위 (created_at 내림차순)
