@@ -203,56 +203,67 @@ window.addEventListener('beforeunload', async () => {
 // ── Realtime 구독 ──
 
 let realtimeChannel = null;
-// [수정 ①] 채널 재생성 중복 실행 방지 플래그
-let realtimeRestarting = false;
+let realtimeRestartTimer = null;
 
 async function startRealtime() {
-  // [수정 ①] 이미 재시작 중이면 무시 — visibilitychange 연속 호출 시 채널 충돌 방지
-  if (realtimeRestarting) return;
-  realtimeRestarting = true;
-
-  try {
-    const client = getSupabaseClient();
-
-    if (realtimeChannel) {
-      try {
-        await client.removeChannel(realtimeChannel);
-      } catch(e) {
-        console.warn('[realtime] removeChannel 실패 (무시)', e);
-      }
-      realtimeChannel = null;
-      // [수정 ①] SDK 내부 정리가 완전히 끝날 때까지 잠깐 대기
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    // [수정 ①] 채널 이름에 타임스탬프를 붙여 매번 고유하게 생성
-    //           → 이전 채널이 서버에서 미처 정리되지 않아도 새 채널과 충돌하지 않음
-    const channelName = `ddog-changes-${Date.now()}`;
-
-    realtimeChannel = client
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: TABLE_NAME },
-        async payload => {
-          console.log('[realtime]', payload.eventType, payload);
-          await handleRealtimeEvent(payload);
-        }
-      )
-      .subscribe(status => {
-        console.log('[realtime] status:', status);
-
-        // [수정 ③] 채널이 CHANNEL_ERROR / TIMED_OUT 상태가 되면 bgSync로 즉시 폴백
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('[realtime] 채널 오류 → bgSync 폴백');
-          if (AppState.isOnline) {
-            bgSync().catch(e => console.warn('[sync] bgSync 폴백 실패', e));
-          }
-        }
-      });
-  } finally {
-    realtimeRestarting = false;
+  // 이미 진행 중인 재시작 타이머가 있으면 취소하고 새로 시작
+  // (플래그 방식은 hang 시 영구 고착되므로 사용하지 않음)
+  if (realtimeRestartTimer) {
+    clearTimeout(realtimeRestartTimer);
+    realtimeRestartTimer = null;
   }
+
+  const client = getSupabaseClient();
+
+  // 기존 채널은 await 없이 fire-and-forget으로 제거
+  // (removeChannel이 hang해도 새 채널 생성을 막지 않음)
+  if (realtimeChannel) {
+    const oldChannel = realtimeChannel;
+    realtimeChannel = null;
+    client.removeChannel(oldChannel).catch(e =>
+      console.warn('[realtime] removeChannel 실패 (무시)', e)
+    );
+  }
+
+  // 채널 이름에 타임스탬프를 붙여 매번 고유하게 생성
+  const channelName = `ddog-changes-${Date.now()}`;
+
+  realtimeChannel = client
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: TABLE_NAME },
+      async payload => {
+        console.log('[realtime]', payload.eventType, payload);
+        await handleRealtimeEvent(payload);
+      }
+    )
+    .subscribe(status => {
+      console.log('[realtime] status:', status);
+
+      if (status === 'SUBSCRIBED') {
+        // 정상 연결 — 혹시 남아있던 재시작 예약 취소
+        if (realtimeRestartTimer) {
+          clearTimeout(realtimeRestartTimer);
+          realtimeRestartTimer = null;
+        }
+      }
+
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('[realtime] 채널 오류/종료 → 5초 후 재연결');
+        // bgSync로 즉시 화면 갱신 (공백 방지)
+        if (AppState.isOnline) {
+          bgSync().catch(e => console.warn('[sync] bgSync 폴백 실패', e));
+        }
+        // 5초 후 채널 재연결 시도 (재귀적 재시도)
+        if (!realtimeRestartTimer) {
+          realtimeRestartTimer = setTimeout(() => {
+            realtimeRestartTimer = null;
+            startRealtime();
+          }, 5000);
+        }
+      }
+    });
 }
 
 async function handleRealtimeEvent(payload) {
@@ -325,13 +336,11 @@ async function initSync() {
   await startRealtime();
 
   // ── 포그라운드 복귀 시 재연결 (모바일 백그라운드 복귀 대응) ──
-  document.addEventListener('visibilitychange', async () => {
+  document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       console.log('[sync] 포그라운드 복귀 → Realtime 재연결 + bgSync');
-      // [수정 ①] startRealtime 내부에서 realtimeRestarting 플래그로 중복 실행 차단
-      await startRealtime();
+      startRealtime();
       if (AppState.isOnline) {
-        // [수정 ②] bgSync 실패해도 화면 갱신은 반드시 수행
         bgSync().catch(e => {
           console.warn('[sync] bg sync 실패', e);
           refreshCurrentTab();
