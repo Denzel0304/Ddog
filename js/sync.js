@@ -204,10 +204,11 @@ window.addEventListener('beforeunload', async () => {
 
 let realtimeChannel = null;
 
-function startRealtime() {
+async function startRealtime() {
   const client = getSupabaseClient();
   if (realtimeChannel) {
-    client.removeChannel(realtimeChannel);
+    await client.removeChannel(realtimeChannel);
+    realtimeChannel = null;
   }
 
   realtimeChannel = client
@@ -287,6 +288,15 @@ async function initSync() {
   }
 
   startRealtime();
+
+  // ── 포그라운드 복귀 시 재연결 (모바일 백그라운드 복귀 대응) ──
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+      console.log('[sync] 포그라운드 복귀 → Realtime 재연결 + bgSync');
+      await startRealtime();
+      if (AppState.isOnline) await bgSync();
+    }
+  });
 }
 
 // ── 백그라운드 동기화 ──
