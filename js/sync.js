@@ -203,27 +203,56 @@ window.addEventListener('beforeunload', async () => {
 // ── Realtime 구독 ──
 
 let realtimeChannel = null;
+// [수정 ①] 채널 재생성 중복 실행 방지 플래그
+let realtimeRestarting = false;
 
 async function startRealtime() {
-  const client = getSupabaseClient();
-  if (realtimeChannel) {
-    await client.removeChannel(realtimeChannel);
-    realtimeChannel = null;
-  }
+  // [수정 ①] 이미 재시작 중이면 무시 — visibilitychange 연속 호출 시 채널 충돌 방지
+  if (realtimeRestarting) return;
+  realtimeRestarting = true;
 
-  realtimeChannel = client
-    .channel('ddog-changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: TABLE_NAME },
-      async payload => {
-        console.log('[realtime]', payload.eventType, payload);
-        await handleRealtimeEvent(payload);
+  try {
+    const client = getSupabaseClient();
+
+    if (realtimeChannel) {
+      try {
+        await client.removeChannel(realtimeChannel);
+      } catch(e) {
+        console.warn('[realtime] removeChannel 실패 (무시)', e);
       }
-    )
-    .subscribe(status => {
-      console.log('[realtime] status:', status);
-    });
+      realtimeChannel = null;
+      // [수정 ①] SDK 내부 정리가 완전히 끝날 때까지 잠깐 대기
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // [수정 ①] 채널 이름에 타임스탬프를 붙여 매번 고유하게 생성
+    //           → 이전 채널이 서버에서 미처 정리되지 않아도 새 채널과 충돌하지 않음
+    const channelName = `ddog-changes-${Date.now()}`;
+
+    realtimeChannel = client
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: TABLE_NAME },
+        async payload => {
+          console.log('[realtime]', payload.eventType, payload);
+          await handleRealtimeEvent(payload);
+        }
+      )
+      .subscribe(status => {
+        console.log('[realtime] status:', status);
+
+        // [수정 ③] 채널이 CHANNEL_ERROR / TIMED_OUT 상태가 되면 bgSync로 즉시 폴백
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[realtime] 채널 오류 → bgSync 폴백');
+          if (AppState.isOnline) {
+            bgSync().catch(e => console.warn('[sync] bgSync 폴백 실패', e));
+          }
+        }
+      });
+  } finally {
+    realtimeRestarting = false;
+  }
 }
 
 async function handleRealtimeEvent(payload) {
@@ -278,8 +307,14 @@ async function initSync() {
     await initialSync();
   } else {
     // 로컬캐시 있음 → 바로 렌더링 후 백그라운드에서 최신화
+    // [수정 ②] bgSync 실패 시 콘솔 경고만 내고 조용히 넘어가던 것을
+    //           실패해도 refreshCurrentTab/updateMonthDots는 반드시 호출되도록 보장
     if (AppState.isOnline) {
-      bgSync().catch(e => console.warn('[sync] bg sync 실패', e));
+      bgSync().catch(e => {
+        console.warn('[sync] bg sync 실패', e);
+        refreshCurrentTab();
+        updateMonthDots();
+      });
     }
   }
 
@@ -287,14 +322,22 @@ async function initSync() {
     await flushQueue();
   }
 
-  startRealtime();
+  await startRealtime();
 
   // ── 포그라운드 복귀 시 재연결 (모바일 백그라운드 복귀 대응) ──
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
       console.log('[sync] 포그라운드 복귀 → Realtime 재연결 + bgSync');
+      // [수정 ①] startRealtime 내부에서 realtimeRestarting 플래그로 중복 실행 차단
       await startRealtime();
-      if (AppState.isOnline) await bgSync();
+      if (AppState.isOnline) {
+        // [수정 ②] bgSync 실패해도 화면 갱신은 반드시 수행
+        bgSync().catch(e => {
+          console.warn('[sync] bg sync 실패', e);
+          refreshCurrentTab();
+          updateMonthDots();
+        });
+      }
     }
   });
 }
