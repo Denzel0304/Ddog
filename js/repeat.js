@@ -223,14 +223,14 @@ function dataToRepeatConfig(todo) {
   try { meta = JSON.parse(todo.repeat_meta || '{}'); } catch(e) {}
   return {
     type:        todo.repeat_type,
-    weekdays:    meta.weekdays    || [],
-    monthMode:   meta.monthMode   || 'day',
-    monthDay:    todo.repeat_day  || meta.yearlyDay || 1,
-    monthWeek:   meta.monthWeek   || 1,
-    monthWeekday:meta.monthWeekday ?? 1,
-    yearlyMonth: meta.yearlyMonth || 1,
-    yearlyDay:   meta.yearlyDay   || 1,
-    customDays:  meta.customDays  || [],
+    weekdays:    meta.weekdays     != null ? meta.weekdays     : [],
+    monthMode:   meta.monthMode    != null ? meta.monthMode    : 'day',
+    monthDay:    todo.repeat_day   != null ? todo.repeat_day   : (meta.monthDay != null ? meta.monthDay : 1),
+    monthWeek:   meta.monthWeek    != null ? meta.monthWeek    : 1,
+    monthWeekday:meta.monthWeekday != null ? meta.monthWeekday : 1,
+    yearlyMonth: meta.yearlyMonth  != null ? meta.yearlyMonth  : 1,
+    yearlyDay:   meta.yearlyDay    != null ? meta.yearlyDay    : 1,
+    customDays:  meta.customDays   != null ? meta.customDays   : [],
     endDate:     todo.repeat_end_date || null,
   };
 }

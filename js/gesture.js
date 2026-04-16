@@ -201,10 +201,14 @@ function initItemGesture(el, todo) {
       el.style.opacity = '0';
       setTimeout(async () => {
         try {
-          await toggleDone(todo.id, true);
+          if (todo._virtual) {
+            await insertRepeatException(todo._masterId, todo.date || AppState.selectedDate, true);
+          } else {
+            await toggleDone(todo.id, true);
+            const t = AppState.todos.find(t => t.id === todo.id);
+            if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
+          }
           playCompleteSound();
-          const t = AppState.todos.find(t => t.id === todo.id);
-          if (t) { t.is_done = true; t.done_at = new Date().toISOString(); }
           await loadTodos();
           updateMonthDots();
         } catch(e) { resetItemStyle(el); showToast('오류가 발생했어요'); }

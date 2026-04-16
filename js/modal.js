@@ -282,12 +282,18 @@ function closeChecklistModal(save) {
           const masterId = isVirtual ? editingTodo._masterId : editingTodo.id;
           const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) : editingTodo.date;
           updateRepeatOnlyDate(masterId, dateStr, patch)
-            .then(() => { if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots(); })
+            .then(() => {
+              // editingTodo.checklist 동기화 → 이후 메인 저장 시 isFormChanged = false 보장
+              if (AppState.editingTodo) AppState.editingTodo.checklist = checklistJson;
+              if (isDone) playCompleteSound();
+              refreshCurrentTab(); updateMonthDots();
+            })
             .catch(e => console.error(e));
         } else {
           // 예외 행(repeat_master_id 있음)
           updateTodo(AppState.editingId, patch)
             .then(() => {
+              if (AppState.editingTodo) AppState.editingTodo.checklist = checklistJson;
               const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
               if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
               if (isDone) playCompleteSound();
@@ -301,6 +307,7 @@ function closeChecklistModal(save) {
         // 일반 할일 (반복 아님)
         updateTodo(AppState.editingId, patch)
           .then(() => {
+            if (AppState.editingTodo) AppState.editingTodo.checklist = checklistJson;
             const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
             if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
             if (isDone) playCompleteSound();
@@ -555,7 +562,7 @@ function isFormChanged(editingTodo, title, memo, date, importance, remind, weekl
     // 양쪽 모두 동일한 키셋으로 정규화하여 비교
     // (dataToRepeatConfig → repeatConfigToData 변환 시 키가 추가될 수 있으므로
     //  원본에 없는 키는 기본값과 같으면 무시)
-    const DEFAULT_META = { weekdays: [], monthMode: 'day', monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 0, customDays: [] };
+    const DEFAULT_META = { weekdays: [], monthMode: 'day', monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 1, customDays: [] };
     const normalizeMeta = (raw) => {
       const parsed = JSON.parse(raw || '{}');
       const result = {};
