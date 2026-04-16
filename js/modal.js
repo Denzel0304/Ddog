@@ -552,8 +552,20 @@ function isFormChanged(editingTodo, title, memo, date, importance, remind, weekl
   if ((editingTodo.repeat_day      || null)   !== (repeatData.repeat_day      || null))   return true;
 
   try {
-    const oldMeta = JSON.stringify(JSON.parse(editingTodo.repeat_meta || '{}'));
-    const newMeta = JSON.stringify(JSON.parse(repeatData.repeat_meta  || '{}'));
+    // 양쪽 모두 동일한 키셋으로 정규화하여 비교
+    // (dataToRepeatConfig → repeatConfigToData 변환 시 키가 추가될 수 있으므로
+    //  원본에 없는 키는 기본값과 같으면 무시)
+    const DEFAULT_META = { weekdays: [], monthMode: 'day', monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 0, customDays: [] };
+    const normalizeMeta = (raw) => {
+      const parsed = JSON.parse(raw || '{}');
+      const result = {};
+      Object.keys(DEFAULT_META).forEach(k => {
+        result[k] = parsed[k] !== undefined ? parsed[k] : DEFAULT_META[k];
+      });
+      return JSON.stringify(result);
+    };
+    const oldMeta = normalizeMeta(editingTodo.repeat_meta);
+    const newMeta = normalizeMeta(repeatData.repeat_meta);
     if (oldMeta !== newMeta) return true;
   } catch(e) {
     if ((editingTodo.repeat_meta || '') !== (repeatData.repeat_meta || '')) return true;
