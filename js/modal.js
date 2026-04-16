@@ -244,7 +244,9 @@ function closeChecklistModal(save) {
         updateChecklistUI();
         document.getElementById('checklist-overlay').classList.add('hidden');
 
+        _checklistSavePending = true; // 취소 시 롤백을 위한 플래그
         openRepeatEditOverlay(async (mode) => {
+          _checklistSavePending = false;
           try {
             if (mode === 'only') {
               await updateRepeatOnlyDate(masterId, dateStr, patch);
@@ -253,11 +255,20 @@ function closeChecklistModal(save) {
             } else {
               await updateRepeatAll(masterId, patch);
             }
+            // ── 저장 완료 후 editingTodo 동기화 → 메인 저장 시 중복 팝업 방지 ──
+            if (AppState.editingTodo) {
+              AppState.editingTodo = { ...AppState.editingTodo, checklist: checklistJson };
+            }
             if (isDone) playCompleteSound();
             refreshCurrentTab();
             updateMonthDots();
             showToast('체크리스트 저장됐어요 ✓');
           } catch(e) {
+            // 저장 실패 시 checklistItems 롤백
+            checklistItems = _checklistBackup;
+            if (AppState.editingTodo) {
+              AppState.editingTodo = { ...AppState.editingTodo, checklist: AppState.editingTodo.checklist };
+            }
             showToast('저장 실패. 다시 시도해주세요');
             console.error(e);
           }
@@ -270,7 +281,11 @@ function closeChecklistModal(save) {
           const masterId = isVirtual ? editingTodo._masterId : editingTodo.id;
           const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) : editingTodo.date;
           updateRepeatOnlyDate(masterId, dateStr, patch)
-            .then(() => { if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots(); })
+            .then(() => {
+              // 저장 완료 후 editingTodo 동기화
+              if (AppState.editingTodo) AppState.editingTodo = { ...AppState.editingTodo, checklist: checklistJson };
+              if (isDone) playCompleteSound(); refreshCurrentTab(); updateMonthDots();
+            })
             .catch(e => console.error(e));
         } else {
           // 예외 행(repeat_master_id 있음)
@@ -278,6 +293,8 @@ function closeChecklistModal(save) {
             .then(() => {
               const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
               if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
+              // 저장 완료 후 editingTodo 동기화
+              if (AppState.editingTodo) AppState.editingTodo = { ...AppState.editingTodo, checklist: checklistJson };
               if (isDone) playCompleteSound();
               refreshCurrentTab(); updateMonthDots();
             })
@@ -291,6 +308,8 @@ function closeChecklistModal(save) {
           .then(() => {
             const idx = AppState.todos.findIndex(t => t.id === AppState.editingId);
             if (idx !== -1) AppState.todos[idx] = { ...AppState.todos[idx], ...patch };
+            // 저장 완료 후 editingTodo 동기화
+            if (AppState.editingTodo) AppState.editingTodo = { ...AppState.editingTodo, checklist: checklistJson };
             if (isDone) playCompleteSound();
             refreshCurrentTab(); updateMonthDots();
           })
@@ -479,6 +498,7 @@ function initChecklistItemDrag(handle, container, itemId) {
 // ─── 반복 수정 오버레이 ───
 
 let repeatEditCallback = null;
+let _checklistSavePending = false; // 리스트 저장 흐름에서 repeat overlay를 연 경우 플래그
 
 function initRepeatEditOverlay() {
   document.getElementById('repeat-edit-overlay').addEventListener('click', e => {
@@ -503,6 +523,12 @@ function openRepeatEditOverlay(callback) {
 
 function closeRepeatEditOverlay() {
   document.getElementById('repeat-edit-overlay').classList.add('hidden');
+  // 리스트 저장 흐름에서 취소한 경우 checklistItems 롤백
+  if (_checklistSavePending) {
+    checklistItems = _checklistBackup;
+    _checklistSavePending = false;
+    updateChecklistUI();
+  }
   repeatEditCallback = null;
 }
 
@@ -533,6 +559,23 @@ function isFormChanged(editingTodo, title, memo, date, importance, remind, weekl
     if (oldMeta !== newMeta) return true;
   } catch(e) {
     if ((editingTodo.repeat_meta || '') !== (repeatData.repeat_meta || '')) return true;
+  }
+
+  // 체크리스트 비교: 리스트 모달에서 이미 저장한 경우 editingTodo.checklist가 갱신되어 있으므로
+  // 현재 checklistItems와 같으면 변경 없음으로 판단 → 메인 저장 시 중복 팝업 방지
+  const validItems = checklistItems.filter(it => it.text && it.text.trim());
+  const currentChecklistJson = validItems.length > 0 ? JSON.stringify(validItems) : null;
+  if ((editingTodo.checklist || null) !== currentChecklistJson) {
+    // 세밀 비교: 내용(텍스트/순서)만 비교, 체크 상태는 제외
+    try {
+      const oldItems = JSON.parse(editingTodo.checklist || '[]').filter(it => it.text && it.text.trim());
+      const newItems = validItems;
+      const structureChanged = oldItems.length !== newItems.length ||
+        oldItems.some((it, i) => it.id !== newItems[i]?.id || it.text !== newItems[i]?.text);
+      if (structureChanged) return true;
+    } catch(e) {
+      return true;
+    }
   }
 
   return false;
