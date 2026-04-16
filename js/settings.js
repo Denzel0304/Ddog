@@ -21,7 +21,7 @@ function closeLogoutConfirm() {
 
 async function doLogout() {
   closeLogoutConfirm();
-  try { await getSupabaseClient().auth.signOut(); } catch(e) {}
+  try { await getSupabaseClient().auth.signOut({ scope: 'local' }); } catch(e) {}
   clearSession();
   location.reload();
 }
