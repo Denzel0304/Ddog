@@ -269,9 +269,28 @@ async function startRealtime() {
 async function handleRealtimeEvent(payload) {
   const { eventType, new: newRow, old: oldRow } = payload;
 
-  if (eventType === 'INSERT' || eventType === 'UPDATE') {
+  if (eventType === 'INSERT') {
     if (newRow && newRow.id) {
       await idbPut(newRow);
+    }
+  } else if (eventType === 'UPDATE') {
+    // REPLICA IDENTITY DEFAULT 환경에서는 newRow의 일부 컬럼(is_done 등)이
+    // 누락될 수 있으므로, id로 Supabase에서 완전한 row를 재조회해서 저장
+    const updateId = newRow?.id;
+    if (updateId) {
+      try {
+        const rows = await sbFetch(`${TABLE_NAME}?id=eq.${updateId}`);
+        if (rows && rows.length > 0) {
+          await idbPut(rows[0]);
+        } else if (newRow) {
+          // 조회 실패 시 newRow 그대로 fallback
+          await idbPut(newRow);
+        }
+      } catch(e) {
+        // 네트워크 실패 시 newRow로 fallback
+        if (newRow) await idbPut(newRow);
+        console.warn('[realtime] UPDATE 재조회 실패, newRow fallback:', e);
+      }
     }
   } else if (eventType === 'DELETE') {
     // oldRow.id가 없는 경우(RLS/REPLICA IDENTITY 문제) 방어 처리
