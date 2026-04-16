@@ -60,13 +60,20 @@ function initGesturePopup() {
     if (!actionTargetId) return;
     const todo = actionTargetTodo;
 
+    // 반복 일정 판단:
+    // 1) 가상 항목(_virtual): 마스터에서 파생된 가상 렌더
+    // 2) 반복 마스터(repeat_type≠none, repeat_master_id 없음)
+    // 3) 예외 행(repeat_master_id 있음): 체크 완료 등으로 이미 예외 행이 생성된 상태
+    //    → 예외 행도 결국 반복 일정이므로 삭제 옵션 3가지를 표시해야 함
     const isRepeat = todo && (
       todo._virtual ||
-      (todo.repeat_type && todo.repeat_type !== 'none' && !todo.repeat_master_id && !todo.repeat_exception)
+      (todo.repeat_type && todo.repeat_type !== 'none' && !todo.repeat_master_id && !todo.repeat_exception) ||
+      (!!todo.repeat_master_id && todo.repeat_exception)
     );
 
     if (isRepeat) {
-      const masterId = todo._virtual ? todo._masterId : todo.id;
+      const masterId = todo._virtual   ? todo._masterId :
+                       todo.repeat_master_id ? todo.repeat_master_id : todo.id;
       showRepeatDeleteSheet(masterId, actionTargetDate, actionFromWeekly);
     } else {
       const fromWeekly = actionFromWeekly;

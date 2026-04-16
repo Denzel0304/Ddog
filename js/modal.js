@@ -508,6 +508,36 @@ function closeRepeatEditOverlay() {
 
 // ─── 저장 처리 ───
 
+// 반복 일정 수정 시, 폼에서 실제로 변경된 내용이 있는지 판단
+// 체크리스트 체크/해제는 closeChecklistModal()에서 독립 처리되므로 여기선 제외
+// 비교 대상: title, memo, date, importance, remind_days, weekly_flag, repeat 설정
+function isFormChanged(editingTodo, title, memo, date, importance, remind, weeklyFlag, repeatData) {
+  if (!editingTodo) return true; // 방어: 원본 없으면 변경된 것으로 간주
+
+  if ((editingTodo.title || '') !== title) return true;
+  if ((editingTodo.memo  || '') !== memo)  return true;
+  if ((editingTodo.date  || '') !== date)  return true;
+  if ((editingTodo.importance  || 0) !== importance)  return true;
+  if ((editingTodo.remind_days || 0) !== remind)       return true;
+  if (!!editingTodo.weekly_flag !== !!weeklyFlag)      return true;
+
+  // 반복 설정 비교 (repeat_type, repeat_meta, repeat_end_date, repeat_day)
+  if ((editingTodo.repeat_type     || 'none') !== (repeatData.repeat_type     || 'none')) return true;
+  if ((editingTodo.repeat_end_date || null)   !== (repeatData.repeat_end_date || null))   return true;
+  if ((editingTodo.repeat_day      || null)   !== (repeatData.repeat_day      || null))   return true;
+
+  // repeat_meta 비교: JSON 정규화해서 비교
+  try {
+    const oldMeta = JSON.stringify(JSON.parse(editingTodo.repeat_meta || '{}'));
+    const newMeta = JSON.stringify(JSON.parse(repeatData.repeat_meta  || '{}'));
+    if (oldMeta !== newMeta) return true;
+  } catch(e) {
+    if ((editingTodo.repeat_meta || '') !== (repeatData.repeat_meta || '')) return true;
+  }
+
+  return false;
+}
+
 async function handleSave() {
   const title      = document.getElementById('input-title').value.trim();
   const memo       = document.getElementById('input-memo').value.trim();
@@ -565,6 +595,21 @@ async function handleSave() {
       const isRepeatException = editingTodo && !!editingTodo.repeat_master_id;
 
       if (isRepeatMaster || isRepeatException || isVirtual) {
+        // ── 반복 일정: 실제로 변경된 내용이 있는지 먼저 확인 ──
+        // 체크리스트 체크/해제만 했을 경우 isFormChanged = false
+        // → 3가지 옵션 모달 없이 그냥 모달만 닫음 (리스트 저장은 이미 완료됨)
+        const formChanged = isFormChanged(
+          editingTodo, title, memo, date,
+          selectedImportance, remind, weeklyFlag, repeatData
+        );
+
+        if (!formChanged) {
+          // 변경 사항 없음 → 그냥 닫기
+          closeModal();
+          return;
+        }
+
+        // 실제 변경 있음 → 3가지 옵션 모달 표시
         const masterId = isVirtual ? editingTodo._masterId :
                          isRepeatException ? editingTodo.repeat_master_id : editingTodo.id;
         const dateStr  = isVirtual ? (editingTodo.date || AppState.selectedDate) :
