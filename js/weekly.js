@@ -254,9 +254,19 @@ function makeWeekTodoItem(todo, isDone) {
     text.appendChild(memo);
   }
 
+  // 점3개 메뉴 버튼 (PC용 액션 트리거)
+  const menuBtn = document.createElement('div');
+  menuBtn.className = 'todo-menu-btn';
+  menuBtn.innerHTML = '<svg viewBox="0 0 4 18" width="4" height="18" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="9" r="1.6"/><circle cx="2" cy="16" r="1.6"/></svg>';
+  menuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openActionPopup(todo.id, true, todo.date, todo);
+  });
+
   el.appendChild(bar);
   el.appendChild(check);
   el.appendChild(text);
+  el.appendChild(menuBtn);
 
   initWeekItemGesture(el, todo);
   return el;

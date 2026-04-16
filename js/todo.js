@@ -153,10 +153,20 @@ function makeTodoItem(todo) {
   handle.innerHTML = '<svg viewBox="0 0 24 14" width="22" height="14" fill="currentColor"><rect y="0" width="24" height="2.5" rx="1.2"/><rect y="5.5" width="24" height="2.5" rx="1.2"/><rect y="11" width="24" height="2.5" rx="1.2"/></svg>';
   handle.setAttribute('data-drag-handle', '');
 
+  // 점3개 메뉴 버튼 (PC용 액션 트리거)
+  const menuBtn = document.createElement('div');
+  menuBtn.className = 'todo-menu-btn';
+  menuBtn.innerHTML = '<svg viewBox="0 0 4 18" width="4" height="18" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="9" r="1.6"/><circle cx="2" cy="16" r="1.6"/></svg>';
+  menuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openActionPopup(todo.id, false, todo.date || AppState.selectedDate, todo);
+  });
+
   li.appendChild(impBar);
   li.appendChild(check);
   li.appendChild(textWrap);
   if (!todo.is_done) li.appendChild(handle);
+  li.appendChild(menuBtn);
 
   // 클릭 → 수정 모달 (체크/핸들 제외)
   textWrap.addEventListener('click', () => openEditModal(todo));
