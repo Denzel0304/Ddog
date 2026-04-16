@@ -312,12 +312,21 @@ async function bgSync() {
   }, '');
 
   if (latest) {
+    // gte(이상)로 조회 후 IDB와 실제 비교 → 경계값 누락 방지
     const updated = await sbFetch(
-      `${TABLE_NAME}?updated_at=gt.${encodeURIComponent(latest)}&order=updated_at.asc`
+      `${TABLE_NAME}?updated_at=gte.${encodeURIComponent(latest)}&order=updated_at.asc`
     );
     if (updated && updated.length > 0) {
-      await idbPutMany(updated);
-      console.log('[sync] bg sync 변경:', updated.length, '건');
+      // IDB와 실제로 다른 행만 저장 (gte 조회로 인한 중복 방지)
+      const idbMap = new Map(all.map(t => [t.id, t]));
+      const changed = updated.filter(r => {
+        const local = idbMap.get(r.id);
+        return !local || (r.updated_at > local.updated_at);
+      });
+      if (changed.length > 0) {
+        await idbPutMany(changed);
+        console.log('[sync] bg sync 변경:', changed.length, '건');
+      }
     }
   }
 
