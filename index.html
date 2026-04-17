@@ -143,6 +143,11 @@
 <!-- ===== 스플래시 화면 (항상 먼저 표시) ===== -->
 <div id="splash-screen">
   <img id="splash-logo" src="logo.png" alt="똑비서" />
+  <script>
+    if (localStorage.getItem('lightmode') === '1') {
+      document.getElementById('splash-logo').src = 'logo1.png';
+    }
+  </script>
 </div>
 
 <!-- ===== 로그인 화면 (세션 없을 때만 표시) ===== -->
