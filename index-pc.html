@@ -490,7 +490,10 @@
 
 let _pcLastDropdownRect = null;
 
-/* ── 삭제 시 우측 패널 자동 비움 ── */
+/* ── PC: 달력 슬라이드 애니메이션 비활성화 (크기 깜빡임 방지) ── */
+window.animateCalendar = function(dir) {
+  renderCalendar();
+};
 (function() {
   const wrapDelete = (fnName) => {
     const _orig = window[fnName];
