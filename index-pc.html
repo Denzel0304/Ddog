@@ -210,21 +210,11 @@
 
   </div><!-- /pc-center -->
 
-  <!-- ── 우측: 메모 + 체크리스트 ── -->
+  <!-- ── 우측: 모달 표시 영역 ── -->
   <div id="pc-right">
-    <div id="pc-right-header">
-      <div id="pc-right-title">할일을 선택하세요</div>
-      <div id="pc-right-sub"></div>
-    </div>
-    <div id="pc-memo-section">
-      <div class="pc-section-label">메모</div>
-      <textarea id="pc-memo-textarea" placeholder="메모 없음" disabled></textarea>
-    </div>
-    <div id="pc-checklist-section">
-      <div class="pc-section-label">체크리스트</div>
-      <div id="pc-checklist-items">
-        <div class="pc-placeholder-text">체크리스트 없음</div>
-      </div>
+    <div id="pc-right-placeholder">
+      <div class="pc-right-empty-icon">✏️</div>
+      <div>할일을 선택하세요</div>
     </div>
   </div>
 
@@ -490,14 +480,14 @@
 <!-- ===== PC 전용 스크립트 ===== -->
 <script>
 /* =============================================
-   PC 전용 로직 — 기존 JS 함수 UI 부분만 덮어씀
+   PC 전용 로직
+   — modal.js 로직 100% 그대로 사용
+   — 우측 패널에 모달이 표시되도록 CSS로 처리
+   — 드롭다운(액션 팝업 대체)만 JS로 처리
    Supabase / IDB 로직 일체 미수정
    ============================================= */
 
-let pcSelectedTodoId    = null;
-let pcSelectedTodoDate  = null;
-let pcSelectedIsVirtual = false;
-let pcMemoOriginal      = '';
+let _pcLastDropdownRect = null;
 
 /* ── openActionPopup: 드롭다운으로 대체 ── */
 (function() {
@@ -508,35 +498,6 @@ let pcMemoOriginal      = '';
     pcShowDropdown(id, fromWeekly, targetDate, todo);
   };
 })();
-
-/* ── openEditModal: 우측 패널도 업데이트 ── */
-(function() {
-  const _orig = window.openEditModal;
-  window.openEditModal = function(todo) {
-    pcShowTodoDetail(todo);
-    _orig(todo);
-  };
-})();
-
-/* ── renderTodos: 우측 패널 선택 복원 ── */
-(function() {
-  const _orig = window.renderTodos;
-  window.renderTodos = function() {
-    _orig();
-    pcRestoreSelection();
-  };
-})();
-
-/* ── loadWeekly: 주간 아이템 클릭 → 우측 패널 ── */
-(function() {
-  const _orig = window.loadWeekly;
-  window.loadWeekly = async function() {
-    await _orig();
-    pcRestoreSelection();
-  };
-})();
-
-let _pcLastDropdownRect = null; // 드롭다운이 열렸던 위치 기억
 
 /* ── PC 드롭다운 ── */
 function pcShowDropdown(id, fromWeekly, targetDate, todo) {
@@ -551,7 +512,7 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   if (!refEl) return;
 
   const rect = refEl.getBoundingClientRect();
-  _pcLastDropdownRect = rect; // 위치 저장
+  _pcLastDropdownRect = rect;
 
   const dd = document.createElement('div');
   dd.id = 'pc-action-dropdown';
@@ -591,8 +552,8 @@ function pcCloseDropdownOutside(e) {
   if (dd && !dd.contains(e.target)) pcCloseDropdown();
 }
 
+/* ── 날짜 선택: 커스텀 달력 팝업 ── */
 function pcPickDate(id, fromWeekly, targetDate) {
-  // 기존 피커 제거
   const existing = document.getElementById('pc-date-picker-popup');
   if (existing) existing.remove();
 
@@ -600,33 +561,26 @@ function pcPickDate(id, fromWeekly, targetDate) {
   let pickerYear  = parseInt(initDate.split('-')[0]);
   let pickerMonth = parseInt(initDate.split('-')[1]);
 
-  // ── 팝업 생성 ──
   const popup = document.createElement('div');
   popup.id = 'pc-date-picker-popup';
   popup.style.cssText = `
-    position: fixed;
-    z-index: 600;
+    position: fixed; z-index: 600;
     background: var(--bg-elevated);
     border: 1px solid var(--border-light);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-    padding: 20px;
-    width: 420px;
-    user-select: none;
-    font-family: var(--font-main);
+    padding: 20px; width: 420px;
+    user-select: none; font-family: var(--font-main);
   `;
 
-  // 중앙 컬럼(#pc-center) 기준 가운데 위치
   const centerEl = document.getElementById('pc-center');
   const cr = centerEl ? centerEl.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
-  const popW = 420, popH = 420;
-  popup.style.left = Math.round(cr.left + (cr.width - popW) / 2) + 'px';
-  popup.style.top  = Math.round(cr.top  + (cr.height - popH) / 2) + 'px';
+  popup.style.left = Math.round(cr.left + (cr.width - 420) / 2) + 'px';
+  popup.style.top  = Math.round(cr.top  + (cr.height - 420) / 2) + 'px';
 
   function renderPicker() {
     popup.innerHTML = '';
 
-    // 헤더
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
 
@@ -652,7 +606,6 @@ function pcPickDate(id, fromWeekly, targetDate) {
       renderPicker();
     });
 
-    // 이번 달 버튼
     const thisMonthBtn = document.createElement('button');
     thisMonthBtn.textContent = '이번 달';
     thisMonthBtn.style.cssText = 'font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);cursor:pointer;padding:4px 10px;border-radius:12px;white-space:nowrap;margin-left:4px;';
@@ -661,12 +614,8 @@ function pcPickDate(id, fromWeekly, targetDate) {
       const today = new Date();
       pickerYear  = today.getFullYear();
       pickerMonth = today.getMonth() + 1;
-      // 오늘 날짜를 선택된 날짜로 설정
-      const todayStr = toLocalDateStr(today);
-      // initDate를 오늘로 갱신 (클로저 변수 재할당은 안되므로 셀 클릭 시뮬레이션)
+      popup.dataset.todayPick = toLocalDateStr(today);
       renderPicker();
-      // 오늘 셀에 강조 표시를 위해 initDate 업데이트
-      popup.dataset.todayPick = todayStr;
     });
 
     const closeBtn = document.createElement('button');
@@ -681,7 +630,6 @@ function pcPickDate(id, fromWeekly, targetDate) {
     header.appendChild(closeBtn);
     popup.appendChild(header);
 
-    // 요일 헤더
     const wdays = document.createElement('div');
     wdays.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;';
     ['일','월','화','수','목','금','토'].forEach((d, i) => {
@@ -692,20 +640,15 @@ function pcPickDate(id, fromWeekly, targetDate) {
     });
     popup.appendChild(wdays);
 
-    // 날짜 그리드
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;';
 
     const firstDay = new Date(pickerYear, pickerMonth - 1, 1).getDay();
     const lastDate = new Date(pickerYear, pickerMonth, 0).getDate();
-    const todayStr2 = toLocalDateStr(new Date());
+    const todayStr2   = toLocalDateStr(new Date());
     const highlightDate = popup.dataset.todayPick || initDate;
 
-    // 빈 칸 채우기
-    for (let i = 0; i < firstDay; i++) {
-      const blank = document.createElement('div');
-      grid.appendChild(blank);
-    }
+    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
 
     for (let d = 1; d <= lastDate; d++) {
       const dateStr = `${pickerYear}-${String(pickerMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -715,18 +658,15 @@ function pcPickDate(id, fromWeekly, targetDate) {
       const isSelected = dateStr === highlightDate;
       const dow = new Date(pickerYear, pickerMonth - 1, d).getDay();
       const color = dow === 0 ? 'var(--danger)' : dow === 6 ? '#6b9fd4' : 'var(--text-primary)';
-
       cell.style.cssText = `
         aspect-ratio:1;width:100%;border:none;cursor:pointer;border-radius:50%;
         font-size:16px;font-weight:${isToday||isSelected?'700':'400'};
         background:${isSelected?'var(--accent)':isToday?'var(--accent-glow)':'none'};
         color:${isSelected?'#1a1a2e':color};
-        display:flex;align-items:center;justify-content:center;
-        transition:background 0.12s;
+        display:flex;align-items:center;justify-content:center;transition:background 0.12s;
       `;
       cell.addEventListener('mouseover', () => { if (!isSelected) cell.style.background = 'var(--bg-hover)'; });
       cell.addEventListener('mouseout',  () => { if (!isSelected) cell.style.background = isToday ? 'var(--accent-glow)' : 'none'; });
-
       cell.addEventListener('click', async (e) => {
         e.stopPropagation();
         popup.remove();
@@ -744,8 +684,6 @@ function pcPickDate(id, fromWeekly, targetDate) {
 
   renderPicker();
   document.body.appendChild(popup);
-
-  // 팝업 외부 클릭 시 닫기
   setTimeout(() => {
     document.addEventListener('click', function outsideClose(e) {
       if (!popup.contains(e.target)) {
@@ -755,140 +693,6 @@ function pcPickDate(id, fromWeekly, targetDate) {
     });
   }, 10);
 }
-
-/* ── 우측 패널: 할일 디테일 ── */
-function pcShowTodoDetail(todo) {
-  if (!todo) return;
-
-  pcSelectedTodoId    = todo._virtual ? todo._masterId : todo.id;
-  pcSelectedTodoDate  = todo.date || AppState.selectedDate;
-  pcSelectedIsVirtual = !!todo._virtual;
-
-  document.getElementById('pc-right-title').textContent = todo.title || '(제목 없음)';
-  const isRepeat = (todo.repeat_type && todo.repeat_type !== 'none') || !!todo.repeat_master_id || todo._virtual;
-  document.getElementById('pc-right-sub').textContent = isRepeat ? '🔁 반복 일정' : '';
-
-  const memoTA = document.getElementById('pc-memo-textarea');
-  memoTA.value = todo.memo || '';
-  memoTA.disabled = false;
-  memoTA.dataset.todoId    = String(todo.id);
-  memoTA.dataset.masterId  = String(todo._masterId || '');
-  memoTA.dataset.isVirtual = String(!!todo._virtual);
-  memoTA.dataset.todoDate  = todo.date || AppState.selectedDate;
-  pcMemoOriginal = todo.memo || '';
-
-  pcRenderChecklist(todo);
-}
-
-function pcClearDetail() {
-  pcSelectedTodoId = null; pcSelectedTodoDate = null; pcSelectedIsVirtual = false;
-  document.getElementById('pc-right-title').textContent = '할일을 선택하세요';
-  document.getElementById('pc-right-sub').textContent   = '';
-  const memoTA = document.getElementById('pc-memo-textarea');
-  memoTA.value = ''; memoTA.disabled = true;
-  memoTA.dataset.todoId = ''; memoTA.dataset.masterId = '';
-  memoTA.dataset.isVirtual = ''; memoTA.dataset.todoDate = '';
-  document.getElementById('pc-checklist-items').innerHTML =
-    '<div class="pc-placeholder-text">체크리스트 없음</div>';
-}
-
-function pcRestoreSelection() {
-  if (!pcSelectedTodoId) return;
-  let found = null;
-  for (const t of (AppState.todos || [])) {
-    if (pcSelectedIsVirtual) {
-      if (t._virtual && String(t._masterId) === String(pcSelectedTodoId) && t.date === pcSelectedTodoDate) { found = t; break; }
-    } else {
-      if (String(t.id) === String(pcSelectedTodoId)) { found = t; break; }
-    }
-  }
-  if (found) pcShowTodoDetail(found);
-}
-
-/* ── 체크리스트 렌더 ── */
-function pcRenderChecklist(todo) {
-  const container = document.getElementById('pc-checklist-items');
-  container.innerHTML = '';
-  if (!hasChecklist(todo)) {
-    container.innerHTML = '<div class="pc-placeholder-text">체크리스트 없음</div>';
-    return;
-  }
-  let items = [];
-  try { items = JSON.parse(todo.checklist); } catch(e) { return; }
-  const valid = items.filter(it => it.text && it.text.trim());
-  if (!valid.length) {
-    container.innerHTML = '<div class="pc-placeholder-text">체크리스트 없음</div>';
-    return;
-  }
-  items.forEach((item, idx) => {
-    if (!item.text || !item.text.trim()) return;
-    const row = document.createElement('div');
-    row.className = 'pc-checklist-item' + (item.checked ? ' pc-cl-done' : '');
-    const chk = document.createElement('div');
-    chk.className = 'pc-cl-check' + (item.checked ? ' pc-cl-done' : '');
-    const txt = document.createElement('div');
-    txt.className = 'pc-cl-text';
-    txt.textContent = item.text;
-    row.appendChild(chk); row.appendChild(txt);
-    row.addEventListener('click', () => pcToggleChecklistItem(todo, idx, items));
-    container.appendChild(row);
-  });
-}
-
-/* ── 체크리스트 아이템 토글 ── */
-async function pcToggleChecklistItem(todo, idx, items) {
-  items[idx].checked = !items[idx].checked;
-  const newChecklist = JSON.stringify(items);
-  const valid = items.filter(it => it.text && it.text.trim());
-  const allChecked = valid.length > 0 && valid.every(it => it.checked);
-  let saveId = todo.id;
-
-  try {
-    if (todo._virtual) {
-      const exRow = await insertRepeatException(todo._masterId, todo.date || AppState.selectedDate, false);
-      await updateTodo(exRow.id, { checklist: newChecklist });
-      saveId = exRow.id;
-      pcSelectedTodoId = exRow.id; pcSelectedIsVirtual = false;
-    } else {
-      await updateTodo(todo.id, { checklist: newChecklist });
-    }
-    if (allChecked) {
-      await toggleDone(saveId, true);
-      playCompleteSound();
-      await loadTodos(); updateMonthDots();
-      pcClearDetail();
-    } else {
-      pcRenderChecklist({ ...todo, checklist: newChecklist, id: saveId, _virtual: false });
-      await loadTodos();
-    }
-  } catch(e) {
-    showToast('오류가 발생했어요');
-    console.error('[PC] checklist toggle error:', e);
-  }
-}
-
-/* ── 메모 자동 저장 (blur) ── */
-document.getElementById('pc-memo-textarea').addEventListener('blur', async function() {
-  const newMemo = this.value;
-  if (newMemo === pcMemoOriginal) return;
-  const id = this.dataset.todoId, masterId = this.dataset.masterId;
-  const isVirtual = this.dataset.isVirtual === 'true';
-  const todoDate  = this.dataset.todoDate;
-  if (!id && !masterId) return;
-  try {
-    if (isVirtual && masterId) {
-      const exRow = await insertRepeatException(masterId, todoDate || AppState.selectedDate, false);
-      await updateTodo(exRow.id, { memo: newMemo });
-      pcSelectedTodoId = exRow.id; pcSelectedIsVirtual = false;
-      this.dataset.todoId = String(exRow.id); this.dataset.isVirtual = 'false';
-    } else {
-      await updateTodo(id, { memo: newMemo });
-    }
-    pcMemoOriginal = newMemo;
-    showToast('메모가 저장됐어요');
-    loadTodos();
-  } catch(e) { showToast('저장 실패'); }
-});
 </script>
 
 </body>
