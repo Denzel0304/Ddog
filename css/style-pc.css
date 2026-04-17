@@ -117,7 +117,41 @@
 }
 
 
-/* 달력 점 크기 확대 */
+/* 달력 헤더 높이 2배, 버튼 크게 */
+#pc-left #calendar-header {
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#pc-left .cal-nav {
+  width: 72px !important;
+  height: 40px !important;
+  border-radius: 20px !important;
+  font-size: 28px !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-light) !important;
+  flex-shrink: 0;
+}
+#pc-left .cal-nav:hover {
+  background: var(--bg-hover) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+#pc-left .cal-thismonth-btn {
+  font-size: 14px !important;
+  padding: 7px 14px !important;
+  border-radius: 16px !important;
+}
+#pc-left #cal-title {
+  font-size: 20px !important;
+}
+#pc-left .cal-year-btn,
+#pc-left .cal-month-btn {
+  font-size: 22px !important;
+}
 #pc-left .cal-day.has-todo span::after {
   width: 7px !important;
   height: 7px !important;
