@@ -504,6 +504,8 @@ window.animateCalendar = function(dir) {
 
 /* ── PC: 반복 삭제 옵션 시트 — #action-popup 대신 드롭다운으로 표시 ── */
 window.showRepeatDeleteSheet = function(masterId, dateStr, fromWeekly) {
+  // rect를 먼저 저장한 뒤 드롭다운 닫기
+  const savedRect = _pcLastDropdownRect || (_pcLastMenuBtn ? _pcLastMenuBtn.getBoundingClientRect() : null);
   pcCloseDropdown();
   const old = document.getElementById('pc-repeat-delete-sheet');
   if (old) old.remove();
@@ -518,7 +520,7 @@ window.showRepeatDeleteSheet = function(masterId, dateStr, fromWeekly) {
     box-shadow:0 8px 24px rgba(0,0,0,0.3);
     min-width:210px;overflow:hidden;font-family:var(--font-main);
   `;
-  const rect = _pcLastDropdownRect;
+  const rect = savedRect;
   let top  = rect ? rect.bottom + 4 : 200;
   let left = rect ? rect.right - 215 : 200;
   if (left < 8) left = 8;
@@ -609,7 +611,7 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   if (!refEl) refEl = _pcLastMenuBtn;
   if (!refEl) return;
 
-  const rect = refEl.getBoundingClientRect();
+  const rect = _pcLastMenuBtn ? _pcLastMenuBtn.getBoundingClientRect() : _pcLastDropdownRect;
   _pcLastDropdownRect = rect;
 
   const dd = document.createElement('div');
