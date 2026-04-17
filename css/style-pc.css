@@ -73,7 +73,8 @@
   padding: 0;
   white-space: nowrap;
 }
-.pc-nav-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+.pc-nav-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
+.pc-nav-btn { font-size: 13px; gap: 6px; }
 .pc-nav-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .pc-nav-btn.active {
   color: var(--accent);
