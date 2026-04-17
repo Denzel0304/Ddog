@@ -5,15 +5,15 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 380px;  /* 좌측 고정 */
+  --pc-left-w: 520px;  /* 달력 넓게 (성공했던 값) */
 }
 
-/* ── #app: 좌측 고정, 중앙 2fr, 우측 1fr ── */
+/* ── #app: 좌측 520px 고정, 중앙 1.4fr, 우측 1fr ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 2fr 1fr !important;
+  grid-template-columns: var(--pc-left-w) 1.4fr 1fr !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
