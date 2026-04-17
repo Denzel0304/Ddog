@@ -268,6 +268,39 @@ body.pc-layout #modal-box {
   animation: none !important;
   box-shadow: none !important;
   background: var(--bg-elevated) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* detail-section이 보일 때 flex 컬럼으로 */
+body.pc-layout #detail-section {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  overflow: visible !important;
+}
+
+/* 메모 행: 남은 공간 모두 차지 */
+body.pc-layout #detail-section .detail-row:has(#input-memo) {
+  flex: 1 !important;
+  align-items: flex-start !important;
+}
+
+/* 메모 textarea: 행 전체 높이 채우기 */
+body.pc-layout #input-memo {
+  flex: 1 !important;
+  min-height: 80px !important;
+  max-height: none !important;
+  height: 100% !important;
+  resize: none !important;
+  align-self: stretch !important;
+}
+
+/* 저장 버튼: flex에서 수축 방지, 아래 40% 여백으로 60% 위치에 고정 */
+body.pc-layout #modal-save {
+  flex-shrink: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 40% !important;
 }
 
 /* =============================================
