@@ -269,6 +269,118 @@
       </div>
     </div>
 
+    <!-- 반복 설정 / 체크리스트 / 반복수정: #pc-right 안에서 하단에 표시 -->
+    <div id="repeat-overlay" class="hidden">
+      <div id="repeat-box">
+        <div id="repeat-header">
+          <span>반복 설정</span>
+          <button id="repeat-modal-close">✕</button>
+        </div>
+        <div id="rtype-row">
+          <button class="rtype-btn active" data-type="none">없음</button>
+          <button class="rtype-btn" data-type="daily">매일</button>
+          <button class="rtype-btn" data-type="weekly">매주</button>
+          <button class="rtype-btn" data-type="monthly">매월</button>
+          <button class="rtype-btn" data-type="yearly">매년</button>
+          <button class="rtype-btn" data-type="custom">커스텀</button>
+        </div>
+        <div id="repeat-weekly-wrap" class="repeat-detail hidden">
+          <label class="repeat-sub-label">요일 선택</label>
+          <div id="repeat-weekday-btns">
+            <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
+            <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
+            <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
+            <button class="rday-btn" data-d="6">토</button>
+          </div>
+        </div>
+        <div id="repeat-monthly-wrap" class="repeat-detail hidden">
+          <div id="repeat-monthly-mode-row">
+            <button class="rmonth-mode-btn active" data-mode="day">N일</button>
+            <button class="rmonth-mode-btn" data-mode="week">X째주 Y요일</button>
+          </div>
+          <div id="repeat-monthly-day-wrap" class="repeat-option">
+            <label>매월</label>
+            <input type="number" id="repeat-monthly-day" min="1" max="31" placeholder="1" />
+            <span>일</span>
+          </div>
+          <div id="repeat-monthly-week-wrap" class="repeat-option hidden">
+            <select id="repeat-monthly-week">
+              <option value="1">첫째</option><option value="2">둘째</option>
+              <option value="3">셋째</option><option value="4">넷째</option><option value="5">마지막</option>
+            </select>
+            <select id="repeat-monthly-weekday">
+              <option value="0">일요일</option><option value="1">월요일</option><option value="2">화요일</option>
+              <option value="3">수요일</option><option value="4">목요일</option><option value="5">금요일</option>
+              <option value="6">토요일</option>
+            </select>
+          </div>
+        </div>
+        <div id="repeat-yearly-wrap" class="repeat-detail hidden">
+          <div class="repeat-option">
+            <label>매년</label>
+            <select id="repeat-yearly-month">
+              <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+              <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+              <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+              <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+            </select>
+            <input type="number" id="repeat-yearly-day" min="1" max="31" placeholder="1" />
+            <span>일</span>
+          </div>
+        </div>
+        <div id="repeat-custom-wrap" class="repeat-detail hidden">
+          <label class="repeat-sub-label">요일 선택 (복수)</label>
+          <div id="repeat-custom-day-btns">
+            <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
+            <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
+            <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
+            <button class="rday-btn" data-d="6">토</button>
+          </div>
+        </div>
+        <div class="repeat-option">
+          <label class="repeat-end-label">
+            <input type="checkbox" id="repeat-end-toggle" />
+            <span>종료일 설정</span>
+          </label>
+          <div id="repeat-end-date-wrap" class="hidden">
+            <input type="date" id="repeat-end-date" />
+          </div>
+        </div>
+        <div id="repeat-footer">
+          <button id="repeat-cancel-btn" class="repeat-footer-btn cancel">취소</button>
+          <button id="repeat-confirm-btn" class="repeat-footer-btn confirm">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="checklist-overlay" class="hidden">
+      <div id="checklist-box">
+        <div id="checklist-header">
+          <span>체크 리스트</span>
+          <button id="checklist-modal-close">✕</button>
+        </div>
+        <div id="checklist-items"></div>
+        <div id="checklist-add-row">
+          <input type="text" id="checklist-input" placeholder="" autocomplete="off" />
+          <button id="checklist-add-btn">＋</button>
+        </div>
+        <div id="checklist-footer">
+          <button id="checklist-cancel-btn" class="checklist-footer-btn cancel">취소</button>
+          <button id="checklist-confirm-btn" class="checklist-footer-btn confirm">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="repeat-edit-overlay" class="hidden">
+      <div id="repeat-edit-box">
+        <div class="rds-title">반복 일정 수정</div>
+        <button class="rds-btn" id="repeat-edit-only">이 날짜만 수정</button>
+        <button class="rds-btn" id="repeat-edit-from">이 날짜 이후 모두 수정</button>
+        <button class="rds-btn" id="repeat-edit-all">전체 수정</button>
+        <button class="rds-btn cancel" id="repeat-edit-cancel">취소</button>
+      </div>
+    </div>
+
   </div>
 
 </div><!-- /app -->
@@ -302,89 +414,7 @@
   <div id="repeats-list"></div>
 </div>
 
-<!-- ===== 반복 설정 모달 ===== -->
-<div id="repeat-overlay" class="hidden">
-  <div id="repeat-box">
-    <div id="repeat-header">
-      <span>반복 설정</span>
-      <button id="repeat-modal-close">✕</button>
-    </div>
-    <div id="rtype-row">
-      <button class="rtype-btn active" data-type="none">없음</button>
-      <button class="rtype-btn" data-type="daily">매일</button>
-      <button class="rtype-btn" data-type="weekly">매주</button>
-      <button class="rtype-btn" data-type="monthly">매월</button>
-      <button class="rtype-btn" data-type="yearly">매년</button>
-      <button class="rtype-btn" data-type="custom">커스텀</button>
-    </div>
-    <div id="repeat-weekly-wrap" class="repeat-detail hidden">
-      <label class="repeat-sub-label">요일 선택</label>
-      <div id="repeat-weekday-btns">
-        <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
-        <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
-        <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
-        <button class="rday-btn" data-d="6">토</button>
-      </div>
-    </div>
-    <div id="repeat-monthly-wrap" class="repeat-detail hidden">
-      <div id="repeat-monthly-mode-row">
-        <button class="rmonth-mode-btn active" data-mode="day">N일</button>
-        <button class="rmonth-mode-btn" data-mode="week">X째주 Y요일</button>
-      </div>
-      <div id="repeat-monthly-day-wrap" class="repeat-option">
-        <label>매월</label>
-        <input type="number" id="repeat-monthly-day" min="1" max="31" placeholder="1" />
-        <span>일</span>
-      </div>
-      <div id="repeat-monthly-week-wrap" class="repeat-option hidden">
-        <select id="repeat-monthly-week">
-          <option value="1">첫째</option><option value="2">둘째</option>
-          <option value="3">셋째</option><option value="4">넷째</option><option value="5">마지막</option>
-        </select>
-        <select id="repeat-monthly-weekday">
-          <option value="0">일요일</option><option value="1">월요일</option><option value="2">화요일</option>
-          <option value="3">수요일</option><option value="4">목요일</option><option value="5">금요일</option>
-          <option value="6">토요일</option>
-        </select>
-      </div>
-    </div>
-    <div id="repeat-yearly-wrap" class="repeat-detail hidden">
-      <div class="repeat-option">
-        <label>매년</label>
-        <select id="repeat-yearly-month">
-          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
-          <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
-          <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
-          <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-        </select>
-        <input type="number" id="repeat-yearly-day" min="1" max="31" placeholder="1" />
-        <span>일</span>
-      </div>
-    </div>
-    <div id="repeat-custom-wrap" class="repeat-detail hidden">
-      <label class="repeat-sub-label">요일 선택 (복수)</label>
-      <div id="repeat-custom-day-btns">
-        <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
-        <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
-        <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
-        <button class="rday-btn" data-d="6">토</button>
-      </div>
-    </div>
-    <div class="repeat-option">
-      <label class="repeat-end-label">
-        <input type="checkbox" id="repeat-end-toggle" />
-        <span>종료일 설정</span>
-      </label>
-      <div id="repeat-end-date-wrap" class="hidden">
-        <input type="date" id="repeat-end-date" />
-      </div>
-    </div>
-    <div id="repeat-footer">
-      <button id="repeat-cancel-btn" class="repeat-footer-btn cancel">취소</button>
-      <button id="repeat-confirm-btn" class="repeat-footer-btn confirm">확인</button>
-    </div>
-  </div>
-</div>
+<!-- ===== 반복 설정 모달 (구 위치 제거 — pc-right 안으로 이동됨) ===== -->
 
 <!-- ===== 액션 팝업 (PC에서 CSS 숨김, JS 호환용) ===== -->
 <div id="action-popup" class="hidden">
@@ -419,36 +449,6 @@
       <button class="month-btn" data-m="9">9월</button><button class="month-btn" data-m="10">10월</button>
       <button class="month-btn" data-m="11">11월</button><button class="month-btn" data-m="12">12월</button>
     </div>
-  </div>
-</div>
-
-<!-- ===== 체크리스트 모달 ===== -->
-<div id="checklist-overlay" class="hidden">
-  <div id="checklist-box">
-    <div id="checklist-header">
-      <span>체크 리스트</span>
-      <button id="checklist-modal-close">✕</button>
-    </div>
-    <div id="checklist-items"></div>
-    <div id="checklist-add-row">
-      <input type="text" id="checklist-input" placeholder="" autocomplete="off" />
-      <button id="checklist-add-btn">＋</button>
-    </div>
-    <div id="checklist-footer">
-      <button id="checklist-cancel-btn" class="checklist-footer-btn cancel">취소</button>
-      <button id="checklist-confirm-btn" class="checklist-footer-btn confirm">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== 반복 수정 시트 ===== -->
-<div id="repeat-edit-overlay" class="hidden">
-  <div id="repeat-edit-box">
-    <div class="rds-title">반복 일정 수정</div>
-    <button class="rds-btn" id="repeat-edit-only">이 날짜만 수정</button>
-    <button class="rds-btn" id="repeat-edit-from">이 날짜 이후 모두 수정</button>
-    <button class="rds-btn" id="repeat-edit-all">전체 수정</button>
-    <button class="rds-btn cancel" id="repeat-edit-cancel">취소</button>
   </div>
 </div>
 
