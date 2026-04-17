@@ -30,6 +30,7 @@ async function bootApp() {
   initWeekly();
   initSettings();
   initTabs();
+  initLightMode();
   loadTodos();
   initBackButton();
 
@@ -37,6 +38,18 @@ async function bootApp() {
     requestAnimationFrame(() => {
       document.getElementById('date-bar-actions').style.visibility = 'visible';
     });
+  });
+}
+
+// ── 라이트 모드 토글 ──
+function initLightMode() {
+  // 저장된 설정 복원
+  if (localStorage.getItem('lightmode') === '1') {
+    document.body.classList.add('light-mode');
+  }
+  document.getElementById('lightmode-toggle').addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    localStorage.setItem('lightmode', isLight ? '1' : '0');
   });
 }
 
