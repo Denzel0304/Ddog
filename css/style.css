@@ -1194,9 +1194,9 @@ body.light-mode {
   --bg-surface:     #ebeee7;
   --bg-elevated:    #e2e5dc;
   --bg-hover:       #d8dcd2;
-  --accent:         #7ecfa0;
-  --accent-dim:     #4a9e6d;
-  --accent-glow:    rgba(126, 207, 160, 0.2);
+  --accent:         #3a9e6a;
+  --accent-dim:     #2d7d52;
+  --accent-glow:    rgba(58, 158, 106, 0.18);
   --text-primary:   #1e2028;
   --text-secondary: #4a5060;
   --text-muted:     #8a8f9e;
