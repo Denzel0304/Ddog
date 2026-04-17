@@ -14,7 +14,7 @@
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1.4fr minmax(180px, 1fr) !important;
+  grid-template-columns: var(--pc-left-w) 1.4fr minmax(240px, 1fr) !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -257,7 +257,7 @@ body.pc-layout #modal-overlay {
   z-index: 10 !important;
 }
 
-/* 모달 박스: #pc-right 전체를 채움 */
+/* 모달 박스: #pc-right 전체를 채움, 세로 스크롤 */
 body.pc-layout #modal-box {
   border-radius: 0 !important;
   max-width: none !important;
@@ -265,26 +265,32 @@ body.pc-layout #modal-box {
   max-height: none !important;
   height: 100% !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   animation: none !important;
   box-shadow: none !important;
   background: var(--bg-elevated) !important;
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important;    /* flex 대신 block → 자연스러운 스크롤 */
+  box-sizing: border-box !important;
 }
 
-/* detail-section: flex 컬럼 */
+/* detail-section: 일반 블록 */
 body.pc-layout #detail-section {
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important;
   overflow: visible !important;
 }
 
-/* 메모 행 */
-body.pc-layout #detail-section .detail-row:has(#input-memo) {
-  align-items: flex-start !important;
+/* 모든 detail-row: 좁아지면 줄바꿈 */
+body.pc-layout .detail-row {
+  flex-wrap: wrap !important;
+  row-gap: 6px !important;
 }
 
-/* 메모 textarea: 고정 높이(절반), 내용 많으면 스크롤 */
+/* 중요도 버튼 그룹: 줄바꿈 허용 */
+body.pc-layout #importance-btns {
+  flex-wrap: wrap !important;
+}
+
+/* 메모 textarea: 고정 높이, 내용 넘치면 스크롤 */
 body.pc-layout #input-memo {
   flex: none !important;
   height: 20vh !important;
@@ -294,13 +300,15 @@ body.pc-layout #input-memo {
   resize: none !important;
   font-size: 15px !important;
   width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* 저장 버튼: 여백 제거, 자연스럽게 메모 아래 배치 */
+/* 저장 버튼 */
 body.pc-layout #modal-save {
-  flex-shrink: 0 !important;
   margin-top: 12px !important;
   margin-bottom: 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* ── 반복설정/체크리스트 오버레이: pc-right 안에 absolute로 하단에 표시 ── */
