@@ -592,30 +592,146 @@ function pcCloseDropdownOutside(e) {
 }
 
 function pcPickDate(id, fromWeekly, targetDate) {
-  // 드롭다운이 있던 위치 근처에 input을 배치 → 달력이 그 옆에서 열림
-  const rect = _pcLastDropdownRect;
-  const posTop  = rect ? Math.min(rect.top, window.innerHeight - 40) : 200;
-  const posLeft = rect ? Math.max(rect.left - 160, 10) : 200;
+  // 기존 피커 제거
+  const existing = document.getElementById('pc-date-picker-popup');
+  if (existing) existing.remove();
 
-  const tmp = document.createElement('input');
-  tmp.type  = 'date';
-  tmp.value = targetDate || AppState.selectedDate;
-  tmp.style.cssText =
-    `position:fixed;top:${posTop}px;left:${posLeft}px;` +
-    `opacity:0;width:1px;height:1px;border:none;padding:0;pointer-events:none;`;
-  document.body.appendChild(tmp);
-  tmp.showPicker?.();
-  tmp.addEventListener('change', async () => {
-    if (!tmp.value) { tmp.remove(); return; }
-    try {
-      await moveTodoDate(id, tmp.value);
-      showToast('날짜를 변경했어요');
-      if (fromWeekly) await loadWeekly();
-      else { await loadTodos(); updateMonthDots(); }
-    } catch(e) { showToast('오류가 발생했어요'); }
-    tmp.remove();
-  });
-  tmp.addEventListener('blur', () => setTimeout(() => tmp.remove(), 300));
+  const initDate = targetDate || AppState.selectedDate;
+  let pickerYear  = parseInt(initDate.split('-')[0]);
+  let pickerMonth = parseInt(initDate.split('-')[1]);
+
+  // ── 팝업 생성 ──
+  const popup = document.createElement('div');
+  popup.id = 'pc-date-picker-popup';
+  popup.style.cssText = `
+    position: fixed;
+    z-index: 600;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    padding: 20px;
+    width: 420px;
+    user-select: none;
+    font-family: var(--font-main);
+  `;
+
+  // 중앙 컬럼(#pc-center) 기준 가운데 위치
+  const centerEl = document.getElementById('pc-center');
+  const cr = centerEl ? centerEl.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+  const popW = 420, popH = 420;
+  popup.style.left = Math.round(cr.left + (cr.width - popW) / 2) + 'px';
+  popup.style.top  = Math.round(cr.top  + (cr.height - popH) / 2) + 'px';
+
+  function renderPicker() {
+    popup.innerHTML = '';
+
+    // 헤더
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '‹';
+    prevBtn.style.cssText = 'font-size:28px;color:var(--text-secondary);background:none;border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;';
+    prevBtn.addEventListener('click', () => {
+      pickerMonth--; if (pickerMonth < 1) { pickerMonth = 12; pickerYear--; }
+      renderPicker();
+    });
+
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:18px;font-weight:700;color:var(--text-primary);';
+    titleEl.textContent = `${pickerYear}년 ${pickerMonth}월`;
+
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '›';
+    nextBtn.style.cssText = prevBtn.style.cssText;
+    nextBtn.addEventListener('click', () => {
+      pickerMonth++; if (pickerMonth > 12) { pickerMonth = 1; pickerYear++; }
+      renderPicker();
+    });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:8px;';
+    closeBtn.addEventListener('click', () => popup.remove());
+
+    header.appendChild(prevBtn);
+    header.appendChild(titleEl);
+    header.appendChild(nextBtn);
+    header.appendChild(closeBtn);
+    popup.appendChild(header);
+
+    // 요일 헤더
+    const wdays = document.createElement('div');
+    wdays.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;';
+    ['일','월','화','수','목','금','토'].forEach((d, i) => {
+      const span = document.createElement('div');
+      span.textContent = d;
+      span.style.cssText = `text-align:center;font-size:13px;font-weight:600;padding:4px 0;color:${i===0?'var(--danger)':i===6?'#6b9fd4':'var(--text-muted)'};`;
+      wdays.appendChild(span);
+    });
+    popup.appendChild(wdays);
+
+    // 날짜 그리드
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px;';
+
+    const firstDay = new Date(pickerYear, pickerMonth - 1, 1).getDay();
+    const lastDate = new Date(pickerYear, pickerMonth, 0).getDate();
+    const todayStr2 = toLocalDateStr(new Date());
+
+    // 빈 칸 채우기
+    for (let i = 0; i < firstDay; i++) {
+      const blank = document.createElement('div');
+      grid.appendChild(blank);
+    }
+
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${pickerYear}-${String(pickerMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const cell = document.createElement('button');
+      cell.textContent = d;
+      const isToday    = dateStr === todayStr2;
+      const isSelected = dateStr === initDate;
+      const dow = new Date(pickerYear, pickerMonth - 1, d).getDay();
+      const color = dow === 0 ? 'var(--danger)' : dow === 6 ? '#6b9fd4' : 'var(--text-primary)';
+
+      cell.style.cssText = `
+        aspect-ratio:1;width:100%;border:none;cursor:pointer;border-radius:50%;
+        font-size:16px;font-weight:${isToday||isSelected?'700':'400'};
+        background:${isSelected?'var(--accent)':isToday?'var(--accent-glow)':'none'};
+        color:${isSelected?'#1a1a2e':color};
+        display:flex;align-items:center;justify-content:center;
+        transition:background 0.12s;
+      `;
+      cell.addEventListener('mouseover', () => { if (!isSelected) cell.style.background = 'var(--bg-hover)'; });
+      cell.addEventListener('mouseout',  () => { if (!isSelected) cell.style.background = isToday ? 'var(--accent-glow)' : 'none'; });
+
+      cell.addEventListener('click', async () => {
+        popup.remove();
+        try {
+          await moveTodoDate(id, dateStr);
+          showToast('날짜를 변경했어요');
+          if (fromWeekly) await loadWeekly();
+          else { await loadTodos(); updateMonthDots(); }
+        } catch(e) { showToast('오류가 발생했어요'); }
+      });
+      grid.appendChild(cell);
+    }
+    popup.appendChild(grid);
+  }
+
+  renderPicker();
+  document.body.appendChild(popup);
+
+  // 팝업 외부 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener('click', function outsideClose(e) {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener('click', outsideClose);
+      }
+    });
+  }, 10);
 }
 
 /* ── 우측 패널: 할일 디테일 ── */
