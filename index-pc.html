@@ -536,6 +536,8 @@ let pcMemoOriginal      = '';
   };
 })();
 
+let _pcLastDropdownRect = null; // 드롭다운이 열렸던 위치 기억
+
 /* ── PC 드롭다운 ── */
 function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   pcCloseDropdown();
@@ -549,6 +551,8 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   if (!refEl) return;
 
   const rect = refEl.getBoundingClientRect();
+  _pcLastDropdownRect = rect; // 위치 저장
+
   const dd = document.createElement('div');
   dd.id = 'pc-action-dropdown';
 
@@ -588,10 +592,17 @@ function pcCloseDropdownOutside(e) {
 }
 
 function pcPickDate(id, fromWeekly, targetDate) {
+  // 드롭다운이 있던 위치 근처에 input을 배치 → 달력이 그 옆에서 열림
+  const rect = _pcLastDropdownRect;
+  const posTop  = rect ? Math.min(rect.top, window.innerHeight - 40) : 200;
+  const posLeft = rect ? Math.max(rect.left - 160, 10) : 200;
+
   const tmp = document.createElement('input');
   tmp.type  = 'date';
   tmp.value = targetDate || AppState.selectedDate;
-  tmp.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;width:1px;height:1px;';
+  tmp.style.cssText =
+    `position:fixed;top:${posTop}px;left:${posLeft}px;` +
+    `opacity:0;width:1px;height:1px;border:none;padding:0;pointer-events:none;`;
   document.body.appendChild(tmp);
   tmp.showPicker?.();
   tmp.addEventListener('change', async () => {
