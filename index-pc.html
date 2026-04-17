@@ -489,6 +489,13 @@
    ============================================= */
 
 let _pcLastDropdownRect = null;
+let _pcLastMenuBtn = null;
+
+/* ── 마지막 클릭된 메뉴 버튼 추적 (weekly 탭 대응) ── */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.todo-menu-btn');
+  if (btn) _pcLastMenuBtn = btn;
+}, true);
 
 /* ── PC: 달력 슬라이드 애니메이션 비활성화 ── */
 window.animateCalendar = function(dir) {
@@ -598,6 +605,8 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
       refEl = el.querySelector('.todo-menu-btn') || el;
     }
   });
+  // weekly 탭은 data-id 없음 → 마지막 클릭된 메뉴 버튼 사용
+  if (!refEl) refEl = _pcLastMenuBtn;
   if (!refEl) return;
 
   const rect = refEl.getBoundingClientRect();
