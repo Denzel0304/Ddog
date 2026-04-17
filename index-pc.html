@@ -145,38 +145,41 @@
 
     <!-- 달력 (항상 표시, 접기 없음) -->
     <div id="calendar-section">
-      <div id="calendar-header">
-        <button id="cal-prev" class="cal-nav">&#8249;</button>
-        <button id="cal-thismonth-btn" class="cal-thismonth-btn">이번 달</button>
-        <div id="cal-title">
-          <span id="cal-year" class="cal-year-btn"></span>년
-          <span id="cal-month" class="cal-month-btn"></span>월
+    <!-- 달력+날짜바 래퍼: 높이를 좌측 4개 탭과 정확히 맞춤 -->
+    <div id="pc-cal-wrap">
+      <div id="calendar-section">
+        <div id="calendar-header">
+          <button id="cal-prev" class="cal-nav">&#8249;</button>
+          <button id="cal-thismonth-btn" class="cal-thismonth-btn">이번 달</button>
+          <div id="cal-title">
+            <span id="cal-year" class="cal-year-btn"></span>년
+            <span id="cal-month" class="cal-month-btn"></span>월
+          </div>
+          <button id="cal-next" class="cal-nav">&#8250;</button>
         </div>
-        <button id="cal-next" class="cal-nav">&#8250;</button>
+        <div id="calendar-weekdays">
+          <span class="wd sun">일</span><span class="wd">월</span><span class="wd">화</span>
+          <span class="wd">수</span><span class="wd">목</span><span class="wd">금</span><span class="wd sat">토</span>
+        </div>
+        <div id="calendar-grid"></div>
       </div>
-      <div id="calendar-weekdays">
-        <span class="wd sun">일</span><span class="wd">월</span><span class="wd">화</span>
-        <span class="wd">수</span><span class="wd">목</span><span class="wd">금</span><span class="wd sat">토</span>
-      </div>
-      <div id="calendar-grid"></div>
-    </div>
 
-    <!-- 날짜 바 (접기 버튼 제외) -->
-    <div id="selected-date-bar">
-      <span id="selected-date-label"></span>
-      <div id="date-bar-actions" style="visibility:hidden">
-        <button id="lightmode-toggle" title="라이트/다크 모드">
-          <div class="lm-toggle-track"><div class="lm-toggle-thumb"></div></div>
-        </button>
-        <!-- cal-toggle-btn: CSS로 숨김, JS 호환을 위해 존재 -->
-        <button id="cal-toggle-btn" title="달력 접기/펴기" style="display:none">
-          <svg id="cal-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
-        </button>
-        <button id="fab-add">＋</button>
+      <!-- 날짜 바 (접기 버튼 제외) -->
+      <div id="selected-date-bar">
+        <span id="selected-date-label"></span>
+        <div id="date-bar-actions" style="visibility:hidden">
+          <button id="lightmode-toggle" title="라이트/다크 모드">
+            <div class="lm-toggle-track"><div class="lm-toggle-thumb"></div></div>
+          </button>
+          <button id="cal-toggle-btn" title="달력 접기/펴기" style="display:none">
+            <svg id="cal-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+          <button id="fab-add">＋</button>
+        </div>
       </div>
-    </div>
+    </div><!-- /pc-cal-wrap -->
 
     <!-- ── 할일 탭 ── -->
     <div id="tab-todo" class="tab-content active">
