@@ -293,9 +293,9 @@ body.pc-layout #importance-btns {
 /* 메모 textarea: 고정 높이, 내용 넘치면 스크롤 */
 body.pc-layout #input-memo {
   flex: none !important;
-  height: 20vh !important;
+  height: 30vh !important;
   min-height: 80px !important;
-  max-height: 20vh !important;
+  max-height: 30vh !important;
   overflow-y: auto !important;
   resize: none !important;
   font-size: 15px !important;
