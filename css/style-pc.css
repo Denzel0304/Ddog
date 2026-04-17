@@ -160,6 +160,9 @@
   height: 7px !important;
   margin-top: 3px !important;
 }
+
+/* 달력 아래 남은 공간 */
+#pc-left-footer {
   flex: 1;
   background: var(--bg-surface);
 }
