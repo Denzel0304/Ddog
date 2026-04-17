@@ -5,15 +5,15 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 260px;  /* 좌측 고정 너비: 달력이 찌그러지지 않는 최소값 */
+  --pc-left-w: 360px;  /* 좌측 고정 너비 확대: 달력이 넓고 시원하게 */
 }
 
-/* ── #app: 좌측 고정, 중앙/우측 균등 ── */
+/* ── #app: 좌측 고정, 중앙 1fr, 우측 0.5fr(중앙의 절반) ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1fr 1fr !important;
+  grid-template-columns: var(--pc-left-w) 1fr 0.5fr !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -91,14 +91,14 @@
 
 /* 달력 셀 원래 aspect-ratio 유지 (고정 너비이므로 찌그러지지 않음) */
 #pc-left .cal-day {
-  font-size: 14px;
+  font-size: 16px;
   /* aspect-ratio는 style.css 기본값(1.4) 유지 */
 }
 
 /* 달력 today/selected 원 크기 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
-  width: 28px; height: 28px;
+  width: 34px; height: 34px;
 }
 
 /* 달력 아래 남은 공간: 빈 영역 */
@@ -253,9 +253,9 @@
 /* =============================================
    설정/반복함 패널
    ============================================= */
-body.pc-layout #settings-panel   { width: 260px; }
+body.pc-layout #settings-panel   { width: var(--pc-left-w); }
 body.pc-layout #settings-overlay { background: rgba(0,0,0,0.15); }
-body.pc-layout #repeats-panel    { width: 260px; }
+body.pc-layout #repeats-panel    { width: var(--pc-left-w); }
 
 /* =============================================
    모달: 화면 정중앙
