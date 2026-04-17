@@ -13,68 +13,63 @@
   <style>
     #splash-screen {
       position: fixed; inset: 0; background: #16181d;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999;
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
     }
     #splash-logo { width: 420px; height: 420px; animation: splash-pulse 1.8s ease-in-out infinite; }
     @keyframes splash-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.75; transform: scale(0.96); }
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.75; transform:scale(0.96); }
     }
     #login-screen {
       position: fixed; inset: 0; background: #16181d;
       display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9998;
     }
     #login-box {
-      width: 100%; max-width: 340px; padding: 40px 28px 36px;
-      background: #1e2028; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      display: flex; flex-direction: column; gap: 14px;
+      width:100%; max-width:340px; padding:40px 28px 36px;
+      background:#1e2028; border-radius:20px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+      display:flex; flex-direction:column; gap:14px;
     }
-    #login-logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 8px; }
-    #login-logo { width: 216px; height: 216px; background: #1e2028; border-radius: 12px; }
-    #login-title { font-size: 20px; font-weight: 700; color: #e0e0e0; letter-spacing: 1px; }
+    #login-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:8px; }
+    #login-logo { width:216px; height:216px; background:#1e2028; border-radius:12px; }
+    #login-title { font-size:20px; font-weight:700; color:#e0e0e0; letter-spacing:1px; }
     #login-box input {
-      width: 100%; padding: 13px 16px; border-radius: 10px; border: 1.5px solid #2e3240;
-      background: #16181d; color: #e0e0e0; font-size: 15px; outline: none;
-      box-sizing: border-box; transition: border-color 0.2s; font-family: 'Noto Sans KR', sans-serif;
+      width:100%; padding:13px 16px; border-radius:10px; border:1.5px solid #2e3240;
+      background:#16181d; color:#e0e0e0; font-size:15px; outline:none;
+      box-sizing:border-box; transition:border-color 0.2s; font-family:'Noto Sans KR',sans-serif;
     }
-    #login-box input:focus { border-color: #7c6ef5; }
+    #login-box input:focus { border-color:#7c6ef5; }
     #login-btn {
-      width: 100%; padding: 13px; border-radius: 10px; border: none;
-      background: #7c6ef5; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.2s; font-family: 'Noto Sans KR', sans-serif; margin-top: 4px;
+      width:100%; padding:13px; border-radius:10px; border:none;
+      background:#7c6ef5; color:#fff; font-size:16px; font-weight:600; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:background 0.2s; font-family:'Noto Sans KR',sans-serif; margin-top:4px;
     }
-    #login-btn:hover  { background: #6a5acd; }
-    #login-btn:active { background: #5a4abf; }
-    #login-btn:disabled { background: #2e3240; cursor: not-allowed; }
-    #login-error { color: #e05c6a; font-size: 13px; text-align: center; min-height: 16px; line-height: 1.4; }
+    #login-btn:hover  { background:#6a5acd; }
+    #login-btn:active { background:#5a4abf; }
+    #login-btn:disabled { background:#2e3240; cursor:not-allowed; }
+    #login-error { color:#e05c6a; font-size:13px; text-align:center; min-height:16px; line-height:1.4; }
     #login-spinner {
-      display: none; width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
-      border-radius: 50%; animation: spin 0.7s linear infinite;
+      display:none; width:18px; height:18px;
+      border:2px solid rgba(255,255,255,0.3); border-top-color:#fff;
+      border-radius:50%; animation:spin 0.7s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin { to { transform:rotate(360deg); } }
   </style>
 </head>
 <body class="pc-layout">
 <script>
-  if (localStorage.getItem('lightmode') === '1') {
-    document.body.classList.add('light-mode');
-  }
+  if (localStorage.getItem('lightmode') === '1') document.body.classList.add('light-mode');
 </script>
 
-<!-- ===== 스플래시 ===== -->
+<!-- 스플래시 -->
 <div id="splash-screen">
   <img id="splash-logo" src="logo.png" alt="똑비서" />
   <script>
-    if (localStorage.getItem('lightmode') === '1') {
-      document.getElementById('splash-logo').src = 'logo1.png';
-    }
+    if (localStorage.getItem('lightmode') === '1') document.getElementById('splash-logo').src = 'logo1.png';
   </script>
 </div>
 
-<!-- ===== 로그인 ===== -->
+<!-- 로그인 -->
 <div id="login-screen">
   <div id="login-box">
     <div id="login-logo-wrap">
@@ -93,13 +88,14 @@
   </div>
 </div>
 
-<!-- ===== 앱 (PC 3열 그리드) ===== -->
+<!-- ===== 앱: 3열 그리드 ===== -->
 <div id="app" style="display:none">
 
-  <!-- ── 좌측: 내비게이션 ── -->
+  <!-- ── 좌측: 탭4개 + 달력 ── -->
   <div id="pc-left">
+
+    <!-- 탭 버튼 4개 -->
     <div id="pc-nav-tabs">
-      <!-- 할일 -->
       <button class="pc-nav-btn nav-btn active" data-tab="todo" id="nav-todo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -110,7 +106,6 @@
         </svg>
         <span>할일</span>
       </button>
-      <!-- 주간 -->
       <button class="pc-nav-btn nav-btn" data-tab="weekly" id="nav-weekly">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -121,7 +116,6 @@
         </svg>
         <span>주간</span>
       </button>
-      <!-- 검색 -->
       <button class="pc-nav-btn nav-btn" data-tab="search" id="nav-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/>
@@ -129,7 +123,6 @@
         </svg>
         <span>검색</span>
       </button>
-      <!-- 설정 -->
       <button class="pc-nav-btn nav-btn" data-tab="settings" id="nav-settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
@@ -138,78 +131,70 @@
         <span>설정</span>
       </button>
     </div>
-  </div>
 
-  <!-- ── 중앙: 달력 + 탭 콘텐츠 ── -->
+    <!-- 달력 (항상 표시) -->
+    <div id="calendar-section">
+      <div id="calendar-header">
+        <button id="cal-prev" class="cal-nav">&#8249;</button>
+        <button id="cal-thismonth-btn" class="cal-thismonth-btn">이번 달</button>
+        <div id="cal-title">
+          <span id="cal-year" class="cal-year-btn"></span>년
+          <span id="cal-month" class="cal-month-btn"></span>월
+        </div>
+        <button id="cal-next" class="cal-nav">&#8250;</button>
+      </div>
+      <div id="calendar-weekdays">
+        <span class="wd sun">일</span><span class="wd">월</span><span class="wd">화</span>
+        <span class="wd">수</span><span class="wd">목</span><span class="wd">금</span><span class="wd sat">토</span>
+      </div>
+      <div id="calendar-grid"></div>
+    </div>
+
+  </div><!-- /pc-left -->
+
+  <!-- ── 중앙: 날짜줄 + 할일목록 ── -->
   <div id="pc-center">
 
-    <!-- 달력 (항상 표시, 접기 없음) -->
-    <div id="calendar-section">
-    <!-- 달력+날짜바 래퍼: 높이를 좌측 4개 탭과 정확히 맞춤 -->
-    <div id="pc-cal-wrap">
-      <div id="calendar-section">
-        <div id="calendar-header">
-          <button id="cal-prev" class="cal-nav">&#8249;</button>
-          <button id="cal-thismonth-btn" class="cal-thismonth-btn">이번 달</button>
-          <div id="cal-title">
-            <span id="cal-year" class="cal-year-btn"></span>년
-            <span id="cal-month" class="cal-month-btn"></span>월
-          </div>
-          <button id="cal-next" class="cal-nav">&#8250;</button>
-        </div>
-        <div id="calendar-weekdays">
-          <span class="wd sun">일</span><span class="wd">월</span><span class="wd">화</span>
-          <span class="wd">수</span><span class="wd">목</span><span class="wd">금</span><span class="wd sat">토</span>
-        </div>
-        <div id="calendar-grid"></div>
+    <!-- 날짜줄: 년월일 + 토글 + 추가버튼 -->
+    <div id="selected-date-bar">
+      <span id="selected-date-label"></span>
+      <div id="date-bar-actions" style="visibility:hidden">
+        <button id="lightmode-toggle" title="라이트/다크 모드">
+          <div class="lm-toggle-track"><div class="lm-toggle-thumb"></div></div>
+        </button>
+        <!-- JS 호환용, CSS로 숨김 -->
+        <button id="cal-toggle-btn" style="display:none">
+          <svg id="cal-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        <button id="fab-add">＋</button>
       </div>
+    </div>
 
-      <!-- 날짜 바 (접기 버튼 제외) -->
-      <div id="selected-date-bar">
-        <span id="selected-date-label"></span>
-        <div id="date-bar-actions" style="visibility:hidden">
-          <button id="lightmode-toggle" title="라이트/다크 모드">
-            <div class="lm-toggle-track"><div class="lm-toggle-thumb"></div></div>
-          </button>
-          <button id="cal-toggle-btn" title="달력 접기/펴기" style="display:none">
-            <svg id="cal-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          </button>
-          <button id="fab-add">＋</button>
-        </div>
-      </div>
-    </div><!-- /pc-cal-wrap -->
-
-    <!-- ── 할일 탭 ── -->
+    <!-- 할일 탭 -->
     <div id="tab-todo" class="tab-content active">
       <div id="todo-list-section">
         <ul id="todo-list"></ul>
       </div>
     </div>
 
-    <!-- ── 주간 탭 ── -->
+    <!-- 주간 탭 -->
     <div id="tab-weekly" class="tab-content">
       <div id="weekly-header">
         <button id="week-prev" class="week-nav">&#8249;</button>
         <span id="week-range-label"></span>
         <div id="week-header-right">
-          <button id="week-important-btn" class="week-filter-btn" title="주간 표시 항목만 보기">중요</button>
+          <button id="week-important-btn" class="week-filter-btn">중요</button>
           <button id="week-next" class="week-nav">&#8250;</button>
         </div>
       </div>
-      <div id="week-day-row-wrap">
-        <div id="week-day-row"></div>
-      </div>
-      <div id="week-selected-bar">
-        <span id="week-selected-label"></span>
-      </div>
-      <div id="weekly-list-section">
-        <div id="weekly-todo-list"></div>
-      </div>
+      <div id="week-day-row-wrap"><div id="week-day-row"></div></div>
+      <div id="week-selected-bar"><span id="week-selected-label"></span></div>
+      <div id="weekly-list-section"><div id="weekly-todo-list"></div></div>
     </div>
 
-    <!-- ── 검색 탭 ── -->
+    <!-- 검색 탭 -->
     <div id="tab-search" class="tab-content">
       <div id="search-container">
         <div id="search-input-wrap">
@@ -222,7 +207,7 @@
 
   </div><!-- /pc-center -->
 
-  <!-- ── 우측: 디테일 패널 ── -->
+  <!-- ── 우측: 메모 + 체크리스트 ── -->
   <div id="pc-right">
     <div id="pc-right-header">
       <div id="pc-right-title">할일을 선택하세요</div>
@@ -271,7 +256,7 @@
   <div id="repeats-list"></div>
 </div>
 
-<!-- ===== 할일 추가/수정 모달 ===== -->
+<!-- ===== 할일 모달 ===== -->
 <div id="modal-overlay" class="hidden">
   <div id="modal-box">
     <div id="modal-header">
@@ -316,7 +301,7 @@
           <input type="checkbox" id="checklist-toggle" />
           <span>리스트</span>
         </label>
-        <button id="checklist-open-btn" class="checklist-open-btn hidden" title="체크리스트 편집">☑ 리스트</button>
+        <button id="checklist-open-btn" class="checklist-open-btn hidden">☑ 리스트</button>
       </div>
     </div>
     <button id="modal-save">저장</button>
@@ -407,7 +392,7 @@
   </div>
 </div>
 
-<!-- ===== 액션 팝업 (PC에서는 CSS로 hidden, 드롭다운 대체) ===== -->
+<!-- ===== 액션 팝업 (PC에서 CSS 숨김, JS 호환용) ===== -->
 <div id="action-popup" class="hidden">
   <div id="action-box">
     <input type="date" id="action-date-picker" />
@@ -484,7 +469,7 @@
   </div>
 </div>
 
-<!-- ===== 공유 JS (기존 파일 그대로 사용, 수정 없음) ===== -->
+<!-- ===== 공유 JS (기존 파일 그대로, 수정 없음) ===== -->
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/sync.js"></script>
@@ -502,30 +487,26 @@
 <!-- ===== PC 전용 스크립트 ===== -->
 <script>
 /* =============================================
-   PC 전용 로직
-   — 기존 JS 함수를 덮어써서 PC UX 적용
-   — Supabase/IDB 로직 일체 미수정
+   PC 전용 로직 — 기존 JS 함수 UI 부분만 덮어씀
+   Supabase / IDB 로직 일체 미수정
    ============================================= */
 
-// ── 우측 패널 상태 ──
-let pcSelectedTodoId   = null;
-let pcSelectedTodoDate = null;
+let pcSelectedTodoId    = null;
+let pcSelectedTodoDate  = null;
 let pcSelectedIsVirtual = false;
-let pcMemoOriginal     = '';
+let pcMemoOriginal      = '';
 
-// ── openActionPopup 재정의: 드롭다운으로 대체 ──
+/* ── openActionPopup: 드롭다운으로 대체 ── */
 (function() {
   const _orig = window.openActionPopup;
   window.openActionPopup = function(id, fromWeekly, targetDate, todo) {
-    // 내부 상태 세팅을 위해 원본 호출 후 즉시 숨김
     _orig(id, fromWeekly, targetDate, todo);
     document.getElementById('action-popup').classList.add('hidden');
-    // PC 드롭다운 표시
     pcShowDropdown(id, fromWeekly, targetDate, todo);
   };
 })();
 
-// ── openEditModal 재정의: 우측 패널도 업데이트 ──
+/* ── openEditModal: 우측 패널도 업데이트 ── */
 (function() {
   const _orig = window.openEditModal;
   window.openEditModal = function(todo) {
@@ -534,7 +515,7 @@ let pcMemoOriginal     = '';
   };
 })();
 
-// ── renderTodos 재정의: 우측 패널 선택 복원 ──
+/* ── renderTodos: 우측 패널 선택 복원 ── */
 (function() {
   const _orig = window.renderTodos;
   window.renderTodos = function() {
@@ -543,12 +524,11 @@ let pcMemoOriginal     = '';
   };
 })();
 
-// ── loadWeekly 이후 주간 클릭도 우측 패널 반영 ──
+/* ── loadWeekly: 주간 아이템 클릭 → 우측 패널 ── */
 (function() {
   const _orig = window.loadWeekly;
   window.loadWeekly = async function() {
     await _orig();
-    pcAttachWeeklyClickHandlers();
     pcRestoreSelection();
   };
 })();
@@ -557,8 +537,6 @@ let pcMemoOriginal     = '';
 function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   pcCloseDropdown();
 
-  // 위치 기준: 해당 할일 아이템의 메뉴 버튼
-  const selector = `[data-id="${CSS.escape(String(id))}"] .todo-menu-btn, .week-todo-item .todo-menu-btn`;
   let refEl = null;
   document.querySelectorAll('[data-id]').forEach(el => {
     if (String(el.dataset.id) === String(id)) {
@@ -571,11 +549,10 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
   const dd = document.createElement('div');
   dd.id = 'pc-action-dropdown';
 
-  // 위치 계산 (화면 경계 보정)
   let top  = rect.bottom + 4;
   let left = rect.right - 160;
   if (left < 8) left = 8;
-  if (top + 150 > window.innerHeight) top = rect.top - 154;
+  if (top + 140 > window.innerHeight) top = rect.top - 144;
 
   dd.style.top  = top  + 'px';
   dd.style.left = left + 'px';
@@ -585,7 +562,6 @@ function pcShowDropdown(id, fromWeekly, targetDate, todo) {
     { text: '🗓 날짜 선택', danger: false, onClick: () => pcPickDate(id, fromWeekly, targetDate) },
     { text: '🗑 삭제',     danger: true,  onClick: () => document.getElementById('action-delete').click() },
   ];
-
   btns.forEach(b => {
     const btn = document.createElement('button');
     btn.className = 'pc-dropdown-btn' + (b.danger ? ' danger' : '');
@@ -603,13 +579,11 @@ function pcCloseDropdown() {
   if (el) el.remove();
   document.removeEventListener('click', pcCloseDropdownOutside);
 }
-
 function pcCloseDropdownOutside(e) {
   const dd = document.getElementById('pc-action-dropdown');
   if (dd && !dd.contains(e.target)) pcCloseDropdown();
 }
 
-// PC 날짜 선택: 임시 input으로 showPicker 호출
 function pcPickDate(id, fromWeekly, targetDate) {
   const tmp = document.createElement('input');
   tmp.type  = 'date';
@@ -630,53 +604,38 @@ function pcPickDate(id, fromWeekly, targetDate) {
   tmp.addEventListener('blur', () => setTimeout(() => tmp.remove(), 300));
 }
 
-/* ── 우측 패널: 할일 디테일 표시 ── */
+/* ── 우측 패널: 할일 디테일 ── */
 function pcShowTodoDetail(todo) {
   if (!todo) return;
 
-  // 선택 상태 저장
   pcSelectedTodoId    = todo._virtual ? todo._masterId : todo.id;
   pcSelectedTodoDate  = todo.date || AppState.selectedDate;
   pcSelectedIsVirtual = !!todo._virtual;
 
-  // 헤더
-  const titleEl = document.getElementById('pc-right-title');
-  const subEl   = document.getElementById('pc-right-sub');
-  titleEl.textContent = todo.title || '(제목 없음)';
-
+  document.getElementById('pc-right-title').textContent = todo.title || '(제목 없음)';
   const isRepeat = (todo.repeat_type && todo.repeat_type !== 'none') || !!todo.repeat_master_id || todo._virtual;
-  subEl.textContent = isRepeat ? '🔁 반복 일정' : '';
+  document.getElementById('pc-right-sub').textContent = isRepeat ? '🔁 반복 일정' : '';
 
-  // 메모
   const memoTA = document.getElementById('pc-memo-textarea');
   memoTA.value = todo.memo || '';
   memoTA.disabled = false;
-  memoTA.dataset.todoId      = String(todo.id);
-  memoTA.dataset.masterId    = String(todo._masterId || '');
-  memoTA.dataset.isVirtual   = String(!!todo._virtual);
-  memoTA.dataset.todoDate    = todo.date || AppState.selectedDate;
+  memoTA.dataset.todoId    = String(todo.id);
+  memoTA.dataset.masterId  = String(todo._masterId || '');
+  memoTA.dataset.isVirtual = String(!!todo._virtual);
+  memoTA.dataset.todoDate  = todo.date || AppState.selectedDate;
   pcMemoOriginal = todo.memo || '';
 
-  // 체크리스트
   pcRenderChecklist(todo);
 }
 
 function pcClearDetail() {
-  pcSelectedTodoId    = null;
-  pcSelectedTodoDate  = null;
-  pcSelectedIsVirtual = false;
-
+  pcSelectedTodoId = null; pcSelectedTodoDate = null; pcSelectedIsVirtual = false;
   document.getElementById('pc-right-title').textContent = '할일을 선택하세요';
   document.getElementById('pc-right-sub').textContent   = '';
-
   const memoTA = document.getElementById('pc-memo-textarea');
-  memoTA.value    = '';
-  memoTA.disabled = true;
-  memoTA.dataset.todoId   = '';
-  memoTA.dataset.masterId = '';
-  memoTA.dataset.isVirtual = '';
-  memoTA.dataset.todoDate  = '';
-
+  memoTA.value = ''; memoTA.disabled = true;
+  memoTA.dataset.todoId = ''; memoTA.dataset.masterId = '';
+  memoTA.dataset.isVirtual = ''; memoTA.dataset.todoDate = '';
   document.getElementById('pc-checklist-items').innerHTML =
     '<div class="pc-placeholder-text">체크리스트 없음</div>';
 }
@@ -686,9 +645,7 @@ function pcRestoreSelection() {
   let found = null;
   for (const t of (AppState.todos || [])) {
     if (pcSelectedIsVirtual) {
-      if (t._virtual && String(t._masterId) === String(pcSelectedTodoId) && t.date === pcSelectedTodoDate) {
-        found = t; break;
-      }
+      if (t._virtual && String(t._masterId) === String(pcSelectedTodoId) && t.date === pcSelectedTodoDate) { found = t; break; }
     } else {
       if (String(t.id) === String(pcSelectedTodoId)) { found = t; break; }
     }
@@ -696,80 +653,60 @@ function pcRestoreSelection() {
   if (found) pcShowTodoDetail(found);
 }
 
-/* ── 우측 패널: 체크리스트 렌더 ── */
+/* ── 체크리스트 렌더 ── */
 function pcRenderChecklist(todo) {
   const container = document.getElementById('pc-checklist-items');
   container.innerHTML = '';
-
   if (!hasChecklist(todo)) {
     container.innerHTML = '<div class="pc-placeholder-text">체크리스트 없음</div>';
     return;
   }
-
   let items = [];
   try { items = JSON.parse(todo.checklist); } catch(e) { return; }
-  const validItems = items.filter(it => it.text && it.text.trim());
-  if (!validItems.length) {
+  const valid = items.filter(it => it.text && it.text.trim());
+  if (!valid.length) {
     container.innerHTML = '<div class="pc-placeholder-text">체크리스트 없음</div>';
     return;
   }
-
-  validItems.forEach((item, idx) => {
+  items.forEach((item, idx) => {
+    if (!item.text || !item.text.trim()) return;
     const row = document.createElement('div');
     row.className = 'pc-checklist-item' + (item.checked ? ' pc-cl-done' : '');
-
     const chk = document.createElement('div');
     chk.className = 'pc-cl-check' + (item.checked ? ' pc-cl-done' : '');
-
     const txt = document.createElement('div');
     txt.className = 'pc-cl-text';
     txt.textContent = item.text;
-
-    row.appendChild(chk);
-    row.appendChild(txt);
-
-    row.addEventListener('click', () => pcToggleChecklistItem(todo, items.indexOf(item), items));
+    row.appendChild(chk); row.appendChild(txt);
+    row.addEventListener('click', () => pcToggleChecklistItem(todo, idx, items));
     container.appendChild(row);
   });
 }
 
-/* ── 체크리스트 아이템 토글 (저장 포함) ── */
-async function pcToggleChecklistItem(todo, rawIdx, items) {
-  items[rawIdx].checked = !items[rawIdx].checked;
+/* ── 체크리스트 아이템 토글 ── */
+async function pcToggleChecklistItem(todo, idx, items) {
+  items[idx].checked = !items[idx].checked;
   const newChecklist = JSON.stringify(items);
-
-  const validItems = items.filter(it => it.text && it.text.trim());
-  const allChecked = validItems.length > 0 && validItems.every(it => it.checked);
-
+  const valid = items.filter(it => it.text && it.text.trim());
+  const allChecked = valid.length > 0 && valid.every(it => it.checked);
   let saveId = todo.id;
 
   try {
     if (todo._virtual) {
-      // 반복 가상 항목: "이 날짜만" 예외 행 생성 후 저장
-      const exRow = await insertRepeatException(
-        todo._masterId, todo.date || AppState.selectedDate, false
-      );
+      const exRow = await insertRepeatException(todo._masterId, todo.date || AppState.selectedDate, false);
       await updateTodo(exRow.id, { checklist: newChecklist });
       saveId = exRow.id;
-      // 이후 해당 예외 행으로 추적
-      pcSelectedTodoId    = exRow.id;
-      pcSelectedIsVirtual = false;
+      pcSelectedTodoId = exRow.id; pcSelectedIsVirtual = false;
     } else {
       await updateTodo(todo.id, { checklist: newChecklist });
     }
-
     if (allChecked) {
-      // 모두 체크 → 할일 완료 처리
       await toggleDone(saveId, true);
       playCompleteSound();
-      await loadTodos();
-      updateMonthDots();
+      await loadTodos(); updateMonthDots();
       pcClearDetail();
     } else {
-      // 부분 체크 → 패널만 업데이트
-      const updatedTodo = { ...todo, checklist: newChecklist, id: saveId, _virtual: false };
-      pcRenderChecklist(updatedTodo);
-      // AppState도 갱신
+      pcRenderChecklist({ ...todo, checklist: newChecklist, id: saveId, _virtual: false });
       await loadTodos();
     }
   } catch(e) {
@@ -778,57 +715,27 @@ async function pcToggleChecklistItem(todo, rawIdx, items) {
   }
 }
 
-/* ── 메모 자동 저장 (blur 시) ── */
+/* ── 메모 자동 저장 (blur) ── */
 document.getElementById('pc-memo-textarea').addEventListener('blur', async function() {
   const newMemo = this.value;
-  if (newMemo === pcMemoOriginal) return; // 변경 없음
-
-  const id         = this.dataset.todoId;
-  const masterId   = this.dataset.masterId;
-  const isVirtual  = this.dataset.isVirtual === 'true';
-  const todoDate   = this.dataset.todoDate;
+  if (newMemo === pcMemoOriginal) return;
+  const id = this.dataset.todoId, masterId = this.dataset.masterId;
+  const isVirtual = this.dataset.isVirtual === 'true';
+  const todoDate  = this.dataset.todoDate;
   if (!id && !masterId) return;
-
   try {
     if (isVirtual && masterId) {
       const exRow = await insertRepeatException(masterId, todoDate || AppState.selectedDate, false);
       await updateTodo(exRow.id, { memo: newMemo });
-      pcSelectedTodoId    = exRow.id;
-      pcSelectedIsVirtual = false;
-      this.dataset.todoId    = String(exRow.id);
-      this.dataset.isVirtual = 'false';
+      pcSelectedTodoId = exRow.id; pcSelectedIsVirtual = false;
+      this.dataset.todoId = String(exRow.id); this.dataset.isVirtual = 'false';
     } else {
       await updateTodo(id, { memo: newMemo });
     }
     pcMemoOriginal = newMemo;
     showToast('메모가 저장됐어요');
     loadTodos();
-  } catch(e) {
-    showToast('저장 실패');
-    console.error('[PC] memo save error:', e);
-  }
-});
-
-/* ── 주간 탭 아이템 클릭 → 우측 패널 ── */
-function pcAttachWeeklyClickHandlers() {
-  document.querySelectorAll('.week-todo-item').forEach(el => {
-    // 기존 핸들러 있으니 새 핸들러를 text 영역에만 추가
-    const textEl = el.querySelector('.todo-text');
-    if (!textEl || textEl._pcBound) return;
-    textEl._pcBound = true;
-    textEl.addEventListener('click', () => {
-      // weekly의 todo 객체를 weekAllRows에서 찾기
-      // makeWeekTodoItem에서 el에 data-id를 달지 않으므로 title로 근사 매칭
-      // → openEditModal 재정의로 자동 처리됨 (주간탭은 text 클릭 시 모달 없음)
-      // 대신 week-todo-item의 텍스트 클릭에 openEditModal을 연결
-    });
-  });
-}
-
-/* 초기화 완료 후 호출 */
-document.addEventListener('DOMContentLoaded', () => {
-  // bootApp이 완료되면 우측 패널 초기 상태 설정
-  // (bootApp → loadTodos → renderTodos → pcRestoreSelection 경로로 자동 처리)
+  } catch(e) { showToast('저장 실패'); }
 });
 </script>
 
