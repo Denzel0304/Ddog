@@ -5,8 +5,8 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 160px;
-  --pc-nav-h: 440px;   /* 달력영역(340px) + 여유(100px) = 440 / 4 = 110px per tab */
+  --pc-left-w: 112px;            /* 기존 160px의 70% */
+  --pc-nav-h: 440px;             /* 4개 탭 전체 높이 = 달력+날짜바 높이와 동일 */
 }
 
 /* ── #app 3열 그리드로 재정의 ── */
@@ -57,9 +57,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 8px;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 14px;
   font-family: var(--font-ui);
   transition: color 0.15s, background 0.15s, border-color 0.15s;
   border-left: 3px solid transparent;
@@ -69,7 +69,7 @@
   width: 100%;
   padding: 0;
 }
-.pc-nav-btn svg { width: 22px; height: 22px; }
+.pc-nav-btn svg { width: 44px; height: 44px; }
 .pc-nav-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .pc-nav-btn.active {
   color: var(--accent);
@@ -91,6 +91,34 @@
 
 /* 달력 접기 버튼 PC에서 숨김 */
 #pc-center #cal-toggle-btn { display: none !important; }
+
+/* ── 달력+날짜바 래퍼: 4개 탭 높이와 정확히 동일 ── */
+#pc-cal-wrap {
+  height: var(--pc-nav-h);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#pc-cal-wrap #calendar-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* 달력 그리드가 남은 높이를 꽉 채우도록 */
+#pc-cal-wrap #calendar-grid {
+  flex: 1;
+  grid-auto-rows: 1fr;
+}
+/* 날짜 셀 aspect-ratio 해제 → 높이를 그리드가 결정 */
+#pc-cal-wrap .cal-day {
+  aspect-ratio: unset;
+  font-size: 17px;
+}
+#pc-cal-wrap #selected-date-bar {
+  flex-shrink: 0;
+}
 
 /* tab-content: 나머지 공간 채우기 */
 #pc-center .tab-content          { flex: 1; overflow: hidden; min-height: 0; }
