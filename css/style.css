@@ -1185,3 +1185,127 @@ select:focus { border-color: var(--accent); }
 }
 .checklist-open-btn.hidden { display: none; }
 #checklist-toggle-label.hidden { display: none; }
+
+/* =============================================
+   라이트 모드
+   ============================================= */
+body.light-mode {
+  --bg-base:        #f4f5f0;
+  --bg-surface:     #ebeee7;
+  --bg-elevated:    #e2e5dc;
+  --bg-hover:       #d8dcd2;
+  --accent:         #7ecfa0;
+  --accent-dim:     #4a9e6d;
+  --accent-glow:    rgba(126, 207, 160, 0.2);
+  --text-primary:   #1e2028;
+  --text-secondary: #4a5060;
+  --text-muted:     #8a8f9e;
+  --text-done:      #aab0be;
+  --border:         #cdd0c8;
+  --border-light:   #bdc1b8;
+  --danger:         #c94050;
+  --imp-1:          #7a7a7a;
+  --imp-2:          #b08a30;
+  --imp-3:          #c85820;
+}
+
+/* 라이트 모드 스플래시/로그인 배경 */
+body.light-mode #splash-screen { background: #f4f5f0; }
+body.light-mode #login-screen  { background: #f4f5f0; }
+body.light-mode #login-box {
+  background: #ebeee7;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+body.light-mode #login-box input {
+  background: #f4f5f0;
+  border-color: #cdd0c8;
+  color: #1e2028;
+}
+body.light-mode #login-box input:focus { border-color: #7ecfa0; }
+body.light-mode #login-title { color: #1e2028; }
+
+/* 달력 선택 날짜 글씨 (다크처럼 어두운 색 유지) */
+body.light-mode .cal-day.selected { color: #fff; }
+body.light-mode .cal-day.selected::before { background: var(--accent); }
+body.light-mode .cal-day.selected.has-todo span::after { background: #fff; }
+body.light-mode .cal-day.selected.past-undone span::after { background: #fff; }
+
+/* 선택된 날의 텍스트가 녹색 배경 위에서 잘 보이도록 */
+body.light-mode .week-day-card.today .wdc-name,
+body.light-mode .week-day-card.today .wdc-num,
+body.light-mode .week-day-card.selected .wdc-name,
+body.light-mode .week-day-card.selected .wdc-num { color: #fff !important; }
+
+/* 토스트 라이트 */
+body.light-mode #toast {
+  background: #1e2028;
+  color: #f0f2ee;
+  border-color: #333;
+}
+
+/* 스크롤바 */
+body.light-mode #todo-list-section::-webkit-scrollbar-thumb { background: #bdc1b8; }
+body.light-mode #weekly-list-section::-webkit-scrollbar-thumb { background: #bdc1b8; }
+
+/* 라이트 모드 토글 버튼 */
+#lightmode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  gap: 0;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.lm-toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--bg-hover);
+  border: 1.5px solid var(--border-light);
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+.lm-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+body.light-mode .lm-toggle-track {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+body.light-mode .lm-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+/* 라이트 모드 select */
+body.light-mode select {
+  background: #ebeee7;
+  color: #1e2028;
+  border-color: #bdc1b8;
+}
+
+/* 반복 설정 모달 */
+body.light-mode #repeat-box,
+body.light-mode #checklist-box,
+body.light-mode #year-box,
+body.light-mode #month-box { border-color: #bdc1b8; }
+
+/* 설정 패널 */
+body.light-mode #settings-panel { box-shadow: 4px 0 24px rgba(0,0,0,0.15); }
+body.light-mode #repeats-panel { box-shadow: 4px 0 24px rgba(0,0,0,0.15); }
+
+/* 로그아웃 모달 */
+body.light-mode #logout-modal > div {
+  background: #ebeee7;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
