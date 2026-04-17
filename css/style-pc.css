@@ -117,8 +117,17 @@
 }
 
 
-/* 달력 아래 남은 공간: 빈 영역 */
-#pc-left-footer {
+/* 달력 점 크기 확대 */
+#pc-left .cal-day.has-todo span::after {
+  width: 7px !important;
+  height: 7px !important;
+  margin-top: 3px !important;
+}
+#pc-left .cal-day.past-undone span::after {
+  width: 7px !important;
+  height: 7px !important;
+  margin-top: 3px !important;
+}
   flex: 1;
   background: var(--bg-surface);
 }
