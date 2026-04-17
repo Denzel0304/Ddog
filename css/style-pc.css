@@ -180,7 +180,22 @@
 }
 
 /* 날짜줄: 중앙 최상단 고정 행 */
-#pc-center #selected-date-bar { flex-shrink: 0; }
+#pc-center #selected-date-bar {
+  flex-shrink: 0;
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px;
+}
+
+/* 날짜 텍스트: 크게 + 볼드 */
+#pc-center #selected-date-label {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  flex: 1 !important;
+  text-align: right !important;
+}
 
 /* 달력 접기 버튼 숨김 */
 #pc-center #cal-toggle-btn { display: none !important; }
