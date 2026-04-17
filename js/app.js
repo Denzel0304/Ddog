@@ -47,10 +47,22 @@ function initLightMode() {
   if (localStorage.getItem('lightmode') === '1') {
     document.body.classList.add('light-mode');
   }
+  applyLogoMode();
   document.getElementById('lightmode-toggle').addEventListener('click', () => {
     const isLight = document.body.classList.toggle('light-mode');
     localStorage.setItem('lightmode', isLight ? '1' : '0');
+    applyLogoMode();
   });
+}
+
+function applyLogoMode() {
+  const isLight = document.body.classList.contains('light-mode');
+  const src = isLight ? 'logo1.png' : 'logo.png';
+  // 스플래시 + 로그인 화면 로고 모두 교체
+  const splashLogo = document.getElementById('splash-logo');
+  const loginLogo  = document.getElementById('login-logo');
+  if (splashLogo) splashLogo.src = src;
+  if (loginLogo)  loginLogo.src  = src;
 }
 
 // ── 뒤로가기 처리 ──
