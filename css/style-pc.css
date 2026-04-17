@@ -294,6 +294,7 @@ body.pc-layout #input-memo {
   height: 100% !important;
   resize: none !important;
   align-self: stretch !important;
+  font-size: 15px !important;
 }
 
 /* 저장 버튼: flex에서 수축 방지, 아래 40% 여백으로 60% 위치에 고정 */
