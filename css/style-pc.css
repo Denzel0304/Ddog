@@ -5,15 +5,16 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 360px;  /* 좌측 고정 너비 확대: 달력이 넓고 시원하게 */
+  --pc-left-w: 520px;   /* 확대: 달력 너비 ↑ */
+  --pc-cal-h:  560px;   /* 달력 고정 높이: 기존의 약 2배 */
 }
 
-/* ── #app: 좌측 고정, 중앙 1fr, 우측 0.5fr(중앙의 절반) ── */
+/* ── #app: 좌측 고정, 중앙 0.7fr(기존 1fr의 70%), 우측 0.5fr ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1fr 0.5fr !important;
+  grid-template-columns: var(--pc-left-w) 0.7fr 0.5fr !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -81,24 +82,36 @@
   background: var(--accent-glow);
 }
 
-/* ── 달력: 고정 높이, 찌그러지지 않음 ── */
+/* ── 달력: 고정 높이(2배), 그리드가 채움 ── */
 #pc-left #calendar-section {
-  flex-shrink: 0;               /* 높이 고정, 늘어나지 않음 */
+  flex-shrink: 0;
+  height: var(--pc-cal-h);
+  display: flex;
+  flex-direction: column;
   padding: 8px 8px 6px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+#pc-left #calendar-header   { margin-bottom: 4px; flex-shrink: 0; }
+#pc-left #calendar-weekdays { margin-bottom: 1px; flex-shrink: 0; }
+
+/* 달력 그리드: 남은 높이를 6행이 균등 분할 */
+#pc-left #calendar-grid {
+  flex: 1;
+  grid-auto-rows: 1fr;
 }
 
-/* 달력 셀 원래 aspect-ratio 유지 (고정 너비이므로 찌그러지지 않음) */
+/* 달력 셀: 높이는 그리드가 결정, aspect-ratio 해제 */
 #pc-left .cal-day {
-  font-size: 16px;
-  /* aspect-ratio는 style.css 기본값(1.4) 유지 */
+  aspect-ratio: unset !important;
+  font-size: 18px;
 }
 
 /* 달력 today/selected 원 크기 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
-  width: 34px; height: 34px;
+  width: 38px; height: 38px;
 }
 
 /* 달력 아래 남은 공간: 빈 영역 */
