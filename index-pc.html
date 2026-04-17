@@ -652,14 +652,32 @@ function pcPickDate(id, fromWeekly, targetDate) {
       renderPicker();
     });
 
+    // 이번 달 버튼
+    const thisMonthBtn = document.createElement('button');
+    thisMonthBtn.textContent = '이번 달';
+    thisMonthBtn.style.cssText = 'font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);cursor:pointer;padding:4px 10px;border-radius:12px;white-space:nowrap;margin-left:4px;';
+    thisMonthBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const today = new Date();
+      pickerYear  = today.getFullYear();
+      pickerMonth = today.getMonth() + 1;
+      // 오늘 날짜를 선택된 날짜로 설정
+      const todayStr = toLocalDateStr(today);
+      // initDate를 오늘로 갱신 (클로저 변수 재할당은 안되므로 셀 클릭 시뮬레이션)
+      renderPicker();
+      // 오늘 셀에 강조 표시를 위해 initDate 업데이트
+      popup.dataset.todayPick = todayStr;
+    });
+
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
-    closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:8px;';
+    closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:4px;';
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); popup.remove(); });
 
     header.appendChild(prevBtn);
     header.appendChild(titleEl);
     header.appendChild(nextBtn);
+    header.appendChild(thisMonthBtn);
     header.appendChild(closeBtn);
     popup.appendChild(header);
 
@@ -681,6 +699,7 @@ function pcPickDate(id, fromWeekly, targetDate) {
     const firstDay = new Date(pickerYear, pickerMonth - 1, 1).getDay();
     const lastDate = new Date(pickerYear, pickerMonth, 0).getDate();
     const todayStr2 = toLocalDateStr(new Date());
+    const highlightDate = popup.dataset.todayPick || initDate;
 
     // 빈 칸 채우기
     for (let i = 0; i < firstDay; i++) {
@@ -693,7 +712,7 @@ function pcPickDate(id, fromWeekly, targetDate) {
       const cell = document.createElement('button');
       cell.textContent = d;
       const isToday    = dateStr === todayStr2;
-      const isSelected = dateStr === initDate;
+      const isSelected = dateStr === highlightDate;
       const dow = new Date(pickerYear, pickerMonth - 1, d).getDay();
       const color = dow === 0 ? 'var(--danger)' : dow === 6 ? '#6b9fd4' : 'var(--text-primary)';
 
