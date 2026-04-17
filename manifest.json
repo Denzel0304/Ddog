@@ -10,18 +10,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/Ddog/logo.png",
+      "src": "/Ddog/logo192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/Ddog/logo.png",
+      "src": "/Ddog/logo512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/Ddog/logo.png",
-      "sizes": "1024x1024",
       "type": "image/png"
     }
   ]
