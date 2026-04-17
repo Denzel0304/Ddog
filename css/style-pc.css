@@ -5,15 +5,16 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 520px;  /* 달력 넓게 (성공했던 값) */
+  /* 풀화면(1400px)→520px, 절반(700px)→364px(30%감소), 이하 364px 유지 */
+  --pc-left-w: clamp(364px, 37.14vw, 520px);
 }
 
-/* ── #app: 좌측 520px 고정, 중앙 1.4fr, 우측 1fr ── */
+/* ── #app: 좌측 동적, 중앙 흡수, 우측 최솟값 보장 ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1.4fr 1fr !important;
+  grid-template-columns: var(--pc-left-w) 1.4fr minmax(180px, 1fr) !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -183,18 +184,27 @@
 #pc-center #selected-date-bar {
   flex-shrink: 0;
   display: flex !important;
-  flex-direction: row-reverse !important;
-  justify-content: flex-end !important;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
   align-items: center !important;
-  gap: 12px;
+  gap: 0;
 }
 
-/* 날짜 텍스트: 크게 + 볼드 */
+/* 액션 버튼 그룹: 왼쪽 고정 */
+#pc-center #date-bar-actions {
+  flex-shrink: 0;
+  order: 0;
+}
+
+/* 날짜 텍스트: 버튼 바로 우측, 여백 추가 */
 #pc-center #selected-date-label {
   font-size: 18px !important;
   font-weight: 700 !important;
-  flex: 1 !important;
-  text-align: right !important;
+  flex: 0 !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  margin-left: 20px !important;
+  order: 1;
 }
 
 /* 달력 접기 버튼 숨김 */
