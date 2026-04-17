@@ -9,6 +9,15 @@ function initCalendar() {
 
   document.getElementById('cal-prev').addEventListener('click', () => moveCalMonth(-1));
   document.getElementById('cal-next').addEventListener('click', () => moveCalMonth(1));
+  document.getElementById('cal-thismonth-btn').addEventListener('click', () => {
+    const today = new Date();
+    AppState.calYear  = today.getFullYear();
+    AppState.calMonth = today.getMonth() + 1;
+    AppState.selectedDate = toLocalDateStr(today);
+    renderCalendar();
+    updateMonthDots();
+    loadTodos();
+  });
   document.getElementById('cal-year').addEventListener('click', openYearPopup);
   document.getElementById('cal-month').addEventListener('click', openMonthPopup);
 

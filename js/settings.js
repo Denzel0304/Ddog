@@ -178,6 +178,8 @@ function showRepeatDeleteOptions(todo, el) {
   opts.appendChild(cancel);
 
   el.appendChild(opts);
+  // 최하단 아이템의 경우 삭제 옵션이 잘리지 않도록 스크롤
+  setTimeout(() => opts.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 
 

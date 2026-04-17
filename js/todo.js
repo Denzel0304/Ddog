@@ -5,7 +5,6 @@
 // 할일 목록 로드 & 렌더링
 async function loadTodos() {
   const list = document.getElementById('todo-list');
-  list.innerHTML = '<div class="spinner"></div>';
   try {
     const dateStr = AppState.selectedDate;
     const allDirectRows = await fetchTodosByDate(dateStr);

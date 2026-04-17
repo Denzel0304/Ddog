@@ -5,11 +5,12 @@
 let weekOffset = 1;
 let selectedWeekDay = null;
 let weekAllRows = [];
-let weekImportantOnly = false;
+let weekImportantOnly = true;
 
 function initWeekly() {
   document.getElementById('week-prev').addEventListener('click', () => { weekOffset--; loadWeekly(); });
   document.getElementById('week-next').addEventListener('click', () => { weekOffset++; loadWeekly(); });
+  document.getElementById('week-important-btn').classList.add('active');
   document.getElementById('week-important-btn').addEventListener('click', () => {
     weekImportantOnly = !weekImportantOnly;
     document.getElementById('week-important-btn').classList.toggle('active', weekImportantOnly);
@@ -38,7 +39,6 @@ async function loadWeekly() {
   const fromStr = toLocalDateStr(monday);
   const toStr   = toLocalDateStr(sunday);
   const container = document.getElementById('weekly-todo-list');
-  container.innerHTML = '<div class="spinner"></div>';
 
   try {
     // ── IDB에서 읽기 (Supabase 직접 호출 X → 오프라인 대응 + 빠른 속도) ──

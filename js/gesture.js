@@ -33,14 +33,12 @@ function initGesturePopup() {
   });
 
   document.getElementById('action-pick-date').addEventListener('click', () => {
-    const fromWeekly = actionFromWeekly; // 플래그를 먼저 로컬에 저장
+    const fromWeekly = actionFromWeekly;
     const picker = document.getElementById('action-date-picker');
     picker.value = actionTargetDate || AppState.selectedDate;
-    picker.classList.remove('hidden');
     picker.showPicker?.();
     picker.addEventListener('change', async function onPick() {
       picker.removeEventListener('change', onPick);
-      picker.classList.add('hidden');
       if (!picker.value || !actionTargetId) return;
       try {
         await moveTodoDate(actionTargetId, picker.value);
@@ -99,7 +97,6 @@ function openActionPopup(id, fromWeekly = false, targetDate = null, todo = null)
 
 function closeActionPopup() {
   document.getElementById('action-popup').classList.add('hidden');
-  document.getElementById('action-date-picker').classList.add('hidden');
   const sheet = document.getElementById('repeat-delete-sheet');
   if (sheet) sheet.remove();
   actionTargetId = null;
