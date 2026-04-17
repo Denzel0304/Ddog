@@ -633,7 +633,8 @@ function pcPickDate(id, fromWeekly, targetDate) {
     const prevBtn = document.createElement('button');
     prevBtn.textContent = '‹';
     prevBtn.style.cssText = 'font-size:28px;color:var(--text-secondary);background:none;border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;';
-    prevBtn.addEventListener('click', () => {
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       pickerMonth--; if (pickerMonth < 1) { pickerMonth = 12; pickerYear--; }
       renderPicker();
     });
@@ -645,7 +646,8 @@ function pcPickDate(id, fromWeekly, targetDate) {
     const nextBtn = document.createElement('button');
     nextBtn.textContent = '›';
     nextBtn.style.cssText = prevBtn.style.cssText;
-    nextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       pickerMonth++; if (pickerMonth > 12) { pickerMonth = 1; pickerYear++; }
       renderPicker();
     });
@@ -653,7 +655,7 @@ function pcPickDate(id, fromWeekly, targetDate) {
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:8px;';
-    closeBtn.addEventListener('click', () => popup.remove());
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); popup.remove(); });
 
     header.appendChild(prevBtn);
     header.appendChild(titleEl);
@@ -706,14 +708,15 @@ function pcPickDate(id, fromWeekly, targetDate) {
       cell.addEventListener('mouseover', () => { if (!isSelected) cell.style.background = 'var(--bg-hover)'; });
       cell.addEventListener('mouseout',  () => { if (!isSelected) cell.style.background = isToday ? 'var(--accent-glow)' : 'none'; });
 
-      cell.addEventListener('click', async () => {
+      cell.addEventListener('click', async (e) => {
+        e.stopPropagation();
         popup.remove();
         try {
           await moveTodoDate(id, dateStr);
           showToast('날짜를 변경했어요');
           if (fromWeekly) await loadWeekly();
           else { await loadTodos(); updateMonthDots(); }
-        } catch(e) { showToast('오류가 발생했어요'); }
+        } catch(e2) { showToast('오류가 발생했어요'); }
       });
       grid.appendChild(cell);
     }
