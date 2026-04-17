@@ -165,6 +165,7 @@
     <div id="calendar-section">
       <div id="calendar-header">
         <button id="cal-prev" class="cal-nav">&#8249;</button>
+        <button id="cal-thismonth-btn" class="cal-thismonth-btn">이번 달</button>
         <div id="cal-title">
           <span id="cal-year" class="cal-year-btn"></span>년
           <span id="cal-month" class="cal-month-btn"></span>월
@@ -433,11 +434,11 @@
 <!-- ===== 액션 팝업 ===== -->
 <div id="action-popup" class="hidden">
   <div id="action-box">
+    <input type="date" id="action-date-picker" />
     <button class="action-btn" id="action-tomorrow">📅 1일 뒤</button>
     <button class="action-btn" id="action-pick-date">🗓 날짜 선택</button>
     <button class="action-btn danger" id="action-delete">🗑 삭제</button>
   </div>
-  <input type="date" id="action-date-picker" class="hidden" />
 </div>
 
 <!-- ===== 년도 팝업 ===== -->
