@@ -490,6 +490,22 @@
 
 let _pcLastDropdownRect = null;
 
+/* ── 삭제 시 우측 패널 자동 비움 ── */
+(function() {
+  const wrapDelete = (fnName) => {
+    const _orig = window[fnName];
+    window[fnName] = async function(...args) {
+      const result = await _orig(...args);
+      closeModal();
+      return result;
+    };
+  };
+  wrapDelete('deleteTodo');
+  wrapDelete('deleteRepeatAll');
+  wrapDelete('deleteRepeatFromDate');
+  wrapDelete('deleteRepeatOnlyDate');
+})();
+
 /* ── openActionPopup: 드롭다운으로 대체 ── */
 (function() {
   const _orig = window.openActionPopup;
