@@ -5,11 +5,11 @@
    ============================================= */
 
 :root {
-  --pc-left-w: 520px;   /* 확대: 달력 너비 ↑ */
-  --pc-cal-h:  560px;   /* 달력 고정 높이: 기존의 약 2배 */
+  /* 좌측 컬럼: 풀화면 520px, 화면이 줄어들면 37.1vw로 동적 축소, 최소 338px(35% 감소) */
+  --pc-left-w: clamp(338px, 37.1vw, 520px);
 }
 
-/* ── #app: 좌측 고정, 중앙 0.7fr(기존 1fr의 70%), 우측 0.5fr ── */
+/* ── #app: 좌측 동적 고정, 중앙 0.7fr, 우측 0.5fr ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
@@ -82,10 +82,11 @@
   background: var(--accent-glow);
 }
 
-/* ── 달력: 고정 높이(2배), 그리드가 채움 ── */
+/* ── 달력: aspect-ratio로 높이가 너비에 비례 → 화면 축소 시 함께 줄어듦 ── */
+/* 기준: 너비 520px → 높이 560px (520:560 = 13:14 비율) */
 #pc-left #calendar-section {
   flex-shrink: 0;
-  height: var(--pc-cal-h);
+  aspect-ratio: 520 / 560;
   display: flex;
   flex-direction: column;
   padding: 8px 8px 6px;
@@ -102,17 +103,19 @@
   grid-auto-rows: 1fr;
 }
 
-/* 달력 셀: 높이는 그리드가 결정, aspect-ratio 해제 */
+/* 달력 셀: 폰트 동적 크기 (풀화면 22px, 절반 화면 ~14px) */
 #pc-left .cal-day {
   aspect-ratio: unset !important;
-  font-size: 18px;
+  font-size: clamp(14px, 1.6vw, 22px);
 }
 
-/* 달력 today/selected 원 크기 */
+/* 달력 today/selected 원 크기: 동적 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
-  width: 38px; height: 38px;
+  width:  clamp(28px, 2.9vw, 40px);
+  height: clamp(28px, 2.9vw, 40px);
 }
+
 
 /* 달력 아래 남은 공간: 빈 영역 */
 #pc-left-footer {
