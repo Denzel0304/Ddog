@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1a1a2e" />
-
-<link rel="icon" href="/Ddog/logo.png" type="image/png">
-  
   <title>똑비서 PC</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/style-pc.css" />
@@ -493,9 +490,78 @@
 
 let _pcLastDropdownRect = null;
 
-/* ── PC: 달력 슬라이드 애니메이션 비활성화 (크기 깜빡임 방지) ── */
+/* ── PC: 달력 슬라이드 애니메이션 비활성화 ── */
 window.animateCalendar = function(dir) {
   renderCalendar();
+};
+
+/* ── PC: 반복 삭제 옵션 시트 — #action-popup 대신 드롭다운으로 표시 ── */
+window.showRepeatDeleteSheet = function(masterId, dateStr, fromWeekly) {
+  pcCloseDropdown();
+  const old = document.getElementById('pc-repeat-delete-sheet');
+  if (old) old.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'pc-repeat-delete-sheet';
+  sheet.style.cssText = `
+    position:fixed;z-index:600;
+    background:var(--bg-elevated);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius);
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    min-width:210px;overflow:hidden;font-family:var(--font-main);
+  `;
+  const rect = _pcLastDropdownRect;
+  let top  = rect ? rect.bottom + 4 : 200;
+  let left = rect ? rect.right - 215 : 200;
+  if (left < 8) left = 8;
+  if (top + 170 > window.innerHeight) top = rect ? rect.top - 174 : 200;
+  sheet.style.top  = top  + 'px';
+  sheet.style.left = left + 'px';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'padding:10px 16px 8px;font-size:12px;color:var(--text-muted);border-bottom:1px solid var(--border);';
+  title.textContent = '반복 일정 삭제';
+  sheet.appendChild(title);
+
+  const options = [
+    { label: '이 날짜만 삭제',        fn: async () => { await deleteRepeatOnlyDate(masterId, dateStr); showToast('이 날짜만 삭제했어요'); } },
+    { label: '이 날짜 이후 모두 삭제', fn: async () => { await deleteRepeatFromDate(masterId, dateStr); showToast('이후 반복을 삭제했어요'); } },
+    { label: '전체 반복 삭제',         fn: async () => { await deleteRepeatAll(masterId); showToast('반복 일정을 삭제했어요'); } },
+  ];
+
+  options.forEach(({ label, fn }) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `display:block;width:100%;padding:11px 16px;font-size:13px;text-align:left;
+      border:none;border-bottom:1px solid var(--border);background:none;cursor:pointer;
+      font-family:var(--font-main);color:${label.includes('전체') ? 'var(--danger)' : 'var(--text-primary)'};`;
+    btn.textContent = label;
+    btn.addEventListener('mouseover', () => btn.style.background = 'var(--bg-hover)');
+    btn.addEventListener('mouseout',  () => btn.style.background = 'none');
+    btn.addEventListener('click', async () => {
+      sheet.remove();
+      try {
+        await fn();
+        if (fromWeekly) await loadWeekly();
+        else { await loadTodos(); updateMonthDots(); }
+      } catch(e) { showToast('오류가 발생했어요'); }
+    });
+    sheet.appendChild(btn);
+  });
+
+  const cancel = document.createElement('button');
+  cancel.style.cssText = `display:block;width:100%;padding:11px 16px;font-size:13px;
+    text-align:center;border:none;background:none;cursor:pointer;color:var(--text-muted);font-family:var(--font-main);`;
+  cancel.textContent = '취소';
+  cancel.addEventListener('click', () => sheet.remove());
+  sheet.appendChild(cancel);
+
+  document.body.appendChild(sheet);
+  setTimeout(() => {
+    document.addEventListener('click', function outsideClose(e) {
+      if (!sheet.contains(e.target)) { sheet.remove(); document.removeEventListener('click', outsideClose); }
+    });
+  }, 10);
 };
 (function() {
   const wrapDelete = (fnName) => {
