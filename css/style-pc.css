@@ -4,12 +4,16 @@
    기존 파일 일체 수정 없음.
    ============================================= */
 
-/* ── #app 1:2:2 비율 3열 그리드 ── */
+:root {
+  --pc-left-w: 260px;  /* 좌측 고정 너비: 달력이 찌그러지지 않는 최소값 */
+}
+
+/* ── #app: 좌측 고정, 중앙/우측 균등 ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: 1fr 2fr 2fr !important;
+  grid-template-columns: var(--pc-left-w) 1fr 1fr !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -17,7 +21,7 @@
   box-shadow: none !important;
 }
 
-/* 기존 하단 탭바 완전 숨김 */
+/* 기존 하단 탭바 숨김 */
 #bottom-nav { display: none !important; }
 
 /* 기존 패딩 리셋 */
@@ -26,10 +30,11 @@
 #search-results      { padding-bottom: 8px !important; }
 
 /* =============================================
-   좌측: 탭 버튼 4개 + 달력
+   좌측: 가로 탭 1줄 + 달력 (고정 높이)
    ============================================= */
 #pc-left {
   grid-column: 1;
+  min-width: var(--pc-left-w);
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -38,73 +43,72 @@
   z-index: 5;
 }
 
+/* ── 가로 탭: 한 줄 ── */
 #pc-nav-tabs {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;          /* 가로 배치 */
   flex-shrink: 0;
+  height: 52px;
   border-bottom: 1px solid var(--border);
+  width: 100%;
 }
 
 .pc-nav-btn {
-  height: 72px;
-  flex-shrink: 0;
+  flex: 1;
+  height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;          /* 아이콘+텍스트 가로 */
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 5px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 11px;
   font-family: var(--font-ui);
   font-weight: 500;
   transition: color 0.15s, background 0.15s, border-color 0.15s;
-  border-left: 3px solid transparent;
-  border-top: none; border-right: none; border-bottom: none;
+  border-bottom: 2.5px solid transparent;
+  border-top: none; border-left: none; border-right: none;
   cursor: pointer;
   background: none;
-  width: 100%;
   padding: 0;
+  white-space: nowrap;
 }
-.pc-nav-btn svg { width: 28px; height: 28px; }
+.pc-nav-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
 .pc-nav-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .pc-nav-btn.active {
   color: var(--accent);
-  border-left-color: var(--accent);
+  border-bottom-color: var(--accent);
   background: var(--accent-glow);
 }
 
-/* 달력: 탭 아래, 남은 공간 모두 사용 */
+/* ── 달력: 고정 높이, 찌그러지지 않음 ── */
 #pc-left #calendar-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 8px 8px 4px;
+  flex-shrink: 0;               /* 높이 고정, 늘어나지 않음 */
+  padding: 8px 8px 6px;
   background: var(--bg-surface);
-  border-bottom: none;
-  border-top: 1px solid var(--border);
-}
-#pc-left #calendar-header  { margin-bottom: 4px; }
-#pc-left #calendar-weekdays { margin-bottom: 1px; }
-
-/* 달력 그리드: 남은 높이 꽉 채우기 */
-#pc-left #calendar-grid {
-  flex: 1;
-  grid-auto-rows: 1fr;
+  border-bottom: 1px solid var(--border);
 }
 
-/* 달짜 셀: aspect-ratio 해제, 높이는 그리드가 결정 */
+/* 달력 셀 원래 aspect-ratio 유지 (고정 너비이므로 찌그러지지 않음) */
 #pc-left .cal-day {
-  aspect-ratio: unset !important;
-  font-size: 16px;
+  font-size: 14px;
+  /* aspect-ratio는 style.css 기본값(1.4) 유지 */
 }
+
+/* 달력 today/selected 원 크기 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
   width: 28px; height: 28px;
 }
 
+/* 달력 아래 남은 공간: 빈 영역 */
+#pc-left-footer {
+  flex: 1;
+  background: var(--bg-surface);
+}
+
 /* =============================================
-   중앙: 날짜줄(선택된날짜+토글++버튼) + 할일목록
+   중앙: 날짜줄(첫행) + 할일 목록
    ============================================= */
 #pc-center {
   grid-column: 2;
@@ -115,13 +119,13 @@
   background: var(--bg-base);
 }
 
-/* 날짜줄: 중앙 첫 번째 행 */
+/* 날짜줄: 중앙 최상단 고정 행 */
 #pc-center #selected-date-bar { flex-shrink: 0; }
 
 /* 달력 접기 버튼 숨김 */
 #pc-center #cal-toggle-btn { display: none !important; }
 
-/* tab-content */
+/* 탭 콘텐츠 */
 #pc-center .tab-content         { flex: 1; overflow: hidden; min-height: 0; }
 #pc-center #tab-todo            { flex-direction: column; }
 #pc-center #todo-list-section   { flex: 1; overflow-y: auto; }
@@ -254,7 +258,7 @@ body.pc-layout #settings-overlay { background: rgba(0,0,0,0.15); }
 body.pc-layout #repeats-panel    { width: 260px; }
 
 /* =============================================
-   모달: PC에서 화면 정중앙
+   모달: 화면 정중앙
    ============================================= */
 body.pc-layout #modal-overlay { align-items: center !important; }
 body.pc-layout #modal-box {
