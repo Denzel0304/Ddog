@@ -543,7 +543,7 @@ function updateMemoLinks() {
   if (!memo) return;
 
   let linkBox = document.getElementById('memo-links-preview');
-  const urlRegex = /https?:\/\/[^\s\n"'<>]+/gi;
+  const urlRegex = /https?:\/\/[^\s\n"'<>]+/g;
   const urls = (memo.value || '').match(urlRegex);
 
   if (!urls || urls.length === 0) {
@@ -603,54 +603,67 @@ document.addEventListener('input', e => {
   }
 })();
 
-/* ── 메모 자동 번호 리스트 (노션 스타일) ── */
-document.addEventListener('keydown', function(e) {
-  const el = e.target;
-  if (el.id !== 'input-memo') return;
+/* ── 메모 자동 번호 리스트 (input 이벤트 — 모바일/PC 공통) ── */
+(function() {
+  let _prevVal = '';
+  document.addEventListener('input', function(e) {
+    const el = e.target;
+    if (el.id !== 'input-memo') return;
 
-  if (e.key === ' ') {
     const val = el.value;
     const pos = el.selectionStart;
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
     const lineText  = val.substring(lineStart, pos);
-    if (/^\d+\.$/.test(lineText)) {
-      e.preventDefault();
-      const num = parseInt(lineText);
+
+    // 1. "숫자. " 입력 감지 → 들여쓰기 + 번호 변환
+    const triggerMatch = lineText.match(/^(\d+)\. $/);
+    if (triggerMatch) {
+      const num = parseInt(triggerMatch[1]);
       const newLine = '    ' + num + '. ';
       const before = val.substring(0, lineStart);
       const after  = val.substring(pos);
       el.value = before + newLine + after;
       el.selectionStart = el.selectionEnd = lineStart + newLine.length;
+      _prevVal = el.value;
+      return;
     }
-  }
 
-  if (e.key === 'Enter') {
-    const val = el.value;
-    const pos = el.selectionStart;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const lineText  = val.substring(lineStart, pos);
-    const match = lineText.match(/^( {4})(\d+)\. (.*)/);
+    // 2. 줄바꿈 감지 → 번호 줄 다음에 다음 번호 삽입
+    const prevVal = _prevVal;
+    _prevVal = val;
+    if (val.length <= prevVal.length) return; // 삭제면 무시
+    const added = val.substring(prevVal.length);
+    if (!added.includes('\n')) return;
+
+    // 커서 이전 줄 (방금 엔터 친 줄)
+    const prevLineEnd = pos - 1;
+    const prevLineStart = val.lastIndexOf('\n', prevLineEnd - 1) + 1;
+    const prevLine = val.substring(prevLineStart, prevLineEnd);
+
+    const match = prevLine.match(/^( {4})(\d+)\. (.*)/);
     if (!match) return;
 
-    e.preventDefault();
     const indent  = match[1];
     const num     = parseInt(match[2]);
     const content = match[3];
 
     if (content === '') {
-      const before = val.substring(0, lineStart);
+      // 빈 번호 줄 → 번호 제거
+      const before = val.substring(0, prevLineStart);
       const after  = val.substring(pos);
       el.value = before + after;
-      el.selectionStart = el.selectionEnd = lineStart;
+      el.selectionStart = el.selectionEnd = prevLineStart;
     } else {
+      // 다음 번호 삽입
       const nextPrefix = indent + (num + 1) + '. ';
       const before = val.substring(0, pos);
       const after  = val.substring(pos);
-      el.value = before + '\n' + nextPrefix + after;
-      el.selectionStart = el.selectionEnd = pos + 1 + nextPrefix.length;
+      el.value = before + nextPrefix + after;
+      el.selectionStart = el.selectionEnd = pos + nextPrefix.length;
     }
-  }
-});
+    _prevVal = el.value;
+  });
+})();
 </script>
 
 </body>
