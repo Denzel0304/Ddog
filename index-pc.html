@@ -798,6 +798,7 @@ function pcPickDate(id, fromWeekly, targetDate) {
       }
     });
   }, 10);
+}
 /* =============================================
    PC 3열 드래그 리사이즈
    — #app의 grid-template-columns를 직접 조작
@@ -823,12 +824,14 @@ function pcPickDate(id, fromWeekly, targetDate) {
     try { localStorage.setItem(LS_KEY, JSON.stringify({ left, right })); } catch(e) {}
   }
 
-  /* grid-template-columns 적용 */
+  /* grid-template-columns 적용 + CSS 변수 동기화 */
   function applyColumns(leftW, rightW) {
     const app = document.getElementById('app');
     if (!app) return;
     app.style.gridTemplateColumns =
       `${leftW}px ${HANDLE_W}px 1fr ${HANDLE_W}px ${rightW}px`;
+    /* :root --pc-left-w 업데이트 → CSS calc()가 달력 폰트/버튼 크기 자동 반영 */
+    document.documentElement.style.setProperty('--pc-left-w', leftW + 'px');
   }
 
   /* 초기 너비 계산 */
