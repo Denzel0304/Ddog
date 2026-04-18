@@ -1316,90 +1316,128 @@ body.light-mode #logout-modal > div {
 }
 
 /* =============================================
-   5가지 테마
+   5가지 컬러 테마 (배경 전체 톤이 바뀌는 독립 테마)
    ============================================= */
+
+/* 토글 버튼: 컬러 테마 활성 시 비활성화 */
+body.theme-active #lightmode-toggle {
+  opacity: 0.3;
+  pointer-events: none;
+}
 
 /* 1. 연한 녹색 (Sage) */
 body.theme-sage {
-  --bg-base:        #1a1f1b;
-  --bg-surface:     #222820;
-  --bg-elevated:    #2a3028;
-  --bg-hover:       #323d30;
-  --accent:         #7ec87e;
-  --accent-dim:     #5aaa5a;
-  --accent-glow:    rgba(126,200,126,0.15);
-  --text-primary:   #e2ede2;
-  --text-secondary: #8aaa8a;
-  --text-muted:     #556055;
-  --border:         #2e382c;
-  --border-light:   #384838;
-  --danger:         #e07070;
+  --bg-base:        #eef5ee;
+  --bg-surface:     #e4ede4;
+  --bg-elevated:    #d8e8d8;
+  --bg-hover:       #cce0cc;
+  --accent:         #3a8a5a;
+  --accent-dim:     #2d6e48;
+  --accent-glow:    rgba(58,138,90,0.15);
+  --text-primary:   #1a2e1a;
+  --text-secondary: #4a6a4a;
+  --text-muted:     #7a9a7a;
+  --text-done:      #aac0aa;
+  --border:         #c4d8c4;
+  --border-light:   #b0ccb0;
+  --danger:         #c84040;
+  --imp-1:          #7a8a7a;
+  --imp-2:          #8a7030;
+  --imp-3:          #a04820;
 }
+body.theme-sage #splash-screen,
+body.theme-sage #login-screen { background: #eef5ee; }
+body.theme-sage .cal-day.selected { color: #fff; }
 
 /* 2. 하늘색 (Sky) */
 body.theme-sky {
-  --bg-base:        #161c22;
-  --bg-surface:     #1e2830;
-  --bg-elevated:    #243040;
-  --bg-hover:       #2c3a4c;
-  --accent:         #7ab8e8;
-  --accent-dim:     #5090c0;
-  --accent-glow:    rgba(122,184,232,0.15);
-  --text-primary:   #ddeaf8;
-  --text-secondary: #7a9ab8;
-  --text-muted:     #4a6880;
-  --border:         #263040;
-  --border-light:   #2e3a4e;
-  --danger:         #e07070;
+  --bg-base:        #eef4fa;
+  --bg-surface:     #e2ecf6;
+  --bg-elevated:    #d4e4f0;
+  --bg-hover:       #c4d8ec;
+  --accent:         #2868c0;
+  --accent-dim:     #1e50a0;
+  --accent-glow:    rgba(40,104,192,0.15);
+  --text-primary:   #0e1e30;
+  --text-secondary: #3a5878;
+  --text-muted:     #6a8aaa;
+  --text-done:      #a0b8cc;
+  --border:         #b8d0e8;
+  --border-light:   #a0c0e0;
+  --danger:         #c03040;
+  --imp-1:          #6a7a8a;
+  --imp-2:          #7a6828;
+  --imp-3:          #984030;
 }
+body.theme-sky #splash-screen,
+body.theme-sky #login-screen { background: #eef4fa; }
+body.theme-sky .cal-day.selected { color: #fff; }
 
 /* 3. 연한 붉은색 (Rose) */
 body.theme-rose {
-  --bg-base:        #1f1818;
-  --bg-surface:     #281e1e;
-  --bg-elevated:    #322424;
-  --bg-hover:       #3c2c2c;
-  --accent:         #e88888;
-  --accent-dim:     #c06060;
-  --accent-glow:    rgba(232,136,136,0.15);
-  --text-primary:   #f0e2e2;
-  --text-secondary: #b08080;
-  --text-muted:     #7a5555;
-  --border:         #3a2828;
-  --border-light:   #4a3030;
-  --danger:         #e05c6a;
+  --bg-base:        #faf0f0;
+  --bg-surface:     #f4e4e4;
+  --bg-elevated:    #eed8d8;
+  --bg-hover:       #e8cccc;
+  --accent:         #c03848;
+  --accent-dim:     #a02838;
+  --accent-glow:    rgba(192,56,72,0.15);
+  --text-primary:   #2e1010;
+  --text-secondary: #6a3838;
+  --text-muted:     #9a6868;
+  --text-done:      #c0a0a0;
+  --border:         #e0c0c0;
+  --border-light:   #d4b0b0;
+  --danger:         #b02020;
+  --imp-1:          #8a6868;
+  --imp-2:          #8a6028;
+  --imp-3:          #904018;
 }
+body.theme-rose #splash-screen,
+body.theme-rose #login-screen { background: #faf0f0; }
+body.theme-rose .cal-day.selected { color: #fff; }
 
 /* 4. 연한 자주색 (Lavender) */
 body.theme-lavender {
-  --bg-base:        #1a1820;
-  --bg-surface:     #221e2c;
-  --bg-elevated:    #2a2438;
-  --bg-hover:       #342c44;
-  --accent:         #b088e8;
-  --accent-dim:     #8860c0;
-  --accent-glow:    rgba(176,136,232,0.15);
-  --text-primary:   #ece0f8;
-  --text-secondary: #9878c0;
-  --text-muted:     #6050a0;
-  --border:         #2e2840;
-  --border-light:   #3a3050;
-  --danger:         #e07070;
+  --bg-base:        #f4f0fa;
+  --bg-surface:     #eae4f4;
+  --bg-elevated:    #dfd8ee;
+  --bg-hover:       #d4ccee;
+  --accent:         #7040c0;
+  --accent-dim:     #5830a0;
+  --accent-glow:    rgba(112,64,192,0.15);
+  --text-primary:   #1a0e30;
+  --text-secondary: #4a3870;
+  --text-muted:     #7a68a0;
+  --text-done:      #b0a0c8;
+  --border:         #c8bce0;
+  --border-light:   #bcaed8;
+  --danger:         #c02848;
+  --imp-1:          #7a6890;
+  --imp-2:          #806830;
+  --imp-3:          #904028;
 }
+body.theme-lavender #splash-screen,
+body.theme-lavender #login-screen { background: #f4f0fa; }
+body.theme-lavender .cal-day.selected { color: #fff; }
 
 /* 5. 진한 청색 (Navy) */
 body.theme-navy {
-  --bg-base:        #10141e;
-  --bg-surface:     #161c2c;
-  --bg-elevated:    #1c2438;
-  --bg-hover:       #222c44;
-  --accent:         #5080e0;
-  --accent-dim:     #3060b8;
-  --accent-glow:    rgba(80,128,224,0.15);
-  --text-primary:   #d8e4f8;
-  --text-secondary: #6880b0;
-  --text-muted:     #405080;
-  --border:         #1e2840;
-  --border-light:   #263250;
-  --danger:         #e07070;
+  --bg-base:        #0e1428;
+  --bg-surface:     #141c38;
+  --bg-elevated:    #1a2448;
+  --bg-hover:       #202c58;
+  --accent:         #4878e8;
+  --accent-dim:     #3060c0;
+  --accent-glow:    rgba(72,120,232,0.18);
+  --text-primary:   #d0e0f8;
+  --text-secondary: #7090c0;
+  --text-muted:     #405880;
+  --text-done:      #506070;
+  --border:         #1e2c50;
+  --border-light:   #283860;
+  --danger:         #e05060;
+  --imp-1:          #506070;
+  --imp-2:          #806020;
+  --imp-3:          #904030;
 }
