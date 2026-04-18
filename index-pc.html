@@ -155,6 +155,9 @@
 
   </div><!-- /pc-left -->
 
+  <!-- ── 핸들1: 좌↔중앙 ── -->
+  <div class="pc-resize-handle" id="pc-handle-1" title="드래그하여 크기 조절"></div>
+
   <!-- ── 중앙: 날짜줄 + 할일목록 ── -->
   <div id="pc-center">
 
@@ -209,6 +212,9 @@
     </div>
 
   </div><!-- /pc-center -->
+
+  <!-- ── 핸들2: 중앙↔우측 ── -->
+  <div class="pc-resize-handle" id="pc-handle-2" title="드래그하여 크기 조절"></div>
 
   <!-- ── 우측: 모달 표시 영역 ── -->
   <div id="pc-right">
@@ -792,8 +798,187 @@ function pcPickDate(id, fromWeekly, targetDate) {
       }
     });
   }, 10);
-}
-</script>
+/* =============================================
+   PC 3열 드래그 리사이즈
+   — #app의 grid-template-columns를 직접 조작
+   — 기존 로직 일체 미수정, 새 변수/이벤트만 사용
+   ============================================= */
+(function() {
+  const HANDLE_W  = 6;    // 핸들 너비(px) — CSS와 동일
+  const MIN_LEFT  = 200;  // 좌측 최소 너비
+  const MIN_CTR   = 180;  // 중앙 최소 너비
+  const MIN_RIGHT = 180;  // 우측 최소 너비
 
-</body>
+  const LS_KEY = 'pc_col_widths_v1';
+
+  /* 저장된 너비 복원 */
+  function loadWidths() {
+    try {
+      const s = localStorage.getItem(LS_KEY);
+      if (s) return JSON.parse(s);
+    } catch(e) {}
+    return null;
+  }
+  function saveWidths(left, right) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ left, right })); } catch(e) {}
+  }
+
+  /* grid-template-columns 적용 */
+  function applyColumns(leftW, rightW) {
+    const app = document.getElementById('app');
+    if (!app) return;
+    app.style.gridTemplateColumns =
+      `${leftW}px ${HANDLE_W}px 1fr ${HANDLE_W}px ${rightW}px`;
+  }
+
+  /* 초기 너비 계산 */
+  function initColumns() {
+    const saved = loadWidths();
+    const totalW = window.innerWidth;
+    let leftW, rightW;
+
+    if (saved) {
+      leftW  = Math.max(MIN_LEFT,  Math.min(saved.left,  totalW * 0.6));
+      rightW = Math.max(MIN_RIGHT, Math.min(saved.right, totalW * 0.6));
+      // 중앙 영역이 최소 너비 확보 가능한지 검증
+      const centerW = totalW - leftW - rightW - HANDLE_W * 2;
+      if (centerW < MIN_CTR) {
+        leftW  = Math.round(totalW * 0.28);
+        rightW = Math.round(totalW * 0.28);
+      }
+    } else {
+      leftW  = Math.round(totalW * 0.28);
+      rightW = Math.round(totalW * 0.26);
+    }
+
+    applyColumns(leftW, rightW);
+    return { leftW, rightW };
+  }
+
+  /* 드래그 핸들 등록 */
+  function initHandle(handleId, which) {
+    const handle = document.getElementById(handleId);
+    const app    = document.getElementById('app');
+    if (!handle || !app) return;
+
+    let startX = 0;
+    let startLeftW  = 0;
+    let startRightW = 0;
+
+    function getColWidths() {
+      const cols = getComputedStyle(app).gridTemplateColumns.split(' ');
+      return {
+        left:  parseFloat(cols[0]) || 320,
+        right: parseFloat(cols[4]) || 280,
+      };
+    }
+
+    function onMouseMove(e) {
+      const dx     = e.clientX - startX;
+      const totalW = window.innerWidth;
+      let newLeft  = startLeftW;
+      let newRight = startRightW;
+
+      if (which === 'left') {
+        // 핸들1: 좌측 너비 조절
+        newLeft = startLeftW + dx;
+        newLeft = Math.max(MIN_LEFT, Math.min(newLeft, totalW - MIN_CTR - MIN_RIGHT - HANDLE_W * 2));
+      } else {
+        // 핸들2: 우측 너비 조절 (오른쪽에서 드래그, dx 반전)
+        newRight = startRightW - dx;
+        newRight = Math.max(MIN_RIGHT, Math.min(newRight, totalW - MIN_LEFT - MIN_CTR - HANDLE_W * 2));
+      }
+
+      applyColumns(newLeft, newRight);
+    }
+
+    function onMouseUp(e) {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      const cur = getColWidths();
+      saveWidths(cur.left, cur.right);
+    }
+
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      const cur = getColWidths();
+      startX      = e.clientX;
+      startLeftW  = cur.left;
+      startRightW = cur.right;
+
+      handle.classList.add('dragging');
+      document.body.style.cursor     = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup',   onMouseUp);
+    });
+
+    /* 터치 지원 */
+    handle.addEventListener('touchstart', function(e) {
+      const t = e.touches[0];
+      const cur = getColWidths();
+      startX      = t.clientX;
+      startLeftW  = cur.left;
+      startRightW = cur.right;
+      handle.classList.add('dragging');
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', function(e) {
+      const t = e.touches[0];
+      const dx     = t.clientX - startX;
+      const totalW = window.innerWidth;
+      let newLeft  = startLeftW;
+      let newRight = startRightW;
+
+      if (which === 'left') {
+        newLeft = Math.max(MIN_LEFT, Math.min(startLeftW + dx, totalW - MIN_CTR - MIN_RIGHT - HANDLE_W * 2));
+      } else {
+        newRight = Math.max(MIN_RIGHT, Math.min(startRightW - dx, totalW - MIN_LEFT - MIN_CTR - HANDLE_W * 2));
+      }
+
+      applyColumns(newLeft, newRight);
+    }, { passive: true });
+
+    handle.addEventListener('touchend', function() {
+      handle.classList.remove('dragging');
+      const cur = getColWidths();
+      saveWidths(cur.left, cur.right);
+    });
+  }
+
+  /* 창 크기 변경 시 비율 유지 */
+  window.addEventListener('resize', function() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    const cols    = getComputedStyle(app).gridTemplateColumns.split(' ');
+    const leftW   = parseFloat(cols[0]) || 320;
+    const rightW  = parseFloat(cols[4]) || 280;
+    const totalW  = window.innerWidth;
+    const centerW = totalW - leftW - rightW - HANDLE_W * 2;
+    if (centerW < MIN_CTR) {
+      // 양쪽을 비율로 줄임
+      const ratio = (totalW - MIN_CTR - HANDLE_W * 2) / (leftW + rightW);
+      applyColumns(Math.round(leftW * ratio), Math.round(rightW * ratio));
+    }
+  });
+
+  /* DOM 준비 후 실행 */
+  function setup() {
+    initColumns();
+    initHandle('pc-handle-1', 'left');
+    initHandle('pc-handle-2', 'right');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup);
+  } else {
+    setup();
+  }
+})();
+</script>
 </html>
