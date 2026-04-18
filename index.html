@@ -543,7 +543,7 @@ function updateMemoLinks() {
   if (!memo) return;
 
   let linkBox = document.getElementById('memo-links-preview');
-  const urlRegex = /https?:\/\/[^\s\n"'<>]+/g;
+  const urlRegex = /https?:\/\/[^\s\n"'<>]+/gi;
   const urls = (memo.value || '').match(urlRegex);
 
   if (!urls || urls.length === 0) {
