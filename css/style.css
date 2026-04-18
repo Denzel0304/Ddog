@@ -1314,3 +1314,92 @@ body.light-mode #logout-modal > div {
 #detail-section .detail-row:has(#input-date) {
   margin-top: 10px;
 }
+
+/* =============================================
+   5가지 테마
+   ============================================= */
+
+/* 1. 연한 녹색 (Sage) */
+body.theme-sage {
+  --bg-base:        #1a1f1b;
+  --bg-surface:     #222820;
+  --bg-elevated:    #2a3028;
+  --bg-hover:       #323d30;
+  --accent:         #7ec87e;
+  --accent-dim:     #5aaa5a;
+  --accent-glow:    rgba(126,200,126,0.15);
+  --text-primary:   #e2ede2;
+  --text-secondary: #8aaa8a;
+  --text-muted:     #556055;
+  --border:         #2e382c;
+  --border-light:   #384838;
+  --danger:         #e07070;
+}
+
+/* 2. 하늘색 (Sky) */
+body.theme-sky {
+  --bg-base:        #161c22;
+  --bg-surface:     #1e2830;
+  --bg-elevated:    #243040;
+  --bg-hover:       #2c3a4c;
+  --accent:         #7ab8e8;
+  --accent-dim:     #5090c0;
+  --accent-glow:    rgba(122,184,232,0.15);
+  --text-primary:   #ddeaf8;
+  --text-secondary: #7a9ab8;
+  --text-muted:     #4a6880;
+  --border:         #263040;
+  --border-light:   #2e3a4e;
+  --danger:         #e07070;
+}
+
+/* 3. 연한 붉은색 (Rose) */
+body.theme-rose {
+  --bg-base:        #1f1818;
+  --bg-surface:     #281e1e;
+  --bg-elevated:    #322424;
+  --bg-hover:       #3c2c2c;
+  --accent:         #e88888;
+  --accent-dim:     #c06060;
+  --accent-glow:    rgba(232,136,136,0.15);
+  --text-primary:   #f0e2e2;
+  --text-secondary: #b08080;
+  --text-muted:     #7a5555;
+  --border:         #3a2828;
+  --border-light:   #4a3030;
+  --danger:         #e05c6a;
+}
+
+/* 4. 연한 자주색 (Lavender) */
+body.theme-lavender {
+  --bg-base:        #1a1820;
+  --bg-surface:     #221e2c;
+  --bg-elevated:    #2a2438;
+  --bg-hover:       #342c44;
+  --accent:         #b088e8;
+  --accent-dim:     #8860c0;
+  --accent-glow:    rgba(176,136,232,0.15);
+  --text-primary:   #ece0f8;
+  --text-secondary: #9878c0;
+  --text-muted:     #6050a0;
+  --border:         #2e2840;
+  --border-light:   #3a3050;
+  --danger:         #e07070;
+}
+
+/* 5. 진한 청색 (Navy) */
+body.theme-navy {
+  --bg-base:        #10141e;
+  --bg-surface:     #161c2c;
+  --bg-elevated:    #1c2438;
+  --bg-hover:       #222c44;
+  --accent:         #5080e0;
+  --accent-dim:     #3060b8;
+  --accent-glow:    rgba(80,128,224,0.15);
+  --text-primary:   #d8e4f8;
+  --text-secondary: #6880b0;
+  --text-muted:     #405080;
+  --border:         #1e2840;
+  --border-light:   #263250;
+  --danger:         #e07070;
+}
