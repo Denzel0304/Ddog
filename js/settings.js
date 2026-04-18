@@ -2,25 +2,44 @@
 // settings.js — 설정 패널 & 반복함
 // =============================================
 
+const COLOR_THEMES = ['sage', 'sky', 'rose', 'lavender', 'navy'];
+
 const THEMES = [
-  { id: 'default',  label: '기본',        color: '#7ecfa0' },
-  { id: 'sage',     label: '연한 녹색',   color: '#7ec87e' },
-  { id: 'sky',      label: '하늘색',      color: '#7ab8e8' },
-  { id: 'rose',     label: '연한 붉은색', color: '#e88888' },
-  { id: 'lavender', label: '연한 자주색', color: '#b088e8' },
-  { id: 'navy',     label: '진한 청색',   color: '#5080e0' },
+  { id: 'light',    label: '라이트 모드', bg: '#f4f5f0', dot: '#3a9e6a' },
+  { id: 'dark',     label: '다크 모드',   bg: '#16181d', dot: '#7ecfa0' },
+  { id: 'sage',     label: '연한 녹색',   bg: '#eef5ee', dot: '#3a8a5a' },
+  { id: 'sky',      label: '하늘색',      bg: '#eef4fa', dot: '#2868c0' },
+  { id: 'rose',     label: '연한 붉은색', bg: '#faf0f0', dot: '#c03848' },
+  { id: 'lavender', label: '연한 자주색', bg: '#f4f0fa', dot: '#7040c0' },
+  { id: 'navy',     label: '진한 청색',   bg: '#0e1428', dot: '#4878e8' },
 ];
 
 function applyTheme(themeId) {
-  THEMES.forEach(t => document.body.classList.remove('theme-' + t.id));
-  if (themeId && themeId !== 'default') {
+  COLOR_THEMES.forEach(t => document.body.classList.remove('theme-' + t));
+  document.body.classList.remove('theme-active');
+
+  if (themeId === 'light') {
+    document.body.classList.add('light-mode');
+    localStorage.setItem('lightmode', '1');
+  } else if (themeId === 'dark') {
+    document.body.classList.remove('light-mode');
+    localStorage.setItem('lightmode', '0');
+  } else if (COLOR_THEMES.includes(themeId)) {
+    document.body.classList.remove('light-mode');
     document.body.classList.add('theme-' + themeId);
+    document.body.classList.add('theme-active');
+    localStorage.setItem('lightmode', '0');
   }
-  localStorage.setItem('app-theme', themeId || 'default');
+
+  localStorage.setItem('app-theme', themeId);
+  if (typeof applyLogoMode === 'function') applyLogoMode();
 }
 
 function initTheme() {
-  const saved = localStorage.getItem('app-theme') || 'default';
+  let saved = localStorage.getItem('app-theme');
+  if (!saved) {
+    saved = localStorage.getItem('lightmode') === '1' ? 'light' : 'dark';
+  }
   applyTheme(saved);
 }
 
@@ -36,11 +55,9 @@ function openThemePanel() {
   sheet.id = 'theme-sheet';
   sheet.style.cssText = [
     'position:fixed;bottom:0;left:0;right:0;z-index:1201;',
-    'background:var(--bg-elevated);',
-    'border-radius:20px 20px 0 0;',
-    'padding:20px 20px 40px;',
-    'box-shadow:0 -4px 32px rgba(0,0,0,0.4);',
-    'animation:slideUp 0.25s ease;'
+    'background:var(--bg-elevated);border-radius:20px 20px 0 0;',
+    'padding:20px 20px 40px;box-shadow:0 -4px 32px rgba(0,0,0,0.4);',
+    'animation:slideUp 0.25s ease;max-height:80vh;overflow-y:auto;'
   ].join('');
 
   const title = document.createElement('div');
@@ -48,33 +65,36 @@ function openThemePanel() {
   title.textContent = '테마 선택';
   sheet.appendChild(title);
 
-  const current = localStorage.getItem('app-theme') || 'default';
+  const saved = localStorage.getItem('app-theme') || (localStorage.getItem('lightmode') === '1' ? 'light' : 'dark');
 
   THEMES.forEach(t => {
     const btn = document.createElement('button');
-    const isActive = t.id === current;
+    const isActive = t.id === saved;
     btn.style.cssText = [
-      'display:flex;align-items:center;gap:14px;',
-      'width:100%;padding:13px 16px;margin-bottom:8px;',
-      'border-radius:12px;',
-      'border:2px solid ' + (isActive ? 'var(--accent)' : 'transparent') + ';',
-      'background:var(--bg-surface);cursor:pointer;',
-      'font-family:var(--font-main);transition:border-color 0.15s;'
+      'display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;margin-bottom:8px;',
+      'border-radius:12px;border:2px solid ' + (isActive ? 'var(--accent)' : 'transparent') + ';',
+      'background:var(--bg-surface);cursor:pointer;font-family:var(--font-main);'
     ].join('');
 
-    const dot = document.createElement('div');
-    dot.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + t.color + ';flex-shrink:0;';
+    const preview = document.createElement('div');
+    preview.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+    const bgDot = document.createElement('div');
+    bgDot.style.cssText = 'width:18px;height:18px;border-radius:50%;background:' + t.bg + ';border:1px solid rgba(0,0,0,0.15);';
+    const accentDot = document.createElement('div');
+    accentDot.style.cssText = 'width:18px;height:18px;border-radius:50%;background:' + t.dot + ';';
+    preview.appendChild(bgDot);
+    preview.appendChild(accentDot);
 
     const label = document.createElement('span');
     label.style.cssText = 'font-size:15px;color:var(--text-primary);flex:1;text-align:left;';
     label.textContent = t.label;
 
-    btn.appendChild(dot);
+    btn.appendChild(preview);
     btn.appendChild(label);
 
     if (isActive) {
       const check = document.createElement('span');
-      check.style.cssText = 'color:var(--accent);font-size:18px;';
+      check.style.cssText = 'color:var(--accent);font-size:18px;font-weight:700;';
       check.textContent = '✓';
       btn.appendChild(check);
     }

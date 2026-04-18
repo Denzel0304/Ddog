@@ -44,14 +44,13 @@ async function bootApp() {
 
 // ── 라이트 모드 토글 ──
 function initLightMode() {
-  // 저장된 설정 복원
-  if (localStorage.getItem('lightmode') === '1') {
-    document.body.classList.add('light-mode');
-  }
   applyLogoMode();
   document.getElementById('lightmode-toggle').addEventListener('click', () => {
+    // 컬러 테마 활성 시 토글 무시
+    if (document.body.classList.contains('theme-active')) return;
     const isLight = document.body.classList.toggle('light-mode');
     localStorage.setItem('lightmode', isLight ? '1' : '0');
+    localStorage.setItem('app-theme', isLight ? 'light' : 'dark');
     applyLogoMode();
   });
 }
