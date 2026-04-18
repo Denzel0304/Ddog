@@ -5,16 +5,16 @@
    ============================================= */
 
 :root {
-  /* 풀화면(1400px)→520px, 절반(700px)→364px(30%감소), 이하 364px 유지 */
-  --pc-left-w: clamp(364px, 37.14vw, 520px);
+  --pc-left-w:   clamp(200px, 37.14vw, 520px);
+  --pc-center-w: 1.4fr;
 }
 
-/* ── #app: 좌측 동적, 중앙 흡수, 우측 최솟값 보장 ── */
+/* ── #app: CSS 변수로 컬럼 너비 제어 (드래그로 동적 변경) ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1.4fr minmax(240px, 1fr) !important;
+  grid-template-columns: var(--pc-left-w) 5px var(--pc-center-w) 5px minmax(200px, 1fr) !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -117,20 +117,20 @@
 }
 
 
-/* 달력 헤더 높이 2배, 버튼 크게 */
+/* 달력 헤더 높이 동적, 버튼 크게 */
 #pc-left #calendar-header {
   margin-bottom: 6px;
   flex-shrink: 0;
-  height: 64px;
+  height: clamp(40px, 5.5vw, 64px);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 #pc-left .cal-nav {
-  width: 72px !important;
-  height: 40px !important;
+  width:  clamp(44px, 5.5vw, 72px) !important;
+  height: clamp(26px, 3vw, 40px) !important;
   border-radius: 20px !important;
-  font-size: 28px !important;
+  font-size: clamp(18px, 2.2vw, 28px) !important;
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border-light) !important;
   flex-shrink: 0;
@@ -141,16 +141,16 @@
   border-color: var(--accent) !important;
 }
 #pc-left .cal-thismonth-btn {
-  font-size: 14px !important;
-  padding: 7px 14px !important;
+  font-size: clamp(9px, 1vw, 14px) !important;
+  padding: clamp(3px, 0.4vw, 7px) clamp(6px, 1vw, 14px) !important;
   border-radius: 16px !important;
 }
 #pc-left #cal-title {
-  font-size: 20px !important;
+  font-size: clamp(13px, 1.5vw, 20px) !important;
 }
 #pc-left .cal-year-btn,
 #pc-left .cal-month-btn {
-  font-size: 22px !important;
+  font-size: clamp(14px, 1.6vw, 22px) !important;
 }
 #pc-left .cal-day.has-todo span::after {
   width: 7px !important;
@@ -173,7 +173,7 @@
    중앙: 날짜줄(첫행) + 할일 목록
    ============================================= */
 #pc-center {
-  grid-column: 2;
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -225,7 +225,7 @@
    우측: 모달 표시 영역
    ============================================= */
 #pc-right {
-  grid-column: 3;
+  grid-column: 5;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -374,6 +374,22 @@ body.pc-layout #repeat-edit-box {
 body.pc-layout #settings-panel   { width: var(--pc-left-w); }
 body.pc-layout #settings-overlay { background: rgba(0,0,0,0.15); }
 body.pc-layout #repeats-panel    { width: var(--pc-left-w); }
+
+/* =============================================
+   드래그 구분선 (Resizer)
+   ============================================= */
+.pc-resizer {
+  width: 5px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+  grid-row: 1;
+}
+.pc-resizer:hover,
+.pc-resizer.dragging { background: var(--accent); }
 
 /* action-popup: PC에서 드롭다운으로 대체 */
 body.pc-layout #action-popup { display: none !important; }
