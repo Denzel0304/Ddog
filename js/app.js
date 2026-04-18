@@ -30,6 +30,7 @@ async function bootApp() {
   initWeekly();
   initSettings();
   initTabs();
+  initTheme();
   initLightMode();
   loadTodos();
   initBackButton();

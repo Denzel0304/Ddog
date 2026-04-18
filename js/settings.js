@@ -2,11 +2,103 @@
 // settings.js — 설정 패널 & 반복함
 // =============================================
 
+const THEMES = [
+  { id: 'default',  label: '기본',        color: '#7ecfa0' },
+  { id: 'sage',     label: '연한 녹색',   color: '#7ec87e' },
+  { id: 'sky',      label: '하늘색',      color: '#7ab8e8' },
+  { id: 'rose',     label: '연한 붉은색', color: '#e88888' },
+  { id: 'lavender', label: '연한 자주색', color: '#b088e8' },
+  { id: 'navy',     label: '진한 청색',   color: '#5080e0' },
+];
+
+function applyTheme(themeId) {
+  THEMES.forEach(t => document.body.classList.remove('theme-' + t.id));
+  if (themeId && themeId !== 'default') {
+    document.body.classList.add('theme-' + themeId);
+  }
+  localStorage.setItem('app-theme', themeId || 'default');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('app-theme') || 'default';
+  applyTheme(saved);
+}
+
+function openThemePanel() {
+  const existing = document.getElementById('theme-sheet');
+  if (existing) { existing.remove(); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'theme-sheet-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;';
+
+  const sheet = document.createElement('div');
+  sheet.id = 'theme-sheet';
+  sheet.style.cssText = [
+    'position:fixed;bottom:0;left:0;right:0;z-index:1201;',
+    'background:var(--bg-elevated);',
+    'border-radius:20px 20px 0 0;',
+    'padding:20px 20px 40px;',
+    'box-shadow:0 -4px 32px rgba(0,0,0,0.4);',
+    'animation:slideUp 0.25s ease;'
+  ].join('');
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:16px;text-align:center;';
+  title.textContent = '테마 선택';
+  sheet.appendChild(title);
+
+  const current = localStorage.getItem('app-theme') || 'default';
+
+  THEMES.forEach(t => {
+    const btn = document.createElement('button');
+    const isActive = t.id === current;
+    btn.style.cssText = [
+      'display:flex;align-items:center;gap:14px;',
+      'width:100%;padding:13px 16px;margin-bottom:8px;',
+      'border-radius:12px;',
+      'border:2px solid ' + (isActive ? 'var(--accent)' : 'transparent') + ';',
+      'background:var(--bg-surface);cursor:pointer;',
+      'font-family:var(--font-main);transition:border-color 0.15s;'
+    ].join('');
+
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:24px;height:24px;border-radius:50%;background:' + t.color + ';flex-shrink:0;';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'font-size:15px;color:var(--text-primary);flex:1;text-align:left;';
+    label.textContent = t.label;
+
+    btn.appendChild(dot);
+    btn.appendChild(label);
+
+    if (isActive) {
+      const check = document.createElement('span');
+      check.style.cssText = 'color:var(--accent);font-size:18px;';
+      check.textContent = '✓';
+      btn.appendChild(check);
+    }
+
+    btn.addEventListener('click', () => {
+      applyTheme(t.id);
+      overlay.remove();
+      sheet.remove();
+      closeSettingsPanel();
+    });
+    sheet.appendChild(btn);
+  });
+
+  overlay.addEventListener('click', () => { overlay.remove(); sheet.remove(); });
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+}
+
 function initSettings() {
   document.getElementById('nav-settings').addEventListener('click', openSettingsPanel);
   document.getElementById('settings-close').addEventListener('click', closeSettingsPanel);
   document.getElementById('settings-overlay').addEventListener('click', closeSettingsPanel);
   document.getElementById('menu-repeats').addEventListener('click', openRepeatsPanel);
+  document.getElementById('menu-theme').addEventListener('click', openThemePanel);
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
   document.getElementById('menu-logout').addEventListener('click', openLogoutConfirm);
 }
