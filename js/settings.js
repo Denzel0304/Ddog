@@ -98,7 +98,8 @@ function initSettings() {
   document.getElementById('settings-close').addEventListener('click', closeSettingsPanel);
   document.getElementById('settings-overlay').addEventListener('click', closeSettingsPanel);
   document.getElementById('menu-repeats').addEventListener('click', openRepeatsPanel);
-  document.getElementById('menu-theme').addEventListener('click', openThemePanel);
+  const menuTheme = document.getElementById('menu-theme');
+  if (menuTheme) menuTheme.addEventListener('click', openThemePanel);
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
   document.getElementById('menu-logout').addEventListener('click', openLogoutConfirm);
 }
