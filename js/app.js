@@ -84,6 +84,7 @@ function initBackButton() {
 }
 
 function hasOpenPopup() {
+  if (document.getElementById('theme-sheet')) return true;
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) return true;
   if (!document.getElementById('action-popup').classList.contains('hidden')) return true;
   if (!document.getElementById('year-popup').classList.contains('hidden')) return true;
@@ -97,6 +98,12 @@ function hasOpenPopup() {
 }
 
 function closeTopPopup() {
+  const themeSheet = document.getElementById('theme-sheet');
+  if (themeSheet) {
+    themeSheet.remove();
+    document.getElementById('theme-sheet-overlay')?.remove();
+    return;
+  }
   if (!document.getElementById('checklist-overlay').classList.contains('hidden')) { closeChecklistModal(false); return; }
   if (!document.getElementById('repeat-edit-overlay').classList.contains('hidden')) { closeRepeatEditOverlay(); return; }
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) { document.getElementById('repeat-overlay').classList.add('hidden'); return; }

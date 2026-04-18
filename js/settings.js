@@ -5,13 +5,13 @@
 const COLOR_THEMES = ['sage', 'sky', 'rose', 'lavender', 'navy'];
 
 const THEMES = [
-  { id: 'light',    label: '라이트 모드', bg: '#f4f5f0', dot: '#3a9e6a' },
-  { id: 'dark',     label: '다크 모드',   bg: '#16181d', dot: '#7ecfa0' },
-  { id: 'sage',     label: '연한 녹색',   bg: '#eef5ee', dot: '#3a8a5a' },
-  { id: 'sky',      label: '하늘색',      bg: '#eef4fa', dot: '#2868c0' },
-  { id: 'rose',     label: '연한 붉은색', bg: '#faf0f0', dot: '#c03848' },
-  { id: 'lavender', label: '연한 자주색', bg: '#f4f0fa', dot: '#7040c0' },
-  { id: 'navy',     label: '진한 청색',   bg: '#0e1428', dot: '#4878e8' },
+  { id: 'light',    label: '라이트 모드', bg: '#ebeee7', dot: '#3a9e6a' },
+  { id: 'dark',     label: '다크 모드',   bg: '#1e2028', dot: '#7ecfa0' },
+  { id: 'sage',     label: '연한 녹색',   bg: '#e4ede4', dot: '#3a8a5a' },
+  { id: 'sky',      label: '연한 하늘색', bg: '#e2ecf6', dot: '#2868c0' },
+  { id: 'rose',     label: '연한 붉은색', bg: '#f4e4e4', dot: '#c03848' },
+  { id: 'lavender', label: '연한 자주색', bg: '#eae4f4', dot: '#7040c0' },
+  { id: 'navy',     label: '진한 청색',   bg: '#141c38', dot: '#4878e8' },
 ];
 
 function applyTheme(themeId) {
