@@ -9,46 +9,18 @@
   --pc-left-w: clamp(364px, 37.14vw, 520px);
 }
 
-/* ── #app: 핸들 포함 5열. 기존 비율 그대로, 핸들(5px) 삽입만 ── */
+/* ── #app: 좌측 동적, 중앙 흡수, 우측 최솟값 보장 ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 5px 1.4fr 5px minmax(240px, 1fr) !important;
+  grid-template-columns: var(--pc-left-w) 1.4fr minmax(240px, 1fr) !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
   border-right: none !important;
   box-shadow: none !important;
 }
-
-/* ── 드래그 핸들 ── */
-.pc-resize-handle {
-  grid-row: 1;
-  cursor: col-resize;
-  background: var(--border);
-  z-index: 50;
-  transition: background 0.15s;
-  position: relative;
-}
-.pc-resize-handle:hover,
-.pc-resize-handle.is-dragging {
-  background: var(--accent);
-}
-.pc-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px; height: 36px;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: 0.3;
-}
-
-/* 핸들이 경계선 역할 → 기존 border 제거 */
-#pc-left   { border-right: none !important; }
-#pc-center { border-right: none !important; }
 
 /* 기존 하단 탭바 숨김 */
 #bottom-nav { display: none !important; }
@@ -63,7 +35,6 @@
    ============================================= */
 #pc-left {
   grid-column: 1;
-  /* 핸들이 border 대체 */
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -202,7 +173,7 @@
    중앙: 날짜줄(첫행) + 할일 목록
    ============================================= */
 #pc-center {
-  grid-column: 3;
+  grid-column: 2;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -254,7 +225,7 @@
    우측: 모달 표시 영역
    ============================================= */
 #pc-right {
-  grid-column: 5;
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   overflow: hidden;
