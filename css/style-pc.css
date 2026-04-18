@@ -388,6 +388,8 @@ body.pc-layout #repeats-panel    { width: var(--pc-left-w); }
   transition: background 0.15s;
   grid-row: 1;
 }
+#resizer-1 { grid-column: 2; }
+#resizer-2 { grid-column: 4; }
 .pc-resizer:hover,
 .pc-resizer.dragging { background: var(--accent); }
 
