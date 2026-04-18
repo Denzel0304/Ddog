@@ -496,86 +496,55 @@
 
 /* ── PC: 구분선 드래그 ── */
 (function() {
-  const MIN_LEFT   = 200;  // 좌측 최솟값 px
-  const MIN_CENTER = 220;  // 중앙 최솟값 px
-  const MIN_RIGHT  = 200;  // 우측 최솟값 px
+  const MIN_LEFT   = 200;
+  const MIN_CENTER = 220;
+  const MIN_RIGHT  = 200;
 
-  function initResizer(resizerId, onDrag) {
-    const el = document.getElementById(resizerId);
-    if (!el) return;
-
-    el.addEventListener('mousedown', e => {
-      e.preventDefault();
-      el.classList.add('dragging');
-      const startX = e.clientX;
-
-      const onMove = ev => onDrag(ev.clientX - startX, startX);
-      const onUp   = () => {
-        el.classList.remove('dragging');
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-      };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
-
-  function getColWidths() {
+  function initResizers() {
     const app = document.getElementById('app');
-    const cols = getComputedStyle(app).gridTemplateColumns.split(' ');
-    // resizer 컬럼(5px) 포함해서 파싱
-    const px = cols.map(c => parseFloat(c));
-    // 순서: left, resizer1, center, resizer2, right
-    return { left: px[0], center: px[2], right: px[4] };
+    const r1  = document.getElementById('resizer-1');
+    const r2  = document.getElementById('resizer-2');
+    if (!app || !r1 || !r2) return;
+
+    function startDrag(resizer, onMove) {
+      resizer.addEventListener('mousedown', e => {
+        e.preventDefault();
+        resizer.classList.add('dragging');
+        const startX    = e.clientX;
+        const startCols = getComputedStyle(app).gridTemplateColumns.split(' ').map(c => parseFloat(c));
+
+        const move = ev => onMove(ev.clientX - startX, startCols);
+        const up   = () => {
+          resizer.classList.remove('dragging');
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      });
+    }
+
+    startDrag(r1, (dx, startCols) => {
+      const totalW = app.getBoundingClientRect().width - 10;
+      let newLeft  = startCols[0] + dx;
+      newLeft      = Math.max(MIN_LEFT, newLeft);
+      if (totalW - newLeft < MIN_CENTER + MIN_RIGHT) newLeft = totalW - MIN_CENTER - MIN_RIGHT;
+      app.style.gridTemplateColumns = `${newLeft}px 5px 1fr 5px minmax(${MIN_RIGHT}px,1fr)`;
+    });
+
+    startDrag(r2, (dx, startCols) => {
+      const totalW  = app.getBoundingClientRect().width - 10;
+      const leftW   = startCols[0];
+      let newCenter = startCols[2] + dx;
+      newCenter     = Math.max(MIN_CENTER, newCenter);
+      if (totalW - leftW - newCenter < MIN_RIGHT) newCenter = totalW - leftW - MIN_RIGHT;
+      app.style.gridTemplateColumns = `${leftW}px 5px ${newCenter}px 5px minmax(${MIN_RIGHT}px,1fr)`;
+    });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // 초기 좌측 너비 저장
-    let leftW   = null;
-    let centerW = null;
-
-    // 구분선1: 좌측 ↔ 중앙
-    initResizer('resizer-1', (dx, startX) => {
-      if (leftW === null) leftW = getColWidths().left;
-      const app = document.getElementById('app');
-      const totalW = app.getBoundingClientRect().width - 10; // resizer 두께 2*5
-      let newLeft = leftW + dx;
-      newLeft = Math.max(MIN_LEFT, newLeft);
-      // 중앙+우측 최솟값 보장
-      const remaining = totalW - newLeft;
-      if (remaining < MIN_CENTER + MIN_RIGHT) {
-        newLeft = totalW - MIN_CENTER - MIN_RIGHT;
-      }
-      app.style.gridTemplateColumns = `${newLeft}px 5px 1fr 5px minmax(${MIN_RIGHT}px, 1fr)`;
-    });
-
-    document.getElementById('resizer-1')?.addEventListener('mousedown', () => {
-      leftW = getColWidths().left;
-    });
-
-    // 구분선2: 중앙 ↔ 우측
-    initResizer('resizer-2', (dx, startX) => {
-      const app = document.getElementById('app');
-      const cols = getComputedStyle(app).gridTemplateColumns.split(' ').map(c => parseFloat(c));
-      const currentLeft   = cols[0];
-      const currentCenter = cols[2];
-      const currentRight  = cols[4];
-      const totalW = app.getBoundingClientRect().width - 10;
-
-      if (centerW === null) centerW = currentCenter;
-      let newCenter = centerW + dx;
-      newCenter = Math.max(MIN_CENTER, newCenter);
-      const newRight = totalW - currentLeft - newCenter;
-      if (newRight < MIN_RIGHT) newCenter = totalW - currentLeft - MIN_RIGHT;
-
-      app.style.gridTemplateColumns = `${currentLeft}px 5px ${Math.max(MIN_CENTER, newCenter)}px 5px minmax(${MIN_RIGHT}px, 1fr)`;
-    });
-
-    document.getElementById('resizer-2')?.addEventListener('mousedown', () => {
-      centerW = getColWidths().center;
-    });
-  });
+  initResizers();
 })();
+
 let _pcLastMenuBtn = null;
 
 /* ── 마지막 클릭된 메뉴 버튼 추적 (weekly 탭 대응) ── */
