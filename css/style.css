@@ -1309,3 +1309,8 @@ body.light-mode #logout-modal > div {
   background: #ebeee7;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
 }
+
+/* 메모↔날짜 사이 여백 */
+#detail-section .detail-row:has(#input-date) {
+  margin-top: 10px;
+}
