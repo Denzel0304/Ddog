@@ -156,15 +156,18 @@ async function openStatsModal() {
   // 모달 생성
   const overlay = document.createElement('div');
   overlay.id = 'stats-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;';
+  const isPC = document.body.classList.contains('pc-layout');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.5);display:flex;' +
+    (isPC ? 'align-items:center;justify-content:center;' : 'align-items:flex-end;');
 
   const box = document.createElement('div');
   box.id = 'stats-box';
   box.style.cssText = [
-    'width:100%;background:var(--bg-elevated);',
-    'border-radius:20px 20px 0 0;',
-    'padding:28px 24px 48px;',
-    'box-shadow:0 -4px 32px rgba(0,0,0,0.4);',
+    isPC ? 'width:420px;max-width:90vw;' : 'width:100%;',
+    'background:var(--bg-elevated);',
+    isPC ? 'border-radius:20px;' : 'border-radius:20px 20px 0 0;',
+    'padding:28px 24px 36px;',
+    'box-shadow:0 8px 40px rgba(0,0,0,0.5);',
     'animation:slideUp 0.25s ease;',
     'font-family:var(--font-main);',
   ].join('');
