@@ -155,8 +155,6 @@
 
   </div><!-- /pc-left -->
 
-  <div class="pc-resize-handle" id="pc-handle-1"></div>
-
   <!-- ── 중앙: 날짜줄 + 할일목록 ── -->
   <div id="pc-center">
 
@@ -211,8 +209,6 @@
     </div>
 
   </div><!-- /pc-center -->
-
-  <div class="pc-resize-handle" id="pc-handle-2"></div>
 
   <!-- ── 우측: 모달 표시 영역 ── -->
   <div id="pc-right">
@@ -797,142 +793,6 @@ function pcPickDate(id, fromWeekly, targetDate) {
     });
   }, 10);
 }
-
-/* =============================================
-   PC 드래그 리사이즈 — 기존 코드 수정 없음
-   grid-template-columns 의 px값만 조작
-   ============================================= */
-(function () {
-  const HANDLE_PX = 5;
-  const MIN_L = 200, MIN_C = 160, MIN_R = 180;
-  const LS = 'pc_resize_v1';
-
-  /* app 요소의 현재 컬럼 픽셀값 읽기 */
-  function getCols() {
-    const app = document.getElementById('app');
-    if (!app) return null;
-    // getComputedStyle 은 1fr 등을 px로 변환해서 반환
-    const parts = getComputedStyle(app).gridTemplateColumns.split(' ').map(parseFloat);
-    // parts[0]=left, [1]=handle, [2]=center, [3]=handle, [4]=right
-    return { l: parts[0], c: parts[2], r: parts[4], total: parts[0]+parts[2]+parts[4]+HANDLE_PX*2 };
-  }
-
-  /* grid-template-columns 직접 세팅 (px 고정값으로) */
-  function setCols(l, c, r) {
-    const app = document.getElementById('app');
-    if (!app) return;
-    app.style.gridTemplateColumns = `${l}px ${HANDLE_PX}px ${c}px ${HANDLE_PX}px ${r}px`;
-  }
-
-  /* localStorage 저장/복원 */
-  function save(l, r) {
-    try { localStorage.setItem(LS, JSON.stringify({l, r})); } catch(e) {}
-  }
-  function load() {
-    try { const d = JSON.parse(localStorage.getItem(LS)); if(d) return d; } catch(e) {}
-    return null;
-  }
-
-  /* 초기화: 저장값 있으면 복원, 없으면 CSS 기본값 유지 */
-  function init() {
-    const d = load();
-    if (!d) return; // 저장값 없으면 CSS 기본값(--pc-left-w 등) 그대로
-    const cols = getCols();
-    if (!cols) return;
-    const total = cols.total;
-    let l = d.l, r = d.r;
-    l = Math.max(MIN_L, Math.min(l, total - MIN_C - MIN_R - HANDLE_PX*2));
-    r = Math.max(MIN_R, Math.min(r, total - MIN_L - MIN_C - HANDLE_PX*2));
-    const c = total - l - r - HANDLE_PX*2;
-    if (c >= MIN_C) setCols(l, c, r);
-  }
-
-  /* 핸들 드래그 등록 */
-  function bindHandle(id, side) {
-    const handle = document.getElementById(id);
-    if (!handle) return;
-
-    let startX, startL, startC, startR;
-
-    function onMove(clientX) {
-      const dx = clientX - startX;
-      const total = startL + startC + startR + HANDLE_PX*2;
-      let l = startL, c = startC, r = startR;
-
-      if (side === 'left') {
-        // 핸들1: left↔center 조절
-        l = Math.max(MIN_L, Math.min(startL + dx, total - MIN_C - MIN_R - HANDLE_PX*2));
-        c = total - l - r - HANDLE_PX*2;
-        if (c < MIN_C) { c = MIN_C; l = total - c - r - HANDLE_PX*2; }
-      } else {
-        // 핸들2: center↔right 조절
-        r = Math.max(MIN_R, Math.min(startR - dx, total - MIN_L - MIN_C - HANDLE_PX*2));
-        c = total - l - r - HANDLE_PX*2;
-        if (c < MIN_C) { c = MIN_C; r = total - l - c - HANDLE_PX*2; }
-      }
-      setCols(l, c, r);
-    }
-
-    function onUp(clientX) {
-      onMove(clientX);
-      handle.classList.remove('is-dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', mouseMove);
-      document.removeEventListener('mouseup', mouseUp);
-      const cols = getCols();
-      if (cols) save(cols.l, cols.r);
-    }
-
-    function mouseMove(e) { e.preventDefault(); onMove(e.clientX); }
-    function mouseUp(e)   { onUp(e.clientX); }
-
-    handle.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      const cols = getCols();
-      if (!cols) return;
-      startX = e.clientX;
-      startL = cols.l; startC = cols.c; startR = cols.r;
-      handle.classList.add('is-dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', mouseMove);
-      document.addEventListener('mouseup', mouseUp);
-    });
-
-    // 터치
-    handle.addEventListener('touchstart', function(e) {
-      const cols = getCols();
-      if (!cols) return;
-      startX = e.touches[0].clientX;
-      startL = cols.l; startC = cols.c; startR = cols.r;
-      handle.classList.add('is-dragging');
-    }, {passive:true});
-    handle.addEventListener('touchmove', function(e) {
-      onMove(e.touches[0].clientX);
-    }, {passive:true});
-    handle.addEventListener('touchend', function(e) {
-      handle.classList.remove('is-dragging');
-      const cols = getCols();
-      if (cols) save(cols.l, cols.r);
-    }, {passive:true});
-  }
-
-  /* 창 리사이즈 대응 */
-  window.addEventListener('resize', function() {
-    const cols = getCols();
-    if (!cols) return;
-    // 1fr 처리로 인해 center가 이미 자동 조절됨 → 저장만 갱신
-    save(cols.l, cols.r);
-  });
-
-  /* DOM 준비 후 실행 */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { init(); bindHandle('pc-handle-1','left'); bindHandle('pc-handle-2','right'); });
-  } else {
-    init(); bindHandle('pc-handle-1','left'); bindHandle('pc-handle-2','right');
-  }
-})();
 </script>
 
 </body>
