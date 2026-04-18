@@ -536,56 +536,5 @@
 <script src="js/sound.js"></script>
 <script src="js/app.js"></script>
 
-<script>
-/* ── 메모 자동 번호 리스트 (노션 스타일) ── */
-document.addEventListener('keydown', function(e) {
-  const el = e.target;
-  if (el.id !== 'input-memo') return;
-
-  if (e.key === ' ') {
-    const val = el.value;
-    const pos = el.selectionStart;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const lineText  = val.substring(lineStart, pos);
-    if (/^\d+\.$/.test(lineText)) {
-      e.preventDefault();
-      const num = parseInt(lineText);
-      const newLine = '    ' + num + '. ';
-      const before = val.substring(0, lineStart);
-      const after  = val.substring(pos);
-      el.value = before + newLine + after;
-      el.selectionStart = el.selectionEnd = lineStart + newLine.length;
-    }
-  }
-
-  if (e.key === 'Enter') {
-    const val = el.value;
-    const pos = el.selectionStart;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const lineText  = val.substring(lineStart, pos);
-    const match = lineText.match(/^( {4})(\d+)\. (.*)/);
-    if (!match) return;
-
-    e.preventDefault();
-    const indent  = match[1];
-    const num     = parseInt(match[2]);
-    const content = match[3];
-
-    if (content === '') {
-      const before = val.substring(0, lineStart);
-      const after  = val.substring(pos);
-      el.value = before + after;
-      el.selectionStart = el.selectionEnd = lineStart;
-    } else {
-      const nextPrefix = indent + (num + 1) + '. ';
-      const before = val.substring(0, pos);
-      const after  = val.substring(pos);
-      el.value = before + '\n' + nextPrefix + after;
-      el.selectionStart = el.selectionEnd = pos + 1 + nextPrefix.length;
-    }
-  }
-});
-</script>
-
 </body>
 </html>
