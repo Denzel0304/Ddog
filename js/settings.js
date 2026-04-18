@@ -113,6 +113,109 @@ function openThemePanel() {
   document.body.appendChild(sheet);
 }
 
+
+const STAT_LEVELS = [
+  { min: 0,      max: 99,     level: 1, label: '새싹',    icon: '🌱' },
+  { min: 100,    max: 499,    level: 2, label: '성장 중',  icon: '🌿' },
+  { min: 500,    max: 1999,   level: 3, label: '집중력',   icon: '📋' },
+  { min: 2000,   max: 4999,   level: 4, label: '실행가',   icon: '⚡' },
+  { min: 5000,   max: 9999,   level: 5, label: '전문가',   icon: '🎯' },
+  { min: 10000,  max: 29999,  level: 6, label: '마스터',   icon: '🏆' },
+  { min: 30000,  max: Infinity, level: 7, label: '전설',   icon: '👑' },
+];
+
+function getLevel(count) {
+  return STAT_LEVELS.find(l => count >= l.min && count <= l.max) || STAT_LEVELS[0];
+}
+
+async function openStatsModal() {
+  // IDB에서 전체 데이터 로드
+  let all = [];
+  try { all = await idbGetAll(); } catch(e) {}
+
+  // 완료된 할일 수 (가상 row 제외)
+  const doneCount = all.filter(t => t.is_done && !t._virtual).length;
+
+  // 시작일: created_at 가장 오래된 row
+  const dates = all.map(t => t.created_at).filter(Boolean).sort();
+  let daysSince = 0;
+  let startDateStr = '';
+  if (dates.length > 0) {
+    const start = new Date(dates[0]);
+    const today = new Date();
+    daysSince = Math.max(1, Math.floor((today - start) / 86400000) + 1);
+    startDateStr = `${start.getFullYear()}년 ${start.getMonth()+1}월 ${start.getDate()}일`;
+  }
+
+  const lv = getLevel(doneCount);
+  const nextLv = STAT_LEVELS.find(l => l.level === lv.level + 1);
+  const progress = nextLv
+    ? Math.min(100, Math.round((doneCount - lv.min) / (nextLv.min - lv.min) * 100))
+    : 100;
+
+  // 모달 생성
+  const overlay = document.createElement('div');
+  overlay.id = 'stats-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;';
+
+  const box = document.createElement('div');
+  box.id = 'stats-box';
+  box.style.cssText = [
+    'width:100%;background:var(--bg-elevated);',
+    'border-radius:20px 20px 0 0;',
+    'padding:28px 24px 48px;',
+    'box-shadow:0 -4px 32px rgba(0,0,0,0.4);',
+    'animation:slideUp 0.25s ease;',
+    'font-family:var(--font-main);',
+  ].join('');
+
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div style="font-size:17px;font-weight:700;color:var(--text-primary);">📊 나의 통계</div>
+      <button id="stats-close" style="font-size:18px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;">✕</button>
+    </div>
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:56px;margin-bottom:6px;">${lv.icon}</div>
+      <div style="font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px;">Lv.${lv.level} ${lv.label}</div>
+      ${startDateStr ? `<div style="font-size:13px;color:var(--text-muted);">${startDateStr}부터 시작</div>` : ''}
+    </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:24px;">
+      <div style="flex:1;background:var(--bg-surface);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--accent);">${daysSince.toLocaleString()}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">사용 일수</div>
+      </div>
+      <div style="flex:1;background:var(--bg-surface);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:26px;font-weight:700;color:var(--accent);">${doneCount.toLocaleString()}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">완료한 할일</div>
+      </div>
+    </div>
+
+    ${nextLv ? `
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:13px;color:var(--text-secondary);">다음 레벨까지</span>
+        <span style="font-size:13px;color:var(--text-secondary);">${(nextLv.min - doneCount).toLocaleString()}개 남음</span>
+      </div>
+      <div style="background:var(--bg-surface);border-radius:8px;height:10px;overflow:hidden;">
+        <div style="background:var(--accent);height:100%;width:${progress}%;border-radius:8px;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+    ` : `
+    <div style="text-align:center;padding:12px;background:var(--bg-surface);border-radius:14px;">
+      <span style="font-size:14px;color:var(--accent);font-weight:600;">✨ 최고 레벨 달성!</span>
+    </div>
+    `}
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  box.querySelector('#stats-close').addEventListener('click', () => overlay.remove());
+}
+
 function initSettings() {
   document.getElementById('nav-settings').addEventListener('click', openSettingsPanel);
   document.getElementById('settings-close').addEventListener('click', closeSettingsPanel);
@@ -120,6 +223,8 @@ function initSettings() {
   document.getElementById('menu-repeats').addEventListener('click', openRepeatsPanel);
   const menuTheme = document.getElementById('menu-theme');
   if (menuTheme) menuTheme.addEventListener('click', openThemePanel);
+  const menuStats = document.getElementById('menu-stats');
+  if (menuStats) menuStats.addEventListener('click', () => { closeSettingsPanel(); setTimeout(openStatsModal, 350); });
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
   document.getElementById('menu-logout').addEventListener('click', openLogoutConfirm);
 }
