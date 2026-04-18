@@ -580,13 +580,20 @@ function updateMemoLinks() {
   });
 }
 
-/* 모달 열릴 때 링크 감지 */
+/* 모달 열릴 때 링크 감지 + 넘버링 들여쓰기 복원 */
 (function() {
   const _orig = window.openEditModal;
   if (_orig) {
     window.openEditModal = function(todo) {
       _orig(todo);
-      setTimeout(updateMemoLinks, 50);
+      setTimeout(() => {
+        updateMemoLinks();
+        // trim()으로 사라진 1번 항목 들여쓰기 복원
+        const memo = document.getElementById('input-memo');
+        if (memo && /^\d+\. /.test(memo.value) && /\n {4}\d+\. /.test(memo.value)) {
+          memo.value = '    ' + memo.value;
+        }
+      }, 60);
     };
   }
 })();

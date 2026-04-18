@@ -642,18 +642,24 @@ function pcUpdateMemoLinks() {
   });
 }
 
-/* 모달 열릴 때 링크 미리보기 업데이트 */
+/* 모달 열릴 때 링크 미리보기 업데이트 + 넘버링 들여쓰기 복원 */
 (function() {
+  function restoreIndent() {
+    const memo = document.getElementById('input-memo');
+    if (memo && /^\d+\. /.test(memo.value) && /\n {4}\d+\. /.test(memo.value)) {
+      memo.value = '    ' + memo.value;
+    }
+  }
   const _origOpen = window.openEditModal;
   window.openEditModal = function(todo) {
     _origOpen(todo);
-    setTimeout(pcUpdateMemoLinks, 50);
+    setTimeout(() => { pcUpdateMemoLinks(); restoreIndent(); }, 60);
   };
   const _origAdd = window.openAddModal;
   if (_origAdd) {
     window.openAddModal = function(...args) {
       _origAdd(...args);
-      setTimeout(pcUpdateMemoLinks, 50);
+      setTimeout(() => { pcUpdateMemoLinks(); restoreIndent(); }, 60);
     };
   }
 })();
