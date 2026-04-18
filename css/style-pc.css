@@ -5,24 +5,50 @@
    ============================================= */
 
 :root {
-  /* 드래그 리사이즈로 동적 관리 — 초기값만 설정 */
-  --pc-left-w:   320px;
-  --pc-center-w: 1fr;   /* CSS 변수는 참고용, 실제는 JS가 px로 직접 제어 */
+  /* 풀화면(1400px)→520px, 절반(700px)→364px(30%감소), 이하 364px 유지 */
+  --pc-left-w: clamp(364px, 37.14vw, 520px);
 }
 
-/* ── #app: 드래그 핸들로 열 너비를 JS가 직접 설정 ── */
+/* ── #app: 핸들 포함 5열. 기존 비율 그대로, 핸들(5px) 삽입만 ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  /* 초기값: left 320px, 핸들1 6px, center나머지, 핸들2 6px, right 280px */
-  grid-template-columns: 320px 6px 1fr 6px 280px !important;
+  grid-template-columns: var(--pc-left-w) 5px 1.4fr 5px minmax(240px, 1fr) !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
   border-right: none !important;
   box-shadow: none !important;
 }
+
+/* ── 드래그 핸들 ── */
+.pc-resize-handle {
+  grid-row: 1;
+  cursor: col-resize;
+  background: var(--border);
+  z-index: 50;
+  transition: background 0.15s;
+  position: relative;
+}
+.pc-resize-handle:hover,
+.pc-resize-handle.is-dragging {
+  background: var(--accent);
+}
+.pc-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px; height: 36px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+/* 핸들이 경계선 역할 → 기존 border 제거 */
+#pc-left   { border-right: none !important; }
+#pc-center { border-right: none !important; }
 
 /* 기존 하단 탭바 숨김 */
 #bottom-nav { display: none !important; }
@@ -37,13 +63,13 @@
    ============================================= */
 #pc-left {
   grid-column: 1;
+  /* 핸들이 border 대체 */
   background: var(--bg-surface);
-  border-right: none; /* 핸들이 경계선 역할 */
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 5;
-  min-width: 200px;
 }
 
 /* ── 가로 탭: 한 줄 ── */
@@ -85,7 +111,7 @@
   background: var(--accent-glow);
 }
 
-/* ── 달력: aspect-ratio로 높이가 너비에 비례 ── */
+/* ── 달력: aspect-ratio로 높이가 너비에 비례 → 화면 축소 시 함께 줄어듦 ── */
 /* 기준: 너비 520px → 높이 560px (520:560 = 13:14 비율) */
 #pc-left #calendar-section {
   flex-shrink: 0;
@@ -106,34 +132,34 @@
   grid-auto-rows: 1fr;
 }
 
-/* ── 달력 셀: --pc-left-w 기반 동적 크기 ──
-   320px → 17px, 200px → 13px, 520px → 22px 선형 */
+/* 달력 셀: 폰트 동적 크기 (풀화면 22px, 절반 화면 ~14px) */
 #pc-left .cal-day {
   aspect-ratio: unset !important;
-  font-size: clamp(12px, calc(var(--pc-left-w) * 0.044), 22px);
+  font-size: clamp(14px, 1.6vw, 22px);
 }
 
-/* 달력 today/selected 원 크기: 너비에 비례 */
+/* 달력 today/selected 원 크기: 동적 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
-  width:  clamp(24px, calc(var(--pc-left-w) * 0.08), 42px);
-  height: clamp(24px, calc(var(--pc-left-w) * 0.08), 42px);
+  width:  clamp(28px, 2.9vw, 40px);
+  height: clamp(28px, 2.9vw, 40px);
 }
 
-/* 달력 헤더: 너비에 따라 높이·버튼 크기 동적 조절 */
+
+/* 달력 헤더 높이 2배, 버튼 크게 */
 #pc-left #calendar-header {
   margin-bottom: 6px;
   flex-shrink: 0;
-  height: clamp(44px, calc(var(--pc-left-w) * 0.14), 68px);
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 #pc-left .cal-nav {
-  width:  clamp(36px, calc(var(--pc-left-w) * 0.14), 72px) !important;
-  height: clamp(28px, calc(var(--pc-left-w) * 0.085), 42px) !important;
+  width: 72px !important;
+  height: 40px !important;
   border-radius: 20px !important;
-  font-size: clamp(16px, calc(var(--pc-left-w) * 0.065), 30px) !important;
+  font-size: 28px !important;
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border-light) !important;
   flex-shrink: 0;
@@ -144,26 +170,26 @@
   border-color: var(--accent) !important;
 }
 #pc-left .cal-thismonth-btn {
-  font-size: clamp(10px, calc(var(--pc-left-w) * 0.038), 15px) !important;
-  padding: 5px 10px !important;
-  border-radius: 14px !important;
+  font-size: 14px !important;
+  padding: 7px 14px !important;
+  border-radius: 16px !important;
 }
 #pc-left #cal-title {
-  font-size: clamp(13px, calc(var(--pc-left-w) * 0.052), 22px) !important;
+  font-size: 20px !important;
 }
 #pc-left .cal-year-btn,
 #pc-left .cal-month-btn {
-  font-size: clamp(13px, calc(var(--pc-left-w) * 0.056), 24px) !important;
+  font-size: 22px !important;
 }
 #pc-left .cal-day.has-todo span::after {
-  width:  clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
-  height: clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
-  margin-top: 2px !important;
+  width: 7px !important;
+  height: 7px !important;
+  margin-top: 3px !important;
 }
 #pc-left .cal-day.past-undone span::after {
-  width:  clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
-  height: clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
-  margin-top: 2px !important;
+  width: 7px !important;
+  height: 7px !important;
+  margin-top: 3px !important;
 }
 
 /* 달력 아래 남은 공간 */
@@ -180,9 +206,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: none; /* 핸들이 경계선 역할 */
+  border-right: 1px solid var(--border);
   background: var(--bg-base);
-  min-width: 180px;
 }
 
 /* 날짜줄: 중앙 최상단 고정 행 */
@@ -234,8 +259,7 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-base);
-  position: relative;
-  min-width: 180px;
+  position: relative;   /* 모달 absolute 기준점 */
 }
 
 /* 선택 전 플레이스홀더 */
@@ -369,47 +393,11 @@ body.pc-layout #repeat-edit-box {
 .pc-dropdown-btn.danger { color: var(--danger); }
 
 /* =============================================
-   드래그 리사이즈 핸들
-   ============================================= */
-.pc-resize-handle {
-  position: relative;
-  z-index: 50;
-  cursor: col-resize;
-  background: var(--border);
-  width: 6px;
-  transition: background 0.15s;
-  user-select: none;
-  flex-shrink: 0;
-}
-.pc-resize-handle:hover,
-.pc-resize-handle.dragging {
-  background: var(--accent);
-}
-/* 핸들 중앙 점선 장식 */
-.pc-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px;
-  height: 40px;
-  border-radius: 2px;
-  background: var(--text-muted);
-  opacity: 0.4;
-}
-.pc-resize-handle:hover::after,
-.pc-resize-handle.dragging::after {
-  background: var(--accent);
-  opacity: 0.9;
-}
-
-/* =============================================
    설정/반복함 패널
    ============================================= */
-body.pc-layout #settings-panel   { width: 320px; }
+body.pc-layout #settings-panel   { width: var(--pc-left-w); }
 body.pc-layout #settings-overlay { background: rgba(0,0,0,0.15); }
-body.pc-layout #repeats-panel    { width: 320px; }
+body.pc-layout #repeats-panel    { width: var(--pc-left-w); }
 
 /* action-popup: PC에서 드롭다운으로 대체 */
 body.pc-layout #action-popup { display: none !important; }
