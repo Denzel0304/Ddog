@@ -85,6 +85,7 @@ function initBackButton() {
 
 function hasOpenPopup() {
   if (document.getElementById('theme-sheet')) return true;
+  if (document.getElementById('stats-overlay')) return true;
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) return true;
   if (!document.getElementById('action-popup').classList.contains('hidden')) return true;
   if (!document.getElementById('year-popup').classList.contains('hidden')) return true;
@@ -98,6 +99,8 @@ function hasOpenPopup() {
 }
 
 function closeTopPopup() {
+  const statsOverlay = document.getElementById('stats-overlay');
+  if (statsOverlay) { statsOverlay.remove(); return; }
   const themeSheet = document.getElementById('theme-sheet');
   if (themeSheet) {
     themeSheet.remove();
