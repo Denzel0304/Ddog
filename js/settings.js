@@ -11,7 +11,7 @@ const THEMES = [
   { id: 'sky',      label: '연한 하늘색', bg: '#e2ecf6', dot: '#2868c0' },
   { id: 'rose',     label: '연한 붉은색', bg: '#f4e4e4', dot: '#c03848' },
   { id: 'lavender', label: '연한 자주색', bg: '#eae4f4', dot: '#7040c0' },
-  { id: 'navy',     label: '진한 청색',   bg: '#141c38', dot: '#4878e8' },
+  { id: 'navy',     label: '진한 청색',   bg: '#1a2448', dot: '#4878e8' },
 ];
 
 function applyTheme(themeId) {
@@ -36,6 +36,8 @@ function applyTheme(themeId) {
 }
 
 function initTheme() {
+  // PC 레이아웃에서는 컬러 테마 적용 안 함
+  if (document.body.classList.contains('pc-layout')) return;
   let saved = localStorage.getItem('app-theme');
   if (!saved) {
     saved = localStorage.getItem('lightmode') === '1' ? 'light' : 'dark';
