@@ -312,6 +312,11 @@ body.pc-layout #modal-save {
   box-sizing: border-box !important;
 }
 
+/* 메모↔날짜 사이 여백 */
+body.pc-layout #detail-section .detail-row:has(#input-date) {
+  margin-top: 10px !important;
+}
+
 /* ── 반복설정/체크리스트 오버레이: pc-right 안에 absolute로 하단에 표시 ── */
 body.pc-layout #repeat-overlay,
 body.pc-layout #checklist-overlay,
