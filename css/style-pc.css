@@ -85,7 +85,7 @@
   background: var(--accent-glow);
 }
 
-/* ── 달력: aspect-ratio로 높이가 너비에 비례 → 화면 축소 시 함께 줄어듦 ── */
+/* ── 달력: aspect-ratio로 높이가 너비에 비례 ── */
 /* 기준: 너비 520px → 높이 560px (520:560 = 13:14 비율) */
 #pc-left #calendar-section {
   flex-shrink: 0;
@@ -106,34 +106,34 @@
   grid-auto-rows: 1fr;
 }
 
-/* 달력 셀: 폰트 동적 크기 (풀화면 22px, 절반 화면 ~14px) */
+/* ── 달력 셀: --pc-left-w 기반 동적 크기 ──
+   320px → 17px, 200px → 13px, 520px → 22px 선형 */
 #pc-left .cal-day {
   aspect-ratio: unset !important;
-  font-size: clamp(14px, 1.6vw, 22px);
+  font-size: clamp(12px, calc(var(--pc-left-w) * 0.044), 22px);
 }
 
-/* 달력 today/selected 원 크기: 동적 */
+/* 달력 today/selected 원 크기: 너비에 비례 */
 #pc-left .cal-day.today::before,
 #pc-left .cal-day.selected::before {
-  width:  clamp(28px, 2.9vw, 40px);
-  height: clamp(28px, 2.9vw, 40px);
+  width:  clamp(24px, calc(var(--pc-left-w) * 0.08), 42px);
+  height: clamp(24px, calc(var(--pc-left-w) * 0.08), 42px);
 }
 
-
-/* 달력 헤더 높이 2배, 버튼 크게 */
+/* 달력 헤더: 너비에 따라 높이·버튼 크기 동적 조절 */
 #pc-left #calendar-header {
   margin-bottom: 6px;
   flex-shrink: 0;
-  height: 64px;
+  height: clamp(44px, calc(var(--pc-left-w) * 0.14), 68px);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 #pc-left .cal-nav {
-  width: 72px !important;
-  height: 40px !important;
+  width:  clamp(36px, calc(var(--pc-left-w) * 0.14), 72px) !important;
+  height: clamp(28px, calc(var(--pc-left-w) * 0.085), 42px) !important;
   border-radius: 20px !important;
-  font-size: 28px !important;
+  font-size: clamp(16px, calc(var(--pc-left-w) * 0.065), 30px) !important;
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border-light) !important;
   flex-shrink: 0;
@@ -144,26 +144,26 @@
   border-color: var(--accent) !important;
 }
 #pc-left .cal-thismonth-btn {
-  font-size: 14px !important;
-  padding: 7px 14px !important;
-  border-radius: 16px !important;
+  font-size: clamp(10px, calc(var(--pc-left-w) * 0.038), 15px) !important;
+  padding: 5px 10px !important;
+  border-radius: 14px !important;
 }
 #pc-left #cal-title {
-  font-size: 20px !important;
+  font-size: clamp(13px, calc(var(--pc-left-w) * 0.052), 22px) !important;
 }
 #pc-left .cal-year-btn,
 #pc-left .cal-month-btn {
-  font-size: 22px !important;
+  font-size: clamp(13px, calc(var(--pc-left-w) * 0.056), 24px) !important;
 }
 #pc-left .cal-day.has-todo span::after {
-  width: 7px !important;
-  height: 7px !important;
-  margin-top: 3px !important;
+  width:  clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
+  height: clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
+  margin-top: 2px !important;
 }
 #pc-left .cal-day.past-undone span::after {
-  width: 7px !important;
-  height: 7px !important;
-  margin-top: 3px !important;
+  width:  clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
+  height: clamp(4px, calc(var(--pc-left-w) * 0.018), 8px) !important;
+  margin-top: 2px !important;
 }
 
 /* 달력 아래 남은 공간 */
