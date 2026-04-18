@@ -587,7 +587,65 @@ window.showRepeatDeleteSheet = function(masterId, dateStr, fromWeekly) {
   wrapDelete('deleteRepeatOnlyDate');
 })();
 
-/* ── openActionPopup: 드롭다운으로 대체 ── */
+/* ── PC: 메모 자동 번호 리스트 (노션 스타일) ── */
+document.addEventListener('DOMContentLoaded', () => {
+  // modal.js가 #input-memo를 동적으로 사용하므로, 이벤트는 document에서 위임
+  document.addEventListener('keydown', function(e) {
+    const el = e.target;
+    if (el.id !== 'input-memo') return;
+
+    if (e.key === ' ') {
+      // "숫자." + 스페이스 → 번호 리스트 시작
+      const val = el.value;
+      const pos = el.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const lineText  = val.substring(lineStart, pos);
+      if (/^\d+\.$/.test(lineText)) {
+        e.preventDefault();
+        const num = parseInt(lineText);
+        const prefix = `${num}. `;
+        const indent = '    '; // 들여쓰기 4칸
+        const newLine = indent + prefix;
+        // 현재 줄을 들여쓰기+번호로 교체
+        const before = val.substring(0, lineStart);
+        const after  = val.substring(pos);
+        el.value = before + newLine + after;
+        el.selectionStart = el.selectionEnd = lineStart + newLine.length;
+      }
+    }
+
+    if (e.key === 'Enter') {
+      const val = el.value;
+      const pos = el.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const lineText  = val.substring(lineStart, pos);
+
+      // 들여쓰기된 번호 줄인지 확인: "    N. 내용"
+      const match = lineText.match(/^( {4})(\d+)\. (.*)/);
+      if (!match) return;
+
+      e.preventDefault();
+      const indent  = match[1];
+      const num     = parseInt(match[2]);
+      const content = match[3];
+
+      if (content === '') {
+        // 빈 번호 줄 → 번호 제거하고 리스트 종료
+        const before = val.substring(0, lineStart);
+        const after  = val.substring(pos);
+        el.value = before + after;
+        el.selectionStart = el.selectionEnd = lineStart;
+      } else {
+        // 내용 있는 줄 → 다음 번호 생성
+        const nextPrefix = `${indent}${num + 1}. `;
+        const before = val.substring(0, pos);
+        const after  = val.substring(pos);
+        el.value = before + '\n' + nextPrefix + after;
+        el.selectionStart = el.selectionEnd = pos + 1 + nextPrefix.length;
+      }
+    }
+  });
+});
 (function() {
   const _orig = window.openActionPopup;
   window.openActionPopup = function(id, fromWeekly, targetDate, todo) {
