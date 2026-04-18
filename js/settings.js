@@ -36,8 +36,6 @@ function applyTheme(themeId) {
 }
 
 function initTheme() {
-  // PC 레이아웃에서는 컬러 테마 적용 안 함
-  if (document.body.classList.contains('pc-layout')) return;
   let saved = localStorage.getItem('app-theme');
   if (!saved) {
     saved = localStorage.getItem('lightmode') === '1' ? 'light' : 'dark';
