@@ -536,5 +536,122 @@
 <script src="js/sound.js"></script>
 <script src="js/app.js"></script>
 
+<script>
+/* ── 메모 URL 링크 미리보기 ── */
+function updateMemoLinks() {
+  const memo = document.getElementById('input-memo');
+  if (!memo) return;
+
+  let linkBox = document.getElementById('memo-links-preview');
+  const urlRegex = /https?:\/\/[^\s\n"'<>]+/g;
+  const urls = (memo.value || '').match(urlRegex);
+
+  if (!urls || urls.length === 0) {
+    if (linkBox) linkBox.style.display = 'none';
+    return;
+  }
+
+  if (!linkBox) {
+    linkBox = document.createElement('div');
+    linkBox.id = 'memo-links-preview';
+    linkBox.style.cssText = 'padding:6px 12px 2px;display:flex;flex-direction:column;gap:4px;';
+    const memoRow = memo.closest('.detail-row');
+    if (memoRow && memoRow.nextElementSibling) {
+      memoRow.parentNode.insertBefore(linkBox, memoRow.nextElementSibling);
+    }
+  }
+
+  linkBox.innerHTML = '';
+  linkBox.style.display = 'flex';
+
+  [...new Set(urls)].forEach(url => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = url.length > 50 ? url.slice(0, 50) + '…' : url;
+    a.style.cssText = 'font-size:12px;color:#7ecfa0;text-decoration:underline;word-break:break-all;cursor:pointer;';
+    linkBox.appendChild(a);
+  });
+}
+
+/* 모달 열릴 때 링크 감지 */
+(function() {
+  const _orig = window.openEditModal;
+  if (_orig) {
+    window.openEditModal = function(todo) {
+      _orig(todo);
+      setTimeout(updateMemoLinks, 50);
+    };
+  }
+})();
+
+/* 메모 입력 중 실시간 감지 */
+document.addEventListener('input', e => {
+  if (e.target.id === 'input-memo') updateMemoLinks();
+});
+
+/* 모달 닫힐 때 링크 박스 제거 */
+(function() {
+  const _orig = window.closeModal;
+  if (_orig) {
+    window.closeModal = function(...args) {
+      const lb = document.getElementById('memo-links-preview');
+      if (lb) lb.remove();
+      _orig(...args);
+    };
+  }
+})();
+
+/* ── 메모 자동 번호 리스트 (노션 스타일) ── */
+document.addEventListener('keydown', function(e) {
+  const el = e.target;
+  if (el.id !== 'input-memo') return;
+
+  if (e.key === ' ') {
+    const val = el.value;
+    const pos = el.selectionStart;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText  = val.substring(lineStart, pos);
+    if (/^\d+\.$/.test(lineText)) {
+      e.preventDefault();
+      const num = parseInt(lineText);
+      const newLine = '    ' + num + '. ';
+      const before = val.substring(0, lineStart);
+      const after  = val.substring(pos);
+      el.value = before + newLine + after;
+      el.selectionStart = el.selectionEnd = lineStart + newLine.length;
+    }
+  }
+
+  if (e.key === 'Enter') {
+    const val = el.value;
+    const pos = el.selectionStart;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText  = val.substring(lineStart, pos);
+    const match = lineText.match(/^( {4})(\d+)\. (.*)/);
+    if (!match) return;
+
+    e.preventDefault();
+    const indent  = match[1];
+    const num     = parseInt(match[2]);
+    const content = match[3];
+
+    if (content === '') {
+      const before = val.substring(0, lineStart);
+      const after  = val.substring(pos);
+      el.value = before + after;
+      el.selectionStart = el.selectionEnd = lineStart;
+    } else {
+      const nextPrefix = indent + (num + 1) + '. ';
+      const before = val.substring(0, pos);
+      const after  = val.substring(pos);
+      el.value = before + '\n' + nextPrefix + after;
+      el.selectionStart = el.selectionEnd = pos + 1 + nextPrefix.length;
+    }
+  }
+});
+</script>
+
 </body>
 </html>
