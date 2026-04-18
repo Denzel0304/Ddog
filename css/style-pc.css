@@ -5,16 +5,18 @@
    ============================================= */
 
 :root {
-  /* 풀화면(1400px)→520px, 절반(700px)→364px(30%감소), 이하 364px 유지 */
-  --pc-left-w: clamp(364px, 37.14vw, 520px);
+  /* 드래그 리사이즈로 동적 관리 — 초기값만 설정 */
+  --pc-left-w:   320px;
+  --pc-center-w: 1fr;   /* CSS 변수는 참고용, 실제는 JS가 px로 직접 제어 */
 }
 
-/* ── #app: 좌측 동적, 중앙 흡수, 우측 최솟값 보장 ── */
+/* ── #app: 드래그 핸들로 열 너비를 JS가 직접 설정 ── */
 #app {
   max-width: none !important;
   height: 100dvh !important;
   display: grid !important;
-  grid-template-columns: var(--pc-left-w) 1.4fr minmax(240px, 1fr) !important;
+  /* 초기값: left 320px, 핸들1 6px, center나머지, 핸들2 6px, right 280px */
+  grid-template-columns: 320px 6px 1fr 6px 280px !important;
   grid-template-rows: 100dvh !important;
   overflow: hidden !important;
   border-left: none !important;
@@ -36,11 +38,12 @@
 #pc-left {
   grid-column: 1;
   background: var(--bg-surface);
-  border-right: 1px solid var(--border);
+  border-right: none; /* 핸들이 경계선 역할 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 5;
+  min-width: 200px;
 }
 
 /* ── 가로 탭: 한 줄 ── */
@@ -173,12 +176,13 @@
    중앙: 날짜줄(첫행) + 할일 목록
    ============================================= */
 #pc-center {
-  grid-column: 2;
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--border);
+  border-right: none; /* 핸들이 경계선 역할 */
   background: var(--bg-base);
+  min-width: 180px;
 }
 
 /* 날짜줄: 중앙 최상단 고정 행 */
@@ -225,12 +229,13 @@
    우측: 모달 표시 영역
    ============================================= */
 #pc-right {
-  grid-column: 3;
+  grid-column: 5;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-base);
-  position: relative;   /* 모달 absolute 기준점 */
+  position: relative;
+  min-width: 180px;
 }
 
 /* 선택 전 플레이스홀더 */
@@ -364,11 +369,47 @@ body.pc-layout #repeat-edit-box {
 .pc-dropdown-btn.danger { color: var(--danger); }
 
 /* =============================================
+   드래그 리사이즈 핸들
+   ============================================= */
+.pc-resize-handle {
+  position: relative;
+  z-index: 50;
+  cursor: col-resize;
+  background: var(--border);
+  width: 6px;
+  transition: background 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+.pc-resize-handle:hover,
+.pc-resize-handle.dragging {
+  background: var(--accent);
+}
+/* 핸들 중앙 점선 장식 */
+.pc-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0.4;
+}
+.pc-resize-handle:hover::after,
+.pc-resize-handle.dragging::after {
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+/* =============================================
    설정/반복함 패널
    ============================================= */
-body.pc-layout #settings-panel   { width: var(--pc-left-w); }
+body.pc-layout #settings-panel   { width: 320px; }
 body.pc-layout #settings-overlay { background: rgba(0,0,0,0.15); }
-body.pc-layout #repeats-panel    { width: var(--pc-left-w); }
+body.pc-layout #repeats-panel    { width: 320px; }
 
 /* action-popup: PC에서 드롭다운으로 대체 */
 body.pc-layout #action-popup { display: none !important; }
