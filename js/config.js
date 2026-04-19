@@ -101,6 +101,33 @@ async function refreshSession(session) {
   return data;
 }
 
+// ── 백그라운드 JWT 자동 갱신 ──
+let _tokenRefreshTimer = null;
+
+function startTokenRefresh() {
+  if (_tokenRefreshTimer) clearInterval(_tokenRefreshTimer);
+  // 5분마다 체크, 만료 5분 전이면 갱신
+  _tokenRefreshTimer = setInterval(async () => {
+    const session = loadSession();
+    if (!session || !session.access_token) return;
+    if (isTokenExpired(session)) {
+      console.log('[auth] 토큰 만료 감지 → 자동 갱신');
+      try {
+        const newSession = await refreshSession(session);
+        saveSession(newSession);
+        setAuthToken(newSession.access_token);
+        await getSupabaseClient().auth.setSession({
+          access_token: newSession.access_token,
+          refresh_token: newSession.refresh_token
+        });
+        console.log('[auth] 토큰 자동 갱신 완료');
+      } catch(e) {
+        console.warn('[auth] 토큰 갱신 실패:', e);
+      }
+    }
+  }, 5 * 60 * 1000); // 5분마다
+}
+
 // ── 앱 시작 시 인증 확인 ──
 // 로컬 세션이 유효하면 즉시 true 반환 (스플래시만 잠깐 보임)
 // 만료된 경우만 Supabase에 refresh 요청
@@ -125,6 +152,7 @@ async function initAuth() {
       refresh_token: session.refresh_token
     });
   } catch(e) {}
+  startTokenRefresh();
   return true;
 }
 
@@ -174,6 +202,7 @@ function initLoginForm() {
         access_token: session.access_token,
         refresh_token: session.refresh_token
       });
+      startTokenRefresh();
       await showApp();
     } catch(err) {
       recordLoginFail();

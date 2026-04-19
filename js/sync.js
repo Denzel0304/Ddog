@@ -173,8 +173,8 @@ async function flushQueue() {
       });
       await queueDelete(op.qid);
     } catch(e) {
-      console.warn('[sync] flush 실패, 다음에 재시도:', e);
-      break;
+      console.warn('[sync] flush 실패, 다음 항목 계속:', e);
+      // break 제거 → 하나 실패해도 나머지 계속 시도
     }
   }
 }
@@ -353,6 +353,11 @@ async function initSync() {
   }
 
   await startRealtime();
+
+  // ── 주기적 queue flush (30초마다) ──
+  setInterval(async () => {
+    if (AppState.isOnline) await flushQueue();
+  }, 30 * 1000);
 
   // ── 포그라운드 복귀 시 재연결 (모바일 백그라운드 복귀 대응) ──
   document.addEventListener('visibilitychange', () => {
