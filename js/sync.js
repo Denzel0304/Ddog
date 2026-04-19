@@ -348,11 +348,11 @@ async function initSync() {
     }
   }
 
-  if (AppState.isOnline) {
-    await flushQueue();
-  }
-
-  await startRealtime();
+  // ── 네트워크 작업 모두 백그라운드로 → 스플래시 즉시 해제 ──
+  setTimeout(async () => {
+    if (AppState.isOnline) await flushQueue();
+    await startRealtime();
+  }, 0);
 
   // ── 주기적 queue flush (30초마다) ──
   setInterval(async () => {
