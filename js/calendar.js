@@ -201,7 +201,7 @@ function updateSelectedDateLabel() {
   const d    = new Date(AppState.selectedDate + 'T00:00:00');
   const days = ['일','월','화','수','목','금','토'];
   const dow  = d.getDay();
-  const label = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[dow]})`;
+  const label = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[dow]})`;
   const el = document.getElementById('selected-date-label');
   el.textContent = label;
   el.className = dow === 0 ? 'date-label-sun' : dow === 6 ? 'date-label-sat' : 'date-label-weekday';
