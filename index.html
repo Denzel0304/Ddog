@@ -190,7 +190,7 @@
       <div id="calendar-grid"></div>
     </div>
     <div id="selected-date-bar">
-      <span id="selected-date-label"></span>
+      <span id="selected-date-label"></span><span id="weather-display" style="margin-left:10px;font-size:13px;color:var(--text-secondary);white-space:nowrap;"></span>
       <div id="date-bar-actions" style="visibility:hidden">
         <button id="lightmode-toggle" title="라이트/다크 모드 전환">
           <div class="lm-toggle-track"><div class="lm-toggle-thumb"></div></div>
@@ -683,5 +683,43 @@ document.addEventListener('input', e => {
 })();
 </script>
 
+
+<script>
+/* ── 날씨 표시 (Open-Meteo, 세종시 고정) ── */
+(function() {
+  const LAT = 36.48, LON = 127.29;
+  const WMO = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+    45:'🌫️',48:'🌫️',
+    51:'🌧️',53:'🌧️',55:'🌧️',
+    61:'🌧️',63:'🌧️',65:'🌧️',
+    71:'❄️',73:'❄️',75:'❄️',77:'❄️',
+    80:'🌦️',81:'🌦️',82:'🌦️',
+    85:'🌨️',86:'🌨️',
+    95:'⛈️',96:'⛈️',99:'⛈️'
+  };
+  function wIcon(code) { return WMO[code] || '🌡️'; }
+
+  async function fetchWeather() {
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT +
+        '&longitude=' + LON +
+        '&daily=temperature_2m_max,temperature_2m_min,weathercode' +
+        '&timezone=Asia%2FSeoul&forecast_days=1';
+      const res = await fetch(url);
+      const data = await res.json();
+      const max  = Math.round(data.daily.temperature_2m_max[0]);
+      const min  = Math.round(data.daily.temperature_2m_min[0]);
+      const icon = wIcon(data.daily.weathercode[0]);
+      const el = document.getElementById('weather-display');
+      if (el) el.textContent = icon + ' ' + min + '°/' + max + '°';
+    } catch(e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(fetchWeather, 1500);
+  });
+})();
+</script>
 </body>
 </html>
