@@ -2,7 +2,7 @@
 // weekly.js — 주간 일정 탭
 // =============================================
 
-let weekOffset = 1;
+let weekOffset = 0;
 let selectedWeekDay = null;
 let weekAllRows = [];
 let weekImportantOnly = true;
@@ -20,15 +20,12 @@ function initWeekly() {
 
 function getWeekRange(offset) {
   const today = new Date();
-  const dow = today.getDay();
-  const diffToMon = (dow === 0) ? -6 : 1 - dow;
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() + diffToMon);
-  const monday = new Date(thisMonday);
-  monday.setDate(thisMonday.getDate() + 7 * offset);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return { monday, sunday };
+  // 오늘 기준 + offset*7일이 시작일
+  const start = new Date(today);
+  start.setDate(today.getDate() + offset * 7);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { monday: start, sunday: end };
 }
 
 async function loadWeekly() {
