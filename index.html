@@ -685,58 +685,34 @@ document.addEventListener('input', e => {
 
 
 <script>
-/* ── 날씨 표시 (기상청 단기예보, 세종시 고정) ── */
+/* ── 날씨 표시 (Open-Meteo, 세종시 고정) ── */
 (function() {
-  const API_KEY = '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25';
-  const NX = 66, NY = 99; // 세종시 격자
-
-  const SKY = { '1':'☀️', '3':'⛅', '4':'☁️' };
-  const PTY = { '0':'', '1':'🌧️', '2':'🌨️', '3':'⛈️', '4':'🌧️', '5':'❄️', '6':'🌧️', '7':'❄️' };
-
-  function getBaseTime() {
-    const now = new Date();
-    const h = now.getHours();
-    const times = [2,5,8,11,14,17,20,23];
-    let base = times.filter(t => t <= h).pop() ?? 23;
-    if (base === 23 && h < 23) {
-      now.setDate(now.getDate() - 1);
-      base = 23;
-    }
-    const ymd = now.toISOString().slice(0,10).replace(/-/g,'');
-    return { date: ymd, time: String(base).padStart(2,'0') + '00' };
-  }
+  const LAT = 36.48, LON = 127.29;
+  const WMO = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+    45:'🌫️',48:'🌫️',
+    51:'🌧️',53:'🌧️',55:'🌧️',
+    61:'🌧️',63:'🌧️',65:'🌧️',
+    71:'❄️',73:'❄️',75:'❄️',77:'❄️',
+    80:'🌦️',81:'🌦️',82:'🌦️',
+    85:'🌨️',86:'🌨️',
+    95:'⛈️',96:'⛈️',99:'⛈️'
+  };
+  function wIcon(code) { return WMO[code] || '🌡️'; }
 
   async function fetchWeather() {
     try {
-      const { date, time } = getBaseTime();
-      const url = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst' +
-        '?serviceKey=' + API_KEY +
-        '&numOfRows=300&pageNo=1&dataType=JSON' +
-        '&base_date=' + date + '&base_time=' + time +
-        '&nx=' + NX + '&ny=' + NY;
-
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + LAT +
+        '&longitude=' + LON +
+        '&daily=temperature_2m_max,temperature_2m_min,weathercode' +
+        '&timezone=Asia%2FSeoul&forecast_days=1';
       const res = await fetch(url);
       const data = await res.json();
-      const items = data.response?.body?.items?.item || [];
-
-      const todayStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
-
-      // 오늘 날짜 데이터만 필터
-      const todayItems = items.filter(it => it.fcstDate === todayStr);
-
-      const get = (cat) => todayItems.find(it => it.category === cat)?.fcstValue;
-
-      const tmax = get('TMX') || get('TMP');
-      const tmin = get('TMN') || get('TMP');
-      const sky  = get('SKY') || '1';
-      const pty  = get('PTY') || '0';
-
-      const icon = PTY[pty] && pty !== '0' ? PTY[pty] : (SKY[sky] || '🌡️');
-      const maxT = tmax ? Math.round(Number(tmax)) : '--';
-      const minT = tmin ? Math.round(Number(tmin)) : '--';
-
+      const max  = Math.round(data.daily.temperature_2m_max[0]);
+      const min  = Math.round(data.daily.temperature_2m_min[0]);
+      const icon = wIcon(data.daily.weathercode[0]);
       const el = document.getElementById('weather-display');
-      if (el) el.textContent = icon + ' ' + minT + '°/' + maxT + '°';
+      if (el) el.textContent = icon + ' ' + min + '°/' + max + '°';
     } catch(e) {}
   }
 
