@@ -87,7 +87,7 @@ function clearSession() { localStorage.removeItem('sb_session'); }
 
 function isTokenExpired(session) {
   if (!session || !session.expires_at) return true;
-  return Date.now() / 1000 > session.expires_at - 60;
+  return Date.now() / 1000 > session.expires_at - 300; // 만료 5분 전 갱신
 }
 
 async function refreshSession(session) {
@@ -106,12 +106,11 @@ let _tokenRefreshTimer = null;
 
 function startTokenRefresh() {
   if (_tokenRefreshTimer) clearInterval(_tokenRefreshTimer);
-  // 5분마다 체크, 만료 5분 전이면 갱신
+  // 10분마다 체크 (JWT 7일, 만료 5분 전에 갱신)
   _tokenRefreshTimer = setInterval(async () => {
     const session = loadSession();
     if (!session || !session.access_token) return;
     if (isTokenExpired(session)) {
-      console.log('[auth] 토큰 만료 감지 → 자동 갱신');
       try {
         const newSession = await refreshSession(session);
         saveSession(newSession);
@@ -120,12 +119,13 @@ function startTokenRefresh() {
           access_token: newSession.access_token,
           refresh_token: newSession.refresh_token
         });
-        console.log('[auth] 토큰 자동 갱신 완료');
+        // 토큰 갱신 후 Realtime 채널도 새 토큰으로 재연결
+        if (typeof startRealtime === 'function') startRealtime();
       } catch(e) {
         console.warn('[auth] 토큰 갱신 실패:', e);
       }
     }
-  }, 5 * 60 * 1000); // 5분마다
+  }, 10 * 60 * 1000); // 10분마다
 }
 
 // ── 앱 시작 시 인증 확인 ──

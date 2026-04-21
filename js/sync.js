@@ -152,7 +152,7 @@ async function initialSync() {
       await idbClear();
       await idbPutMany(rows);
     }
-    console.log('[sync] 초기 동기화 완료:', rows?.length, '건');
+
   } catch(e) {
     console.warn('[sync] 초기 동기화 실패 (오프라인?)', e);
   }
@@ -163,7 +163,6 @@ async function initialSync() {
 async function flushQueue() {
   const ops = await queueGetAll();
   if (!ops.length) return;
-  console.log('[sync] queue flush:', ops.length, '건');
 
   for (const op of ops) {
     try {
@@ -181,7 +180,6 @@ async function flushQueue() {
 
 // 온라인 복귀 시
 async function onOnline() {
-  console.log('[sync] 온라인 복귀 → queue flush');
   await flushQueue();
 }
 
@@ -234,13 +232,10 @@ async function startRealtime() {
       'postgres_changes',
       { event: '*', schema: 'public', table: TABLE_NAME },
       async payload => {
-        console.log('[realtime]', payload.eventType, payload);
         await handleRealtimeEvent(payload);
       }
     )
     .subscribe(status => {
-      console.log('[realtime] status:', status);
-
       if (status === 'SUBSCRIBED') {
         // 정상 연결 — 혹시 남아있던 재시작 예약 취소
         if (realtimeRestartTimer) {
@@ -250,17 +245,16 @@ async function startRealtime() {
       }
 
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn('[realtime] 채널 오류/종료 → 5초 후 재연결');
         // bgSync로 즉시 화면 갱신 (공백 방지)
         if (AppState.isOnline) {
-          bgSync().catch(e => console.warn('[sync] bgSync 폴백 실패', e));
+          bgSync().catch(() => {});
         }
-        // 5초 후 채널 재연결 시도 (재귀적 재시도)
+        // 15초 후 채널 재연결 시도 (토큰 갱신 여유 확보)
         if (!realtimeRestartTimer) {
           realtimeRestartTimer = setTimeout(() => {
             realtimeRestartTimer = null;
             startRealtime();
-          }, 5000);
+          }, 15000);
         }
       }
     });
@@ -319,7 +313,6 @@ async function fullResync() {
     }
     refreshCurrentTab();
     updateMonthDots();
-    console.log('[sync] 전체 재동기화 완료');
   } catch(e) {
     console.warn('[sync] 전체 재동기화 실패', e);
   }
@@ -362,7 +355,6 @@ async function initSync() {
   // ── 포그라운드 복귀 시 재연결 (모바일 백그라운드 복귀 대응) ──
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      console.log('[sync] 포그라운드 복귀 → Realtime 재연결 + bgSync');
       startRealtime();
       if (AppState.isOnline) {
         bgSync().catch(e => {
@@ -401,7 +393,6 @@ async function bgSync() {
       });
       if (changed.length > 0) {
         await idbPutMany(changed);
-        console.log('[sync] bg sync 변경:', changed.length, '건');
       }
     }
   }
@@ -417,7 +408,6 @@ async function bgSync() {
       );
       if (deletedLocally.length > 0) {
         await Promise.all(deletedLocally.map(t => idbDelete(t.id)));
-        console.log('[sync] bg sync 삭제 감지:', deletedLocally.length, '건');
       }
     }
   } catch(e) {
