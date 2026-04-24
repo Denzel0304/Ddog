@@ -34,7 +34,6 @@ function initGesturePopup() {
 
   document.getElementById('action-pick-date').addEventListener('click', () => {
     const fromWeekly = actionFromWeekly;
-    const isFromStorage = !!(actionTargetTodo && actionTargetTodo._fromStorage);
     const picker = document.getElementById('action-date-picker');
     picker.value = actionTargetDate || AppState.selectedDate;
     picker.showPicker?.();
@@ -42,26 +41,14 @@ function initGesturePopup() {
       picker.removeEventListener('change', onPick);
       if (!picker.value || !actionTargetId) return;
       try {
-        if (isFromStorage) {
-          // 창고 → 일반 할일 전환 (기존 row 삭제 + 새 할일 insert)
-          await convertStorageToTodo(actionTargetId, picker.value);
-          closeActionPopup();
-          showToast('할일로 옮겼어요');
-          // 창고 목록 갱신 (창고 탭에 있을 수 있음)
-          if (typeof loadStorage === 'function') await loadStorage();
-          // 해당 날짜가 현재 선택된 날짜면 할일 목록도 갱신
-          if (picker.value === AppState.selectedDate) { await loadTodos(); }
-          updateMonthDots();
+        await moveTodoDate(actionTargetId, picker.value);
+        closeActionPopup();
+        showToast('날짜를 변경했어요');
+        if (fromWeekly) {
+          await loadWeekly();
         } else {
-          await moveTodoDate(actionTargetId, picker.value);
-          closeActionPopup();
-          showToast('날짜를 변경했어요');
-          if (fromWeekly) {
-            await loadWeekly();
-          } else {
-            await loadTodos();
-            updateMonthDots();
-          }
+          await loadTodos();
+          updateMonthDots();
         }
       } catch(e) { showToast('오류가 발생했어요'); }
     });
@@ -70,18 +57,6 @@ function initGesturePopup() {
   document.getElementById('action-delete').addEventListener('click', async () => {
     if (!actionTargetId) return;
     const todo = actionTargetTodo;
-    const isFromStorage = !!(todo && todo._fromStorage);
-
-    // 창고 항목: 단순 삭제 후 창고 목록만 갱신
-    if (isFromStorage) {
-      try {
-        await deleteTodo(actionTargetId);
-        closeActionPopup();
-        showToast('삭제됐어요');
-        if (typeof loadStorage === 'function') await loadStorage();
-      } catch(e) { showToast('오류가 발생했어요'); }
-      return;
-    }
 
     // 반복 일정 판단:
     // 1) 가상 항목(_virtual): 마스터에서 파생된 가상 렌더
@@ -117,14 +92,6 @@ function openActionPopup(id, fromWeekly = false, targetDate = null, todo = null)
   actionTargetTodo = todo;
   actionFromWeekly = fromWeekly;
   actionTargetDate = targetDate || AppState.selectedDate;
-
-  // 창고 항목이면 "1일 뒤" 버튼 숨김 (기한 개념 없음)
-  const isFromStorage = !!(todo && todo._fromStorage);
-  const tomorrowBtn = document.getElementById('action-tomorrow');
-  if (tomorrowBtn) {
-    tomorrowBtn.style.display = isFromStorage ? 'none' : '';
-  }
-
   document.getElementById('action-popup').classList.remove('hidden');
 }
 

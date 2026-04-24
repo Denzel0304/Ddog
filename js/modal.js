@@ -52,19 +52,40 @@ function initModal() {
   const storageToggle = document.getElementById('storage-flag-toggle');
   if (storageToggle) {
     storageToggle.addEventListener('change', e => {
-      const detail = document.getElementById('detail-section');
       if (e.target.checked) {
-        detail.classList.add('storage-mode');
+        applyStorageMode(true);
         // 창고로 설정 시 주간 체크박스는 해제 (창고 항목은 주간 개념 없음)
         document.getElementById('input-weekly-flag').checked = false;
       } else {
-        detail.classList.remove('storage-mode');
+        applyStorageMode(false);
       }
     });
   }
 
   initChecklistModal();
   initRepeatEditOverlay();
+}
+
+// ── 창고 모드 시각적 비활성화 적용 ──
+// :has() 미지원 환경에서도 확실히 동작하도록 타겟 row에 직접 클래스 부여.
+function applyStorageMode(on) {
+  const detail = document.getElementById('detail-section');
+  if (!detail) return;
+
+  // 비활성화 대상 요소 수집 (date row 전체 + remind row 전체)
+  const dateInput   = document.getElementById('input-date');
+  const remindInput = document.getElementById('input-remind');
+  const targets = [];
+  if (dateInput)   targets.push(dateInput.closest('.detail-row'));
+  if (remindInput) targets.push(remindInput.closest('.detail-row'));
+
+  if (on) {
+    detail.classList.add('storage-mode');
+    targets.forEach(el => el && el.classList.add('storage-disabled'));
+  } else {
+    detail.classList.remove('storage-mode');
+    targets.forEach(el => el && el.classList.remove('storage-disabled'));
+  }
 }
 
 function getDefaultDate() {
@@ -123,19 +144,18 @@ function openEditModal(todo) {
   //   편집 시에는 창고 체크박스 자체를 disabled 처리 → 일반↔창고 전환 불가
   const storageToggle = document.getElementById('storage-flag-toggle');
   const storageLabel  = document.getElementById('storage-flag-label');
-  const detail = document.getElementById('detail-section');
   if (storageToggle) {
     const isStorage = !!todo.storage_flag;
     storageToggle.checked = isStorage;
     storageToggle.disabled = true;                 // 편집 시엔 항상 잠금
     if (storageLabel) storageLabel.classList.add('disabled');
     if (isStorage) {
-      detail.classList.add('storage-mode');
+      applyStorageMode(true);
       // 창고 항목은 상세 항상 펼쳐서 메모/중요도 편집 편하게
       document.getElementById('detail-toggle').checked = true;
-      detail.classList.remove('hidden');
+      document.getElementById('detail-section').classList.remove('hidden');
     } else {
-      detail.classList.remove('storage-mode');
+      applyStorageMode(false);
     }
   }
 
@@ -172,7 +192,7 @@ function resetModalForm() {
     const label = document.getElementById('storage-flag-label');
     if (label) label.classList.remove('disabled');
   }
-  document.getElementById('detail-section').classList.remove('storage-mode');
+  applyStorageMode(false);
 }
 
 // ─── 체크리스트 UI 상태 관리 ───
