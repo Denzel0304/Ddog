@@ -226,12 +226,32 @@ async function insertTodo(data) {
   if (AppState.isOnline) {
     try {
       // Supabase에 저장해서 실제 id 받아오기
-      const res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
+      let res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
         method: 'POST',
         headers: DB.headers,
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await res.text());
+
+      // storage_flag 컬럼이 DB에 아직 추가되지 않았다면 Supabase가 400/404 에러를 냄.
+      // 이 경우 storage_flag를 제외하고 재시도 (기존 기능은 어쨌든 동작해야 함).
+      if (!res.ok) {
+        const errText = await res.text();
+        const isColumnError = /storage_flag/i.test(errText) &&
+                              /column|schema|PGRST204|not find|not exist/i.test(errText);
+        if (isColumnError) {
+          console.warn('[db] storage_flag 컬럼이 DB에 없음. 컬럼 제외하고 재시도:', errText);
+          const { storage_flag, ...fallbackPayload } = payload;
+          res = await fetch(`${DB.url}/rest/v1/${TABLE_NAME}`, {
+            method: 'POST',
+            headers: DB.headers,
+            body: JSON.stringify(fallbackPayload)
+          });
+          if (!res.ok) throw new Error(await res.text());
+        } else {
+          throw new Error(errText);
+        }
+      }
+
       const rows = await res.json();
       const saved = rows[0];
       await idbPut(saved);

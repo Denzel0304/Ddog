@@ -6,7 +6,34 @@
 
 function initStorage() {
   // 창고 전용 액션 시트는 필요할 때 동적으로 생성.
-  // 초기화 시점엔 할 일 없음.
+  // 헤더 스타일을 JS 인라인으로 강제 적용 → CSS 캐시/충돌과 무관하게 확실하게 렌더링.
+  _applyStorageHeaderStyles();
+}
+
+function _applyStorageHeaderStyles() {
+  const header = document.getElementById('storage-header');
+  const title  = document.getElementById('storage-header-title');
+  if (header) {
+    header.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      min-height: 44px;
+    `;
+  }
+  if (title) {
+    title.style.cssText = `
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+      text-align: center;
+    `;
+  }
 }
 
 async function loadStorage() {
@@ -105,56 +132,22 @@ function makeStorageTodoItem(todo) {
   return li;
 }
 
-// ── 창고 항목 제스처: 좌→우(완료) 차단, 우→좌(액션) 허용 ──
+// ── 창고 항목 제스처: 좌→우, 우→좌 양방향 모두 차단 ──
+//    창고는 단순 메모이므로 스와이프로 뭔가 일어나면 안 됨.
+//    점3개 버튼으로만 액션 가능. 세로 스크롤은 그대로 허용.
 function initStorageItemGesture(el, todo) {
-  let startX = 0, startY = 0, moved = false, isHorizontal = null;
-
-  el.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    moved = false; isHorizontal = null;
-    el.style.transition = 'none';
-  }, { passive: true });
-
-  el.addEventListener('touchmove', e => {
-    const dx = e.touches[0].clientX - startX;
-    const dy = e.touches[0].clientY - startY;
-    if (isHorizontal === null) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8)
-        isHorizontal = Math.abs(dx) > Math.abs(dy);
-      return;
-    }
-    if (!isHorizontal) return;
-    moved = true;
-    // 좌→우(dx>0)는 시각 피드백도 없음 → 창고에선 완료 불가
-    if (dx < 0) {
-      const clampedX = Math.max(-120, dx);
-      el.style.transform = `translateX(${clampedX}px)`;
-      el.style.background = `rgba(224,92,106,${Math.min(Math.abs(dx)/120, 0.25)})`;
-    }
-  }, { passive: true });
-
-  el.addEventListener('touchend', e => {
-    if (!isHorizontal || !moved) { resetStorageItemStyle(el); return; }
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) < Math.abs(dy) || Math.abs(dx) < 60) {
-      resetStorageItemStyle(el); return;
-    }
-    if (dx > 0) {
-      resetStorageItemStyle(el);
-    } else {
-      resetStorageItemStyle(el);
-      openStorageAction(todo);
-    }
-  }, { passive: true });
+  // 스와이프 자체를 허용하지 않음 → 터치 핸들러 최소화.
+  // touchmove에서 가로 이동을 감지해도 시각 피드백/동작 없음.
+  // → 아무 리스너도 등록하지 않는 것이 가장 확실.
+  //    (기본 클릭/스크롤은 브라우저 기본 동작으로 처리됨)
+  return;
 }
 
 function resetStorageItemStyle(el) {
-  el.style.transition = 'transform 0.2s ease, background 0.2s ease';
+  // 미사용 함수지만 호환성을 위해 유지
+  el.style.transition = '';
   el.style.transform = '';
   el.style.background = '';
-  setTimeout(() => { el.style.transition = ''; }, 220);
 }
 
 // =============================================
@@ -184,39 +177,73 @@ function closeStorageAction() {
   _storageActionTodo = null;
 }
 
-// ── 모바일: action-popup과 동일한 구조의 독립 시트 ──
+// ── 모바일: 인라인 스타일로 100% 명시된 독립 시트 ──
+//    (CSS 의존 없이 이 함수만으로 완전히 화면에 뜨도록 구성)
 function _openStorageMobileSheet(todo) {
-  // 기존 시트 제거
   closeStorageAction();
 
   const overlay = document.createElement('div');
   overlay.id = 'storage-action-popup';
-  overlay.className = 'overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  `;
 
   const box = document.createElement('div');
   box.id = 'storage-action-box';
-  box.className = 'action-box';
+  box.style.cssText = `
+    background: var(--bg-elevated, #2a2a3e);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px 16px 0 0;
+    padding: 12px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  `;
 
-  const btnPick = document.createElement('button');
-  btnPick.className = 'action-btn';
-  btnPick.textContent = '🗓 날짜 선택';
-  btnPick.addEventListener('click', () => _pickDateForStorage(todo.id));
+  const makeBtn = (text, extra) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.style.cssText = `
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      text-align: left;
+      color: var(--text-primary, #e8e8f0);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      ${extra || ''}
+    `;
+    return b;
+  };
 
-  const btnDelete = document.createElement('button');
-  btnDelete.className = 'action-btn danger';
-  btnDelete.textContent = '🗑 삭제';
+  const btnPick = makeBtn('🗓  날짜 선택');
+  btnPick.addEventListener('click', () => {
+    closeStorageAction();
+    _pickDateForStorage(todo.id);
+  });
+
+  const btnDelete = makeBtn('🗑  삭제', 'color: var(--danger, #e05c6a);');
   btnDelete.addEventListener('click', async () => {
     try {
       await deleteTodo(todo.id);
       closeStorageAction();
       showToast('삭제됐어요');
       await loadStorage();
-    } catch(e) { showToast('오류가 발생했어요'); }
+    } catch(e) {
+      console.error('[storage] delete failed', e);
+      showToast('오류가 발생했어요');
+    }
   });
 
-  const btnCancel = document.createElement('button');
-  btnCancel.className = 'action-btn cancel';
-  btnCancel.textContent = '취소';
+  const btnCancel = makeBtn('취소', 'color: var(--text-secondary, #a8a8b8); text-align: center; border-top: 1px solid var(--border, #3a3a4a); margin-top: 4px;');
   btnCancel.addEventListener('click', closeStorageAction);
 
   box.appendChild(btnPick);
