@@ -87,6 +87,10 @@ function initBackButton() {
 function hasOpenPopup() {
   if (document.getElementById('theme-sheet')) return true;
   if (document.getElementById('stats-overlay')) return true;
+  // ── 창고 탭 전용 팝업들 (storage.js가 동적 생성) ──
+  if (document.getElementById('storage-action-popup')) return true;
+  if (document.getElementById('storage-date-picker-popup')) return true;
+  if (document.getElementById('storage-pc-dropdown')) return true;
   if (!document.getElementById('repeat-overlay').classList.contains('hidden')) return true;
   if (!document.getElementById('action-popup').classList.contains('hidden')) return true;
   if (!document.getElementById('year-popup').classList.contains('hidden')) return true;
@@ -106,6 +110,26 @@ function closeTopPopup() {
   if (themeSheet) {
     themeSheet.remove();
     document.getElementById('theme-sheet-overlay')?.remove();
+    return;
+  }
+  // ── 창고 날짜 선택 달력 (액션 시트보다 위층이므로 먼저 닫기) ──
+  const storageDatePicker = document.getElementById('storage-date-picker-popup');
+  if (storageDatePicker) {
+    storageDatePicker.remove();
+    document.getElementById('storage-date-picker-backdrop')?.remove();
+    return;
+  }
+  // ── 창고 액션 시트(모바일) / PC 드롭다운 ──
+  const storageActionPopup = document.getElementById('storage-action-popup');
+  if (storageActionPopup) {
+    if (typeof closeStorageAction === 'function') closeStorageAction();
+    else storageActionPopup.remove();
+    return;
+  }
+  const storagePcDropdown = document.getElementById('storage-pc-dropdown');
+  if (storagePcDropdown) {
+    if (typeof closeStorageAction === 'function') closeStorageAction();
+    else storagePcDropdown.remove();
     return;
   }
   if (!document.getElementById('checklist-overlay').classList.contains('hidden')) { closeChecklistModal(false); return; }
