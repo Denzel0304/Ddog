@@ -8,37 +8,119 @@ function initStorage() {
   // 창고 전용 액션 시트는 필요할 때 동적으로 생성.
   // 헤더 스타일을 JS 인라인으로 강제 적용 → CSS 캐시/충돌과 무관하게 확실하게 렌더링.
   _applyStorageHeaderStyles();
+
+  // 모바일 창고 탭 헤더 우측의 "+" 버튼 → 할일 탭의 FAB와 동일 기능 (추가 모달)
+  const fab = document.getElementById('storage-fab-add');
+  if (fab && !fab._bound) {
+    fab._bound = true;
+    fab.addEventListener('click', () => {
+      if (typeof openAddModal === 'function') openAddModal();
+    });
+  }
 }
 
 function _applyStorageHeaderStyles() {
   const header = document.getElementById('storage-header');
+  const dateEl = document.getElementById('storage-header-date');
   const title  = document.getElementById('storage-header-title');
+  const fab    = document.getElementById('storage-fab-add');
+  const isPc   = document.body.classList.contains('pc-layout');
+
   if (header) {
     header.style.cssText = `
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: center;
-      padding: 12px 16px;
+      padding: 10px 12px;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       min-height: 44px;
+      gap: 8px;
     `;
   }
+
+  // 좌측 날짜/요일 (모바일 전용 — PC에는 좌측 패널에 이미 달력이 있음)
+  if (dateEl) {
+    if (isPc) {
+      dateEl.style.cssText = 'visibility: hidden;';
+    } else {
+      dateEl.style.cssText = `
+        justify-self: start;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      `;
+      _updateStorageHeaderDate();
+    }
+  }
+
+  // 중앙 타이틀
   if (title) {
     title.style.cssText = `
+      justify-self: center;
       font-size: 16px;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.2px;
       text-align: center;
+      white-space: nowrap;
     `;
   }
+
+  // 우측 "+" 버튼 (모바일 전용)
+  if (fab) {
+    if (isPc) {
+      fab.style.cssText = 'display: none;';
+    } else {
+      fab.style.cssText = `
+        justify-self: end;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #1a1a2e;
+        font-size: 22px;
+        font-weight: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 3px 12px rgba(126,207,160,0.35);
+        line-height: 1;
+        transition: transform 0.15s;
+        flex-shrink: 0;
+      `;
+    }
+  }
+}
+
+// 모바일 창고 탭 헤더 좌측의 날짜/요일 업데이트
+//  - 할일 탭의 #selected-date-label과 동일한 형식 ("4월 24일 (금)") + 요일별 색상
+function _updateStorageHeaderDate() {
+  const el = document.getElementById('storage-header-date');
+  if (!el) return;
+  if (document.body.classList.contains('pc-layout')) return;
+
+  const d    = new Date(AppState.selectedDate + 'T00:00:00');
+  const days = ['일','월','화','수','목','금','토'];
+  const dow  = d.getDay();
+  el.textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[dow]})`;
+  el.style.color = dow === 0 ? 'var(--danger)' :
+                   dow === 6 ? '#6b9fd4' :
+                   'var(--text-primary)';
 }
 
 async function loadStorage() {
   const container = document.getElementById('storage-todo-list');
   if (!container) return;
+
+  // 탭 전환 시마다 헤더 날짜 갱신 (선택 날짜가 바뀌어 있을 수 있음)
+  _updateStorageHeaderDate();
+
   try {
     const rows = await fetchStorageTodos();
     renderStorageTodos(rows);
@@ -397,12 +479,18 @@ function _openStorageDatePicker(storageId, isPc) {
     background: rgba(0,0,0,0.55);
     z-index: 1000;
   `;
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) {
-      backdrop.remove();
-      popup.remove();
-    }
-  });
+  // ⚠️ backdrop click 리스너는 setTimeout으로 지연 등록.
+  // 이유: 이전 액션 시트의 "날짜 선택" 버튼 클릭 이벤트가 아직 버블링 중인 상태에서
+  //       새 backdrop이 즉시 추가되면, 같은 클릭을 받아서 달력을 즉시 닫아버림.
+  //       10ms 지연으로 버블링이 끝난 뒤에 리스너 부착.
+  setTimeout(() => {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        backdrop.remove();
+        popup.remove();
+      }
+    });
+  }, 10);
 
   const popup = document.createElement('div');
   popup.id = 'storage-date-picker-popup';
