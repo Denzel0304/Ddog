@@ -11,7 +11,8 @@ let repeatConfig = {
   monthWeekday: 1,   // 매월 X째주 Y요일
   yearlyMonth: 1,    // 매년 M월
   yearlyDay: 0,      // 매년 M월 N일 (0 = 미설정)
-  customDays: [],    // 커스텀: 요일 배열 [0~6]
+  customUnit: 'day', // 커스텀: 'day'|'week'|'month'|'year'
+  customInterval: 2, // 커스텀: 반복 간격 (N)
   endDate: null,
 };
 
@@ -37,9 +38,13 @@ function initRepeat() {
     btn.addEventListener('click', () => btn.classList.toggle('active'));
   });
 
-  // 커스텀 요일 버튼
-  document.querySelectorAll('#repeat-custom-day-btns .rday-btn').forEach(btn => {
-    btn.addEventListener('click', () => btn.classList.toggle('active'));
+  // 커스텀 단위 버튼 (일/주/개월/년)
+  document.querySelectorAll('.rcustom-unit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rcustom-unit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateCustomUnitLabel(btn.dataset.unit);
+    });
   });
 
   // 매월 모드 버튼
@@ -75,9 +80,14 @@ function openRepeatModal() {
   document.querySelectorAll('#repeat-weekday-btns .rday-btn').forEach(btn => {
     btn.classList.toggle('active', repeatConfig.weekdays.includes(parseInt(btn.dataset.d)));
   });
-  document.querySelectorAll('#repeat-custom-day-btns .rday-btn').forEach(btn => {
-    btn.classList.toggle('active', repeatConfig.customDays.includes(parseInt(btn.dataset.d)));
+  document.querySelectorAll('.rcustom-unit-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unit === (repeatConfig.customUnit || 'day'));
   });
+  updateCustomUnitLabel(repeatConfig.customUnit || 'day');
+  const intervalInput = document.getElementById('repeat-custom-interval');
+  if (intervalInput) {
+    intervalInput.value = (repeatConfig.type === 'custom') ? repeatConfig.customInterval : '';
+  }
 
   selectRepeatType(repeatConfig.type || 'none');
   document.getElementById('repeat-overlay').classList.remove('hidden');
@@ -141,9 +151,11 @@ function confirmRepeat() {
   }
 
   if (type === 'custom') {
-    repeatConfig.customDays = [...document.querySelectorAll('#repeat-custom-day-btns .rday-btn.active')]
-      .map(b => parseInt(b.dataset.d));
-    if (!repeatConfig.customDays.length) { showToast('요일을 선택해주세요'); return; }
+    const intervalVal = parseInt(document.getElementById('repeat-custom-interval').value);
+    const n = isNaN(intervalVal) ? 2 : intervalVal;
+    if (n < 2) { showToast('최솟값은 2입니다'); return; }
+    repeatConfig.customInterval = n;
+    repeatConfig.customUnit = document.querySelector('.rcustom-unit-btn.active')?.dataset.unit || 'day';
   }
 
   if (document.getElementById('repeat-end-toggle').checked) {
@@ -157,7 +169,7 @@ function confirmRepeat() {
 }
 
 function resetRepeat() {
-  repeatConfig = { type: 'none', weekdays: [], monthMode: 'day', monthDay: 0, monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 0, customDays: [], endDate: null };
+  repeatConfig = { type: 'none', weekdays: [], monthMode: 'day', monthDay: 0, monthWeek: 1, monthWeekday: 1, yearlyMonth: 1, yearlyDay: 0, customUnit: 'day', customInterval: 2, endDate: null };
   updateRepeatBtn();
 }
 
@@ -184,8 +196,8 @@ function getRepeatLabel() {
       return `매월 ${repeatConfig.monthDay}일`;
     case 'yearly':  return `매년 ${repeatConfig.yearlyMonth}/${repeatConfig.yearlyDay}`;
     case 'custom': {
-      const days = ['일','월','화','수','목','금','토'];
-      return '매주 ' + repeatConfig.customDays.map(d => days[d]).join(',');
+      const unitLabels = { day: '일', week: '주', month: '개월', year: '년' };
+      return `매 ${repeatConfig.customInterval}${unitLabels[repeatConfig.customUnit] || '일'}마다`;
     }
     default: return '';
   }
@@ -196,20 +208,21 @@ function repeatConfigToData() {
   if (repeatConfig.type === 'none') return { repeat_type: 'none' };
   return {
     repeat_type:     repeatConfig.type,
-    repeat_interval: 1,
+    repeat_interval: repeatConfig.type === 'custom' ? repeatConfig.customInterval : 1,
     repeat_day:      repeatConfig.type === 'monthly' && repeatConfig.monthMode === 'day'
                        ? repeatConfig.monthDay
                        : repeatConfig.type === 'yearly' ? repeatConfig.yearlyDay : null,
     repeat_end_date: repeatConfig.endDate || null,
     // 복잡한 옵션은 JSON으로 memo_repeat에 저장
     repeat_meta: JSON.stringify({
-      weekdays:    repeatConfig.weekdays,
-      monthMode:   repeatConfig.monthMode,
-      monthWeek:   repeatConfig.monthWeek,
-      monthWeekday:repeatConfig.monthWeekday,
-      yearlyMonth: repeatConfig.yearlyMonth,
-      yearlyDay:   repeatConfig.yearlyDay,
-      customDays:  repeatConfig.customDays,
+      weekdays:      repeatConfig.weekdays,
+      monthMode:     repeatConfig.monthMode,
+      monthWeek:     repeatConfig.monthWeek,
+      monthWeekday:  repeatConfig.monthWeekday,
+      yearlyMonth:   repeatConfig.yearlyMonth,
+      yearlyDay:     repeatConfig.yearlyDay,
+      customUnit:    repeatConfig.customUnit,
+      customInterval:repeatConfig.customInterval,
     }),
   };
 }
@@ -230,9 +243,17 @@ function dataToRepeatConfig(todo) {
     monthWeekday:meta.monthWeekday != null ? meta.monthWeekday : 1,
     yearlyMonth: meta.yearlyMonth  != null ? meta.yearlyMonth  : 1,
     yearlyDay:   meta.yearlyDay    != null ? meta.yearlyDay    : 1,
-    customDays:  meta.customDays   != null ? meta.customDays   : [],
+    customUnit:  meta.customUnit     != null ? meta.customUnit     : 'day',
+    customInterval: meta.customInterval != null ? meta.customInterval : 2,
     endDate:     todo.repeat_end_date || null,
   };
+}
+
+// 커스텀 단위 라벨 업데이트 헬퍼
+function updateCustomUnitLabel(unit) {
+  const labels = { day: '일마다', week: '주마다', month: '개월마다', year: '년마다' };
+  const el = document.getElementById('repeat-custom-unit-label');
+  if (el) el.textContent = labels[unit] || '일마다';
 }
 
 // ── 반복 날짜 매칭 계산 ──
@@ -289,8 +310,27 @@ function isRepeatMatch(todo, dateStr) {
       return (target.getMonth() + 1) === ym && target.getDate() === yd;
     }
     case 'custom': {
-      const customDays = meta.customDays || [];
-      return customDays.includes(targetDow);
+      const customUnit     = meta.customUnit     || 'day';
+      const customInterval = meta.customInterval || 2;
+      switch(customUnit) {
+        case 'day':
+          return diffDays % customInterval === 0;
+        case 'week':
+          return diffDays % (customInterval * 7) === 0;
+        case 'month': {
+          if (target.getDate() !== base.getDate()) return false;
+          const monthDiff = (target.getFullYear() - base.getFullYear()) * 12 +
+                            (target.getMonth() - base.getMonth());
+          return monthDiff % customInterval === 0;
+        }
+        case 'year': {
+          if (target.getMonth() !== base.getMonth()) return false;
+          if (target.getDate()  !== base.getDate())  return false;
+          const yearDiff = target.getFullYear() - base.getFullYear();
+          return yearDiff % customInterval === 0;
+        }
+        default: return false;
+      }
     }
     default:
       return false;
