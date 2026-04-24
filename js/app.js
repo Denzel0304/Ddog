@@ -28,6 +28,7 @@ async function bootApp() {
   initGesturePopup();
   initSearch();
   initWeekly();
+  initStorage();
   initSettings();
   initTabs();
   initTheme();
@@ -136,10 +137,12 @@ function switchTab(tabName) {
   });
   if (tabName === 'todo')        { loadTodos(); updateMonthDots(); }
   else if (tabName === 'weekly') { weekOffset = 0; loadWeekly(); }
+  else if (tabName === 'storage'){ loadStorage(); }
   else if (tabName === 'search') { setTimeout(() => document.getElementById('search-input').focus(), 200); }
 }
 
 function refreshCurrentTab() {
   if (currentTab === 'todo')        { loadTodos(); updateMonthDots(); }
   else if (currentTab === 'weekly') { loadWeekly(); }
+  else if (currentTab === 'storage'){ loadStorage(); }
 }

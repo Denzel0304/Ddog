@@ -47,6 +47,22 @@ function initModal() {
     openChecklistModal();
   });
 
+  // ── 창고 체크박스: 토글 시 detail-section에 storage-mode 클래스 부여
+  //    → CSS로 주간/날짜/상기/반복/리스트 입력 비활성화 (반투명 + pointer-events none)
+  const storageToggle = document.getElementById('storage-flag-toggle');
+  if (storageToggle) {
+    storageToggle.addEventListener('change', e => {
+      const detail = document.getElementById('detail-section');
+      if (e.target.checked) {
+        detail.classList.add('storage-mode');
+        // 창고로 설정 시 주간 체크박스는 해제 (창고 항목은 주간 개념 없음)
+        document.getElementById('input-weekly-flag').checked = false;
+      } else {
+        detail.classList.remove('storage-mode');
+      }
+    });
+  }
+
   initChecklistModal();
   initRepeatEditOverlay();
 }
@@ -103,6 +119,26 @@ function openEditModal(todo) {
     document.getElementById('detail-section').classList.remove('hidden');
   }
 
+  // ── 창고 항목 편집 모드: 창고 체크박스 상태 복원 + storage-mode 적용 ──
+  //   편집 시에는 창고 체크박스 자체를 disabled 처리 → 일반↔창고 전환 불가
+  const storageToggle = document.getElementById('storage-flag-toggle');
+  const storageLabel  = document.getElementById('storage-flag-label');
+  const detail = document.getElementById('detail-section');
+  if (storageToggle) {
+    const isStorage = !!todo.storage_flag;
+    storageToggle.checked = isStorage;
+    storageToggle.disabled = true;                 // 편집 시엔 항상 잠금
+    if (storageLabel) storageLabel.classList.add('disabled');
+    if (isStorage) {
+      detail.classList.add('storage-mode');
+      // 창고 항목은 상세 항상 펼쳐서 메모/중요도 편집 편하게
+      document.getElementById('detail-toggle').checked = true;
+      detail.classList.remove('hidden');
+    } else {
+      detail.classList.remove('storage-mode');
+    }
+  }
+
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 
@@ -127,6 +163,16 @@ function resetModalForm() {
   checklistItems = [];
   updateChecklistUI();
   resetRepeat();
+
+  // 창고 체크박스 초기화 + storage-mode 클래스 제거
+  const storageToggle = document.getElementById('storage-flag-toggle');
+  if (storageToggle) {
+    storageToggle.checked = false;
+    storageToggle.disabled = false;
+    const label = document.getElementById('storage-flag-label');
+    if (label) label.classList.remove('disabled');
+  }
+  document.getElementById('detail-section').classList.remove('storage-mode');
 }
 
 // ─── 체크리스트 UI 상태 관리 ───
@@ -609,6 +655,10 @@ async function handleSave() {
   const remind     = parseInt(document.getElementById('input-remind').value) || 0;
   const weeklyFlag = document.getElementById('input-weekly-flag').checked;
 
+  // 창고 체크박스 상태 (없으면 false)
+  const storageToggle = document.getElementById('storage-flag-toggle');
+  const isStorage = !!(storageToggle && storageToggle.checked);
+
   if (!title) {
     document.getElementById('input-title').focus();
     document.getElementById('input-title').style.borderColor = 'var(--danger)';
@@ -635,18 +685,41 @@ async function handleSave() {
   const checklistJson = validItems.length > 0 ? JSON.stringify(validItems) : null;
   const checklistDone = checklistJson ? validItems.every(it => it.checked) : false;
 
-  const data = {
-    title, memo,
-    importance:  selectedImportance,
-    date,
-    remind_days: remind,
-    weekly_flag: weeklyFlag,
-    ...(!isEditing ? { checklist: checklistJson } : {}),
-    ...repeatData,
-  };
-  if (!isEditing && checklistJson) {
-    data.is_done = checklistDone;
-    data.done_at = checklistDone ? new Date().toISOString() : null;
+  // ── 창고 모드: 제목/중요도/메모만 의미 있음. 나머지는 모두 기본값으로 강제 ──
+  //   (창고 체크 상태에서 저장되면 UI가 disabled여서 사용자 입력 없어도,
+  //    기존 저장값이 남지 않도록 명시적으로 null/false/0/'none'으로 설정)
+  let data;
+  if (isStorage) {
+    data = {
+      title,
+      memo,
+      importance:  selectedImportance,
+      date:        date,           // 의미 없지만 NOT NULL 대비 유지
+      remind_days: 0,
+      weekly_flag: false,
+      repeat_type: 'none',
+      repeat_interval: 1,
+      repeat_day:  null,
+      repeat_end_date: null,
+      repeat_meta: null,
+      storage_flag: true,
+      ...(!isEditing ? { checklist: null } : {}),
+    };
+  } else {
+    data = {
+      title, memo,
+      importance:  selectedImportance,
+      date,
+      remind_days: remind,
+      weekly_flag: weeklyFlag,
+      storage_flag: false,
+      ...(!isEditing ? { checklist: checklistJson } : {}),
+      ...repeatData,
+    };
+    if (!isEditing && checklistJson) {
+      data.is_done = checklistDone;
+      data.done_at = checklistDone ? new Date().toISOString() : null;
+    }
   }
 
   try {
@@ -710,8 +783,9 @@ async function handleSave() {
     } else {
       // 신규 추가
       const newTodo = await insertTodo(data);
-      if (date === AppState.selectedDate) AppState.todos.unshift(newTodo);
-      if (remind > 0) {
+      // 창고 항목은 할일 탭 AppState.todos에 넣지 않음 (별도 영역)
+      if (!isStorage && date === AppState.selectedDate) AppState.todos.unshift(newTodo);
+      if (!isStorage && remind > 0) {
         const remindDate = daysBeforeStr(date, remind);
         if (remindDate !== date) {
           const d = new Date(date + 'T00:00:00');

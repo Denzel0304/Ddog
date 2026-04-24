@@ -36,11 +36,17 @@ async function sbPush(path, method, body) {
 async function fetchTodosByDate(dateStr) {
   const all = await idbGetAll();
   return all
-    .filter(t => t.date === dateStr)
+    .filter(t => t.date === dateStr && !t.storage_flag)
     .sort((a, b) => {
       if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
       return (b.created_at || '') > (a.created_at || '') ? 1 : -1;
     });
+}
+
+// ── 창고 항목 조회 ──
+async function fetchStorageTodos() {
+  const all = await idbGetAll();
+  return all.filter(t => t.storage_flag === true);
 }
 
 async function fetchDotDatesForMonth(year, month) {
@@ -49,21 +55,23 @@ async function fetchDotDatesForMonth(year, month) {
   const to = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
   const all = await idbGetAll();
 
-  // 일반 행 (반복 마스터 제외)
+  // 일반 행 (반복 마스터 제외, 창고 항목 제외)
   const directDates = all
     .filter(t =>
       t.date >= from && t.date <= to &&
       !t.is_done &&
       !(t.repeat_deleted) &&
+      !t.storage_flag &&
       (!t.repeat_type || t.repeat_type === 'none' || t.repeat_exception === true)
     )
     .map(t => t.date);
 
-  // 반복 마스터 행 → 해당 월 날짜 중 매칭되는 날 계산
+  // 반복 마스터 행 → 해당 월 날짜 중 매칭되는 날 계산 (창고 제외)
   const repeatMasters = all.filter(t =>
     t.repeat_type && t.repeat_type !== 'none' &&
     !t.repeat_master_id &&
     !t.repeat_exception &&
+    !t.storage_flag &&
     t.date <= to
   );
 
@@ -105,21 +113,23 @@ async function fetchPastUndoneDatesForMonth(year, month) {
   const today = todayStr();
   const all = await idbGetAll();
 
-  // 일반 행: 과거 + 미완료
+  // 일반 행: 과거 + 미완료 (창고 제외)
   const directDates = all
     .filter(t =>
       t.date >= from && t.date < today && t.date <= to &&
       !t.is_done &&
       !(t.repeat_deleted) &&
+      !t.storage_flag &&
       (!t.repeat_type || t.repeat_type === 'none' || t.repeat_exception === true)
     )
     .map(t => t.date);
 
-  // 반복 마스터: 과거 날짜 중 미완료
+  // 반복 마스터: 과거 날짜 중 미완료 (창고 제외)
   const repeatMasters = all.filter(t =>
     t.repeat_type && t.repeat_type !== 'none' &&
     !t.repeat_master_id &&
     !t.repeat_exception &&
+    !t.storage_flag &&
     t.date <= to
   );
 
@@ -169,9 +179,23 @@ async function searchTodos(keyword) {
 // ── INSERT ──
 
 async function insertTodo(data) {
-  const minOrder = AppState.todos.length > 0
-    ? Math.min(...AppState.todos.map(t => t.sort_order)) - 1
-    : 0;
+  const isStorage = !!data.storage_flag;
+
+  // 창고 항목은 창고 탭 내에서 정렬, 일반 할일은 기존 방식(AppState.todos 기준)
+  let minOrder;
+  if (isStorage) {
+    try {
+      const all = await idbGetAll();
+      const storageRows = all.filter(t => t.storage_flag === true);
+      minOrder = storageRows.length > 0
+        ? Math.min(...storageRows.map(t => t.sort_order || 0)) - 1
+        : 0;
+    } catch(e) { minOrder = 0; }
+  } else {
+    minOrder = AppState.todos.length > 0
+      ? Math.min(...AppState.todos.map(t => t.sort_order)) - 1
+      : 0;
+  }
 
   const now = new Date().toISOString();
   const tempId = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -193,6 +217,7 @@ async function insertTodo(data) {
     repeat_master_id: null,
     repeat_exception: false,
     checklist:        data.checklist       || null,
+    storage_flag:     isStorage,
     created_at:       now,
     updated_at:       now,
     user_id:          getCurrentUserId(),
@@ -291,6 +316,41 @@ async function moveTodoDate(id, newDate) {
   return updateTodo(id, { date: newDate, sort_order: 0 });
 }
 
+// ── 창고 항목을 일반 할일로 전환 ──
+// 방식: 기존 창고 row 완전 삭제 + 제목/중요도/메모만 복사해서 새 할일 insert
+// 이유: 찌꺼기 속성/참조가 남지 않고, insertTodo 경로를 그대로 타므로
+//       sort_order/created_at/updated_at 등 모든 필드가 신규 할일 기준으로 설정됨.
+async function convertStorageToTodo(storageId, newDate) {
+  // 1) 원본 데이터 복사 (IDB에서 조회)
+  const original = await idbGet(storageId);
+  if (!original) throw new Error('창고 항목을 찾을 수 없습니다');
+
+  // 2) 제목 / 중요도 / 메모만 승계. 나머지(주간/상기/반복/리스트 등)는 모두 기본값.
+  const newData = {
+    title:      original.title || '',
+    memo:       original.memo  || '',
+    importance: original.importance || 0,
+    date:       newDate,
+    // 아래는 명시적으로 기본값(찌꺼기 방지):
+    remind_days:  0,
+    weekly_flag:  false,
+    repeat_type:  'none',
+    repeat_interval: 1,
+    repeat_day:   null,
+    repeat_end_date: null,
+    repeat_meta:  null,
+    checklist:    null,
+    storage_flag: false,
+  };
+
+  // 3) 기존 창고 row 삭제 (IDB + Supabase)
+  await deleteTodo(storageId);
+
+  // 4) 새 할일 insert (insertTodo가 알아서 새 id, sort_order, created_at 등 생성)
+  const newTodo = await insertTodo(newData);
+  return newTodo;
+}
+
 async function updateSortOrders(todos) {
   return Promise.all(todos.map((t, i) => updateTodo(t.id, { sort_order: i })));
 }
@@ -314,7 +374,8 @@ async function fetchRepeatMasters(dateStr) {
       t.repeat_type && t.repeat_type !== 'none' &&
       t.date <= dateStr &&
       !t.repeat_master_id &&
-      !t.repeat_exception
+      !t.repeat_exception &&
+      !t.storage_flag
     );
   } catch(e) { return []; }
 }

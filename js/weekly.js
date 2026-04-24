@@ -44,6 +44,7 @@ async function loadWeekly() {
     const directRows = all
       .filter(r => r.date >= fromStr && r.date <= toStr)
       .filter(r => {
+        if (r.storage_flag) return false;
         if (r.repeat_deleted) return false;
         if (!r.repeat_type || r.repeat_type === 'none') return true;
         if (r.repeat_exception === true) return true;
@@ -62,7 +63,8 @@ async function loadWeekly() {
         t.repeat_type && t.repeat_type !== 'none' &&
         t.date <= toStr &&
         !t.repeat_master_id &&
-        !t.repeat_exception
+        !t.repeat_exception &&
+        !t.storage_flag
       );
 
       const exceptions = all.filter(r =>

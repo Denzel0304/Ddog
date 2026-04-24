@@ -71,17 +71,25 @@ function makeSearchItem(todo, keyword, isDone) {
 
   const dateEl = document.createElement('div');
   dateEl.className = 's-date';
-  dateEl.textContent = formatDateKor(todo.date);
+  // 창고 항목이면 날짜 대신 "📦 창고" 표시
+  if (todo.storage_flag) {
+    dateEl.textContent = '📦 창고';
+    dateEl.classList.add('s-date-storage');
+  } else {
+    dateEl.textContent = formatDateKor(todo.date);
+  }
 
   li.appendChild(titleEl);
   li.appendChild(dateEl);
 
-  // 클릭 → 해당 날짜로 이동
+  // 클릭 → 해당 탭으로 이동
   li.addEventListener('click', () => {
-    // 탭 전환
-    switchTab('todo');
-    // 날짜 선택
-    selectDate(todo.date);
+    if (todo.storage_flag) {
+      switchTab('storage');
+    } else {
+      switchTab('todo');
+      selectDate(todo.date);
+    }
   });
 
   return li;
