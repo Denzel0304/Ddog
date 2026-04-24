@@ -34,15 +34,16 @@ function initGesturePopup() {
 
   document.getElementById('action-pick-date').addEventListener('click', () => {
     const fromWeekly = actionFromWeekly;
-    const picker = document.getElementById('action-date-picker');
-    picker.value = actionTargetDate || AppState.selectedDate;
-    picker.showPicker?.();
-    picker.addEventListener('change', async function onPick() {
-      picker.removeEventListener('change', onPick);
-      if (!picker.value || !actionTargetId) return;
+    const targetId   = actionTargetId;
+    // 액션 팝업을 먼저 닫아 달력이 깔끔하게 뜨도록
+    closeActionPopup();
+
+    // 공용 커스텀 달력 (storage.js가 제공) 호출.
+    // 날짜 선택 후 기존 로직(moveTodoDate + 화면 갱신)을 그대로 실행.
+    const onSelect = async (newDate) => {
+      if (!newDate || !targetId) return;
       try {
-        await moveTodoDate(actionTargetId, picker.value);
-        closeActionPopup();
+        await moveTodoDate(targetId, newDate);
         showToast('날짜를 변경했어요');
         if (fromWeekly) {
           await loadWeekly();
@@ -51,7 +52,24 @@ function initGesturePopup() {
           updateMonthDots();
         }
       } catch(e) { showToast('오류가 발생했어요'); }
-    });
+    };
+
+    // PC면 pcPickDate (index-pc.html이 제공), 모바일이면 openCustomDatePicker (storage.js 제공)
+    const isPc = document.body.classList.contains('pc-layout');
+    if (isPc && typeof pcPickDate === 'function') {
+      pcPickDate(targetId, fromWeekly, actionTargetDate, onSelect);
+    } else if (typeof openCustomDatePicker === 'function') {
+      openCustomDatePicker(onSelect);
+    } else {
+      // 최후의 fallback: 네이티브 input (이론상 도달하지 않음)
+      const picker = document.getElementById('action-date-picker');
+      picker.value = actionTargetDate || AppState.selectedDate;
+      picker.showPicker?.();
+      picker.addEventListener('change', async function onPick() {
+        picker.removeEventListener('change', onPick);
+        if (picker.value) await onSelect(picker.value);
+      });
+    }
   });
 
   document.getElementById('action-delete').addEventListener('click', async () => {

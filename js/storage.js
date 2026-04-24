@@ -416,7 +416,27 @@ function _openStoragePcDropdown(todo) {
   btnPick.addEventListener('click', (e) => {
     e.stopPropagation();
     closeStorageAction();
-    _pickDateForStoragePc(todo.id);
+    // PC: 할일/주간과 완전히 동일한 pcPickDate 달력 사용.
+    //     onSelect 콜백으로 창고→일반 전환 동작 주입.
+    if (typeof pcPickDate === 'function') {
+      pcPickDate(todo.id, false, null, async (dateStr) => {
+        try {
+          await convertStorageToTodo(todo.id, dateStr);
+          showToast('할일로 옮겼어요');
+          await loadStorage();
+          if (dateStr === AppState.selectedDate && typeof loadTodos === 'function') {
+            await loadTodos();
+          }
+          updateMonthDots();
+        } catch(err) {
+          showToast('오류가 발생했어요');
+          console.error('[storage] convert failed', err);
+        }
+      });
+    } else {
+      // pcPickDate가 없는 환경(이론상 발생 X) fallback
+      _pickDateForStoragePc(todo.id);
+    }
   });
 
   const btnDelete = makeBtn('🗑  삭제', 'color: var(--danger, #e05c6a); border-bottom: none;');
@@ -458,8 +478,18 @@ function _pickDateForStoragePc(storageId) {
   _openStorageDatePicker(storageId, true);
 }
 
+// ── 외부(gesture.js 등)에서 재사용할 공용 날짜 선택 달력 ──
+//   storage 관련 없이, 단순히 "예쁜 달력 띄우고 선택된 날짜를 콜백으로 돌려주는" 용도
+function openCustomDatePicker(onSelect, initialDate) {
+  // storageId=null, isPc=false(자동 분기 아님), onSelect 콜백 주입
+  // initialDate는 현재 _openStorageDatePicker가 오늘 기준으로 시작하므로 생략
+  _openStorageDatePicker(null, false, onSelect);
+}
+
 // ── 공용 커스텀 달력 팝업 (모바일/PC 공통) ──
-function _openStorageDatePicker(storageId, isPc) {
+//   storageId 가 있으면: 창고→일반 할일 전환 (기존 동작)
+//   onSelect  가 있으면: 선택한 dateStr 로 콜백 호출 (일반 할일/주간에서 재사용용)
+function _openStorageDatePicker(storageId, isPc, onSelect) {
   const existing = document.getElementById('storage-date-picker-popup');
   if (existing) existing.remove();
 
@@ -603,16 +633,22 @@ function _openStorageDatePicker(storageId, isPc) {
         popup.remove();
         backdrop.remove();
         try {
-          await convertStorageToTodo(storageId, dateStr);
-          showToast('할일로 옮겼어요');
-          await loadStorage();
-          if (dateStr === AppState.selectedDate && typeof loadTodos === 'function') {
-            await loadTodos();
+          if (typeof onSelect === 'function') {
+            // 일반 할일/주간 등 외부에서 재사용: 콜백으로 위임
+            await onSelect(dateStr);
+          } else {
+            // 창고→일반 할일 전환 (기존 동작)
+            await convertStorageToTodo(storageId, dateStr);
+            showToast('할일로 옮겼어요');
+            await loadStorage();
+            if (dateStr === AppState.selectedDate && typeof loadTodos === 'function') {
+              await loadTodos();
+            }
+            updateMonthDots();
           }
-          updateMonthDots();
         } catch(e2) {
           showToast('오류가 발생했어요');
-          console.error('[storage] convert failed', e2);
+          console.error('[storage] date pick failed', e2);
         }
       });
       grid.appendChild(cell);
