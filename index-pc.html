@@ -332,12 +332,16 @@
           </div>
         </div>
         <div id="repeat-custom-wrap" class="repeat-detail hidden">
-          <label class="repeat-sub-label">요일 선택 (복수)</label>
-          <div id="repeat-custom-day-btns">
-            <button class="rday-btn" data-d="0">일</button><button class="rday-btn" data-d="1">월</button>
-            <button class="rday-btn" data-d="2">화</button><button class="rday-btn" data-d="3">수</button>
-            <button class="rday-btn" data-d="4">목</button><button class="rday-btn" data-d="5">금</button>
-            <button class="rday-btn" data-d="6">토</button>
+          <div id="repeat-custom-unit-row">
+            <button class="rmonth-mode-btn rcustom-unit-btn active" data-unit="day">일</button>
+            <button class="rmonth-mode-btn rcustom-unit-btn" data-unit="week">주</button>
+            <button class="rmonth-mode-btn rcustom-unit-btn" data-unit="month">개월</button>
+            <button class="rmonth-mode-btn rcustom-unit-btn" data-unit="year">년</button>
+          </div>
+          <div class="repeat-option">
+            <label>매</label>
+            <input type="number" id="repeat-custom-interval" min="2" max="999" placeholder="2" />
+            <span id="repeat-custom-unit-label">일마다</span>
           </div>
         </div>
         <div class="repeat-option">
