@@ -838,7 +838,7 @@ function pcCloseDropdownOutside(e) {
 }
 
 /* ── 날짜 선택: 커스텀 달력 팝업 ── */
-function pcPickDate(id, fromWeekly, targetDate) {
+function pcPickDate(id, fromWeekly, targetDate, onSelect) {
   const existing = document.getElementById('pc-date-picker-popup');
   if (existing) existing.remove();
 
@@ -956,10 +956,16 @@ function pcPickDate(id, fromWeekly, targetDate) {
         e.stopPropagation();
         popup.remove();
         try {
-          await moveTodoDate(id, dateStr);
-          showToast('날짜를 변경했어요');
-          if (fromWeekly) await loadWeekly();
-          else { await loadTodos(); updateMonthDots(); }
+          if (typeof onSelect === 'function') {
+            // 창고 등 다른 용도: 커스텀 콜백 사용
+            await onSelect(dateStr);
+          } else {
+            // 기존 할일/주간 기본 동작 (변경 없음)
+            await moveTodoDate(id, dateStr);
+            showToast('날짜를 변경했어요');
+            if (fromWeekly) await loadWeekly();
+            else { await loadTodos(); updateMonthDots(); }
+          }
         } catch(e2) { showToast('오류가 발생했어요'); }
       });
       grid.appendChild(cell);
