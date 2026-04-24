@@ -861,60 +861,10 @@ ul { list-style: none; }
 /* 검색 탭 — 창고 항목 날짜 표시 */
 .s-date-storage { color: var(--accent) !important; font-weight: 500; }
 
-/* =============================================
-   창고 전용 액션 시트 (모바일) — action-popup과 완전 분리
-   ============================================= */
-#storage-action-popup {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.55);
-  z-index: 90;
-  display: flex; align-items: flex-end;
-  backdrop-filter: blur(3px);
-}
-#storage-action-box {
-  background: var(--bg-elevated);
-  width: 100%; max-width: 480px;
-  margin: 0 auto;
-  border-radius: var(--radius) var(--radius) 0 0;
-  padding: 12px 16px 20px;
-  display: flex; flex-direction: column; gap: 4px;
-  animation: slideUp 0.2s ease;
-  position: relative; overflow: hidden;
-}
-#storage-action-box .action-btn {
-  padding: 15px 20px;
-  border-radius: var(--radius-sm);
-  font-size: 15px;
-  text-align: left;
-  color: var(--text-primary);
-  transition: background 0.15s;
-  background: none; border: none;
-  cursor: pointer;
-  font-family: var(--font-main);
-}
-#storage-action-box .action-btn:hover { background: var(--bg-hover); }
-#storage-action-box .action-btn.danger { color: var(--danger); }
-#storage-action-box .action-btn.cancel {
-  color: var(--text-secondary);
-  text-align: center;
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-}
-
-/* =============================================
-   창고 전용 PC 드롭다운 (기존 #pc-action-dropdown 스타일을 재사용)
-   ============================================= */
-#storage-pc-dropdown.pc-dropdown-clone {
-  position: fixed;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  z-index: 500;
-  min-width: 154px;
-  overflow: hidden;
-  animation: pcDropIn 0.14s ease;
-}
+/* ※ 창고 액션 시트(모바일) / PC 드롭다운의 스타일은 storage.js 내부에서
+     JS 인라인 스타일로 직접 부여됩니다. CSS 룰을 두지 않는 이유:
+       - 클래스 의존 시 다른 룰과의 우선순위 충돌/캐시 이슈 발생 경험
+       - 인라인 스타일이 가장 확실하게 렌더링 보장 */
 
 /* =============================================
    설정 슬라이드 패널
