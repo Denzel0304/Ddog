@@ -67,24 +67,50 @@ function initModal() {
 }
 
 // ── 창고 모드 시각적 비활성화 적용 ──
-// :has() 미지원 환경에서도 확실히 동작하도록 타겟 row에 직접 클래스 부여.
+// CSS에 의존하지 않고 JS가 인라인 스타일 + disabled 속성을 직접 부여한다.
+// 다른 CSS 룰이 덮어쓸 여지가 없어 확실히 작동.
 function applyStorageMode(on) {
   const detail = document.getElementById('detail-section');
   if (!detail) return;
 
-  // 비활성화 대상 요소 수집 (date row 전체 + remind row 전체)
-  const dateInput   = document.getElementById('input-date');
-  const remindInput = document.getElementById('input-remind');
-  const targets = [];
-  if (dateInput)   targets.push(dateInput.closest('.detail-row'));
-  if (remindInput) targets.push(remindInput.closest('.detail-row'));
+  // 비활성화 대상:
+  //  A) 주간 체크박스 라벨 (창고 row의 주간 부분만)
+  //  B) 날짜 row 전체 (input-date 포함)
+  //  C) 상기/반복/리스트 row 전체 (input-remind 포함)
+  const weeklyLabel = document.getElementById('weekly-flag-label');
+  const dateRow    = document.getElementById('input-date')?.closest('.detail-row');
+  const remindRow  = document.getElementById('input-remind')?.closest('.detail-row');
+  const targets = [weeklyLabel, dateRow, remindRow].filter(Boolean);
+
+  // 이 대상들 내부의 실제 입력 요소도 같이 잡아서 disabled 속성 부여/해제
+  //  → pointer-events:none 만으로 안 되는 상황(브라우저 차이)까지 방어
+  const innerInputs = [];
+  targets.forEach(t => {
+    t.querySelectorAll('input, button, textarea, select').forEach(inp => innerInputs.push(inp));
+  });
 
   if (on) {
     detail.classList.add('storage-mode');
-    targets.forEach(el => el && el.classList.add('storage-disabled'));
+    targets.forEach(el => {
+      el.style.opacity = '0.4';
+      el.style.pointerEvents = 'none';
+      el.style.userSelect = 'none';
+    });
+    innerInputs.forEach(inp => {
+      inp.disabled = true;
+      if (inp.tagName === 'INPUT' && inp.type === 'checkbox') inp.checked = false;
+    });
+    // 주간 체크박스는 명시적으로 해제
+    const weeklyInput = document.getElementById('input-weekly-flag');
+    if (weeklyInput) weeklyInput.checked = false;
   } else {
     detail.classList.remove('storage-mode');
-    targets.forEach(el => el && el.classList.remove('storage-disabled'));
+    targets.forEach(el => {
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+      el.style.userSelect = '';
+    });
+    innerInputs.forEach(inp => { inp.disabled = false; });
   }
 }
 

@@ -258,49 +258,97 @@ function _openStorageMobileSheet(todo) {
   document.body.appendChild(overlay);
 }
 
-// ── PC: 점3개 버튼 근처 드롭다운 ──
+// ── PC: 점3개 버튼 근처 드롭다운 (인라인 스타일로 완전 명시) ──
 function _openStoragePcDropdown(todo) {
   closeStorageAction();
 
-  // 해당 항목의 점3개 버튼 찾기
+  // 해당 항목의 점3개 버튼 찾기 (이벤트 target 기반 fallback 포함)
   let refEl = null;
   document.querySelectorAll('.storage-item').forEach(el => {
     if (String(el.dataset.id) === String(todo.id)) {
       refEl = el.querySelector('.todo-menu-btn');
     }
   });
-  if (!refEl) return;
 
-  const rect = refEl.getBoundingClientRect();
+  // 못 찾으면 화면 중앙에 띄움 (안 뜨는 것보다 나음)
+  let rect;
+  if (refEl) {
+    rect = refEl.getBoundingClientRect();
+  } else {
+    console.warn('[storage] PC dropdown: menu btn not found, falling back to center');
+    rect = {
+      top: window.innerHeight / 2,
+      bottom: window.innerHeight / 2,
+      right: window.innerWidth / 2 + 80,
+      left: window.innerWidth / 2
+    };
+  }
+
   const dd = document.createElement('div');
   dd.id = 'storage-pc-dropdown';
-  dd.className = 'pc-dropdown-clone';
 
   let top  = rect.bottom + 4;
   let left = rect.right - 160;
   if (left < 8) left = 8;
   if (top + 100 > window.innerHeight) top = rect.top - 104;
-  dd.style.top  = top  + 'px';
-  dd.style.left = left + 'px';
 
-  const btnPick = document.createElement('button');
-  btnPick.className = 'pc-dropdown-btn';
-  btnPick.textContent = '🗓 날짜 선택';
-  btnPick.addEventListener('click', () => {
+  // ── 인라인 스타일: CSS에 의존하지 않고 드롭다운 표시 보장 ──
+  dd.style.cssText = `
+    position: fixed;
+    top: ${top}px;
+    left: ${left}px;
+    background: var(--bg-elevated, #2a2a3e);
+    border: 1px solid var(--border-light, #3a3a4a);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    z-index: 1001;
+    min-width: 160px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  `;
+
+  const makeBtn = (text, extra) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.style.cssText = `
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--text-primary, #e8e8f0);
+      text-align: left;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      border-bottom: 1px solid var(--border, #3a3a4a);
+      ${extra || ''}
+    `;
+    b.addEventListener('mouseover', () => { b.style.background = 'var(--bg-hover, #3a3a4a)'; });
+    b.addEventListener('mouseout',  () => { b.style.background = 'transparent'; });
+    return b;
+  };
+
+  const btnPick = makeBtn('🗓  날짜 선택');
+  btnPick.addEventListener('click', (e) => {
+    e.stopPropagation();
     closeStorageAction();
     _pickDateForStoragePc(todo.id);
   });
 
-  const btnDelete = document.createElement('button');
-  btnDelete.className = 'pc-dropdown-btn danger';
-  btnDelete.textContent = '🗑 삭제';
-  btnDelete.addEventListener('click', async () => {
+  const btnDelete = makeBtn('🗑  삭제', 'color: var(--danger, #e05c6a); border-bottom: none;');
+  btnDelete.addEventListener('click', async (e) => {
+    e.stopPropagation();
     closeStorageAction();
     try {
       await deleteTodo(todo.id);
       showToast('삭제됐어요');
       await loadStorage();
-    } catch(e) { showToast('오류가 발생했어요'); }
+    } catch(err) {
+      console.error('[storage] delete failed', err);
+      showToast('오류가 발생했어요');
+    }
   });
 
   dd.appendChild(btnPick);
@@ -318,88 +366,71 @@ function _openStoragePcDropdown(todo) {
   }, 10);
 }
 
-// ── 모바일: 네이티브 date input을 이용한 날짜 선택 → convertStorageToTodo ──
+// ── 모바일: 커스텀 달력 팝업으로 날짜 선택 (네이티브 input 대신 확실한 방식) ──
 function _pickDateForStorage(storageId) {
-  // 화면 밖 임시 date input 생성 (네이티브 달력)
-  const picker = document.createElement('input');
-  picker.type = 'date';
-  picker.style.cssText = 'position:fixed;top:-100px;left:-100px;opacity:0;pointer-events:none;';
-  picker.value = AppState.selectedDate || todayStr();
-  document.body.appendChild(picker);
-
-  picker.addEventListener('change', async () => {
-    const newDate = picker.value;
-    picker.remove();
-    if (!newDate) return;
-    try {
-      await convertStorageToTodo(storageId, newDate);
-      closeStorageAction();
-      showToast('할일로 옮겼어요');
-      await loadStorage();
-      if (newDate === AppState.selectedDate && typeof loadTodos === 'function') {
-        await loadTodos();
-      }
-      updateMonthDots();
-    } catch(e) {
-      showToast('오류가 발생했어요');
-      console.error('[storage] convert failed', e);
-    }
-  });
-
-  // iOS/Android 호환: showPicker가 있으면 즉시 열기, 없으면 focus/click
-  try {
-    if (typeof picker.showPicker === 'function') {
-      picker.showPicker();
-    } else {
-      picker.focus();
-      picker.click();
-    }
-  } catch(e) {
-    picker.focus();
-    picker.click();
-  }
-
-  // 취소로 닫힐 경우를 위해 15초 후 자동 정리
-  setTimeout(() => { if (picker.parentNode) picker.remove(); }, 15000);
+  _openStorageDatePicker(storageId, false);
 }
 
-// ── PC: 커스텀 달력 팝업으로 날짜 선택 ──
+// ── PC: 동일한 커스텀 달력 팝업 사용 ──
 function _pickDateForStoragePc(storageId) {
-  const existing = document.getElementById('pc-date-picker-popup');
+  _openStorageDatePicker(storageId, true);
+}
+
+// ── 공용 커스텀 달력 팝업 (모바일/PC 공통) ──
+function _openStorageDatePicker(storageId, isPc) {
+  const existing = document.getElementById('storage-date-picker-popup');
   if (existing) existing.remove();
 
   const today = new Date();
   let pickerYear  = today.getFullYear();
   let pickerMonth = today.getMonth() + 1;
-  const initDate = toLocalDateStr(today);
+
+  // 화면 크기에 따라 팝업 너비 결정
+  const vw = window.innerWidth;
+  const popupWidth = Math.min(420, vw - 40);
+
+  // 배경 오버레이 (탭 외부 클릭으로 닫기용)
+  const backdrop = document.createElement('div');
+  backdrop.id = 'storage-date-picker-backdrop';
+  backdrop.style.cssText = `
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 1000;
+  `;
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) {
+      backdrop.remove();
+      popup.remove();
+    }
+  });
 
   const popup = document.createElement('div');
-  popup.id = 'pc-date-picker-popup';
+  popup.id = 'storage-date-picker-popup';
   popup.style.cssText = `
-    position: fixed; z-index: 600;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-light);
+    position: fixed; z-index: 1001;
+    background: var(--bg-elevated, #2a2a3e);
+    border: 1px solid var(--border-light, #3a3a4a);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-    padding: 20px; width: 420px;
-    user-select: none; font-family: var(--font-main);
+    padding: 20px;
+    width: ${popupWidth}px;
+    user-select: none;
+    font-family: inherit;
   `;
 
-  const centerEl = document.getElementById('pc-center');
-  const cr = centerEl ? centerEl.getBoundingClientRect() :
-             { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
-  popup.style.left = Math.round(cr.left + (cr.width - 420) / 2) + 'px';
-  popup.style.top  = Math.round(cr.top  + (cr.height - 420) / 2) + 'px';
+  // 위치: 화면 정중앙
+  popup.style.left = Math.round((vw - popupWidth) / 2) + 'px';
+  popup.style.top  = Math.round((window.innerHeight - 440) / 2) + 'px';
 
   function renderPicker() {
     popup.innerHTML = '';
 
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:4px;';
 
     const prevBtn = document.createElement('button');
     prevBtn.textContent = '‹';
-    prevBtn.style.cssText = 'font-size:28px;color:var(--text-secondary);background:none;border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;';
+    prevBtn.style.cssText = 'font-size:28px;color:var(--text-secondary);background:none;border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
     prevBtn.addEventListener('click', e => {
       e.stopPropagation();
       pickerMonth--; if (pickerMonth < 1) { pickerMonth = 12; pickerYear--; }
@@ -407,7 +438,7 @@ function _pickDateForStoragePc(storageId) {
     });
 
     const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'font-size:18px;font-weight:700;color:var(--text-primary);';
+    titleEl.style.cssText = 'font-size:17px;font-weight:700;color:var(--text-primary);flex:1;text-align:center;';
     titleEl.textContent = `${pickerYear}년 ${pickerMonth}월`;
 
     const nextBtn = document.createElement('button');
@@ -420,8 +451,8 @@ function _pickDateForStoragePc(storageId) {
     });
 
     const thisMonthBtn = document.createElement('button');
-    thisMonthBtn.textContent = '이번 달';
-    thisMonthBtn.style.cssText = 'font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);cursor:pointer;padding:4px 10px;border-radius:12px;white-space:nowrap;margin-left:4px;';
+    thisMonthBtn.textContent = '오늘';
+    thisMonthBtn.style.cssText = 'font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);cursor:pointer;padding:5px 10px;border-radius:12px;white-space:nowrap;flex-shrink:0;';
     thisMonthBtn.addEventListener('click', e => {
       e.stopPropagation();
       const t = new Date();
@@ -432,8 +463,12 @@ function _pickDateForStoragePc(storageId) {
 
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
-    closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:4px;';
-    closeBtn.addEventListener('click', e => { e.stopPropagation(); popup.remove(); });
+    closeBtn.style.cssText = 'font-size:16px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    closeBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      popup.remove();
+      backdrop.remove();
+    });
 
     header.appendChild(prevBtn);
     header.appendChild(titleEl);
@@ -447,7 +482,7 @@ function _pickDateForStoragePc(storageId) {
     ['일','월','화','수','목','금','토'].forEach((d, i) => {
       const span = document.createElement('div');
       span.textContent = d;
-      span.style.cssText = `text-align:center;font-size:13px;font-weight:600;padding:4px 0;color:${i===0?'var(--danger)':i===6?'#6b9fd4':'var(--text-muted)'};`;
+      span.style.cssText = `text-align:center;font-size:12px;font-weight:600;padding:4px 0;color:${i===0?'var(--danger)':i===6?'#6b9fd4':'var(--text-muted)'};`;
       wdays.appendChild(span);
     });
     popup.appendChild(wdays);
@@ -470,16 +505,15 @@ function _pickDateForStoragePc(storageId) {
       const color = dow === 0 ? 'var(--danger)' : dow === 6 ? '#6b9fd4' : 'var(--text-primary)';
       cell.style.cssText = `
         aspect-ratio:1;width:100%;border:none;cursor:pointer;border-radius:50%;
-        font-size:16px;font-weight:${isToday?'700':'400'};
+        font-size:15px;font-weight:${isToday?'700':'400'};
         background:${isToday?'var(--accent-glow)':'none'};
         color:${color};
         display:flex;align-items:center;justify-content:center;transition:background 0.12s;
       `;
-      cell.addEventListener('mouseover', () => { cell.style.background = 'var(--bg-hover)'; });
-      cell.addEventListener('mouseout',  () => { cell.style.background = isToday ? 'var(--accent-glow)' : 'none'; });
       cell.addEventListener('click', async e => {
         e.stopPropagation();
         popup.remove();
+        backdrop.remove();
         try {
           await convertStorageToTodo(storageId, dateStr);
           showToast('할일로 옮겼어요');
@@ -490,7 +524,7 @@ function _pickDateForStoragePc(storageId) {
           updateMonthDots();
         } catch(e2) {
           showToast('오류가 발생했어요');
-          console.error('[storage pc] convert failed', e2);
+          console.error('[storage] convert failed', e2);
         }
       });
       grid.appendChild(cell);
@@ -499,16 +533,10 @@ function _pickDateForStoragePc(storageId) {
   }
 
   renderPicker();
+  document.body.appendChild(backdrop);
   document.body.appendChild(popup);
-  setTimeout(() => {
-    document.addEventListener('click', function outsideClose(e) {
-      if (!popup.contains(e.target)) {
-        popup.remove();
-        document.removeEventListener('click', outsideClose);
-      }
-    });
-  }, 10);
 }
+
 
 // =============================================
 // 창고 드래그 정렬 (todo.js 드래그 로직과 독립)
