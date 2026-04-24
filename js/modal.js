@@ -285,6 +285,13 @@ function closeChecklistModal(save) {
             .then(() => {
               // editingTodo.checklist 동기화 → 이후 메인 저장 시 isFormChanged = false 보장
               if (AppState.editingTodo) AppState.editingTodo.checklist = checklistJson;
+              // AppState.todos 메모리 동기화 (가상 항목은 _masterId 기준으로 찾음)
+              const _editId = AppState.editingId;
+              const _idx = AppState.todos.findIndex(t =>
+                String(t.id) === String(_editId) ||
+                (t._virtual && t._masterId && String(t._masterId) === String(_editId))
+              );
+              if (_idx !== -1) AppState.todos[_idx] = { ...AppState.todos[_idx], ...patch };
               if (isDone) playCompleteSound();
               refreshCurrentTab(); updateMonthDots();
             })
