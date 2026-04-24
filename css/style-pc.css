@@ -28,6 +28,7 @@
 /* 기존 패딩 리셋 */
 #todo-list-section   { padding-bottom: 8px !important; }
 #weekly-list-section { padding-bottom: 8px !important; }
+#storage-list-section{ padding-bottom: 8px !important; }
 #search-results      { padding-bottom: 8px !important; }
 
 /* =============================================
@@ -217,6 +218,8 @@
 #pc-center #todo-list-section   { flex: 1; overflow-y: auto; }
 #pc-center #tab-weekly          { flex-direction: column; }
 #pc-center #weekly-list-section { flex: 1; overflow-y: auto; }
+#pc-center #tab-storage         { flex-direction: column; }
+#pc-center #storage-list-section{ flex: 1; overflow-y: auto; }
 #pc-center #tab-search          { flex-direction: column; }
 #pc-center #search-container    { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #pc-center #search-results      { flex: 1; overflow-y: auto; }
