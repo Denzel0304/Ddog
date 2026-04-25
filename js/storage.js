@@ -141,6 +141,7 @@ function _applyStorageHeaderStyles() {
         line-height: 1;
         transition: transform 0.15s;
         flex-shrink: 0;
+        margin-right: 12px;
       `;
     }
   }
