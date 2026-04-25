@@ -218,6 +218,13 @@ function resetModalForm() {
     const label = document.getElementById('storage-flag-label');
     if (label) label.classList.remove('disabled');
   }
+  // 창고탭 +로 열었을 때 잠갔던 "상세" 토글도 원복 (일반 할일 추가에 영향 없도록)
+  const detailToggleReset = document.getElementById('detail-toggle');
+  if (detailToggleReset) {
+    detailToggleReset.disabled = false;
+    const detailLabelReset = document.getElementById('detail-toggle-label');
+    if (detailLabelReset) detailLabelReset.style.opacity = '';
+  }
   applyStorageMode(false);
 }
 

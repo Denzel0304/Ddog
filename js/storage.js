@@ -1,5 +1,5 @@
 // =============================================
-// storage.js — 창고 탭 (날짜 없는 "곧 할일들")
+// storage.js — 창고 탭 (날짜 없는 "곧 할 일들")
 // 독립 파일: todo.js / weekly.js / gesture.js 원본 미수정
 // 자체 액션 시트를 사용 (기존 action-popup과 완전 분리)
 // =============================================
@@ -9,14 +9,61 @@ function initStorage() {
   // 헤더 스타일을 JS 인라인으로 강제 적용 → CSS 캐시/충돌과 무관하게 확실하게 렌더링.
   _applyStorageHeaderStyles();
 
-  // 모바일 창고 탭 헤더 우측의 "+" 버튼 → 할일 탭의 FAB와 동일 기능 (추가 모달)
+  // 모바일 창고 탭 헤더 우측의 "+" 버튼 → 할일 탭의 FAB와 동일하게 openAddModal 호출
+  // 단, 창고 탭에서 연 경우엔 자동으로 "상세"+"창고" 체크 + 제목을 "창고 추가"로 변경 + 잠금
   const fab = document.getElementById('storage-fab-add');
   if (fab && !fab._bound) {
     fab._bound = true;
     fab.addEventListener('click', () => {
-      if (typeof openAddModal === 'function') openAddModal();
+      if (typeof openAddModal !== 'function') return;
+      openAddModal();
+      // 모달이 openAddModal 내부의 setTimeout(focus)까지 완료된 뒤에 창고 모드로 전환.
+      // 순서: 상세 펼치기 → 창고 체크 → 제목 변경 → 잠금 → 제목 입력란에 포커스
+      _forceStorageModeInAddModal();
     });
   }
+}
+
+// 창고탭 +로 열었을 때만 호출: 사용자가 수동으로 "상세" + "창고"를 클릭한 것과 동일한 효과 재현
+// 다른 경로(할일탭 +, 편집 등)에서는 전혀 호출되지 않음.
+function _forceStorageModeInAddModal() {
+  // 1) 상세 토글 체크 + change 이벤트 발화 → 기존 리스너가 detail-section.hidden 제거
+  const detailToggle = document.getElementById('detail-toggle');
+  if (detailToggle && !detailToggle.checked) {
+    detailToggle.checked = true;
+    detailToggle.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // 2) 창고 체크박스 체크 + change 이벤트 발화 → 기존 applyStorageMode(true) 실행
+  const storageToggle = document.getElementById('storage-flag-toggle');
+  if (storageToggle && !storageToggle.checked) {
+    storageToggle.checked = true;
+    storageToggle.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // 3) 창고 체크박스 잠금 (해제 불가) — 편집 시와 동일한 시각 처리
+  if (storageToggle) {
+    storageToggle.disabled = true;
+    const label = document.getElementById('storage-flag-label');
+    if (label) label.classList.add('disabled');
+  }
+
+  // 4) 상세 토글 잠금 (접기 불가)
+  if (detailToggle) {
+    detailToggle.disabled = true;
+    const detailLabel = document.getElementById('detail-toggle-label');
+    if (detailLabel) detailLabel.style.opacity = '0.45';
+  }
+
+  // 5) 모달 제목을 "창고 추가"로 변경
+  const titleLabel = document.getElementById('modal-title-label');
+  if (titleLabel) titleLabel.textContent = '창고 추가';
+
+  // 6) 제목 입력란에 포커스 (openAddModal의 setTimeout(300)과 겹치지 않게 약간 늦게)
+  setTimeout(() => {
+    const titleInput = document.getElementById('input-title');
+    if (titleInput) titleInput.focus();
+  }, 320);
 }
 
 function _applyStorageHeaderStyles() {
@@ -31,7 +78,7 @@ function _applyStorageHeaderStyles() {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      padding: 10px 12px;
+      padding: 10px 16px;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
@@ -47,8 +94,9 @@ function _applyStorageHeaderStyles() {
     } else {
       dateEl.style.cssText = `
         justify-self: start;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: var(--font-ui);
         color: var(--text-primary);
         white-space: nowrap;
         overflow: hidden;
@@ -98,14 +146,15 @@ function _applyStorageHeaderStyles() {
   }
 }
 
-// 모바일 창고 탭 헤더 좌측의 날짜/요일 업데이트
-//  - 할일 탭의 #selected-date-label과 동일한 형식 ("4월 24일 (금)") + 요일별 색상
+// 모바일 창고 탭 헤더 좌측의 날짜/요일: 언제나 "오늘" 날짜 표시.
+//   - 할일 탭의 selectedDate 와 무관
+//   - 자정을 넘긴 상태에서도 탭을 다시 열거나 loadStorage 호출 시 자동 갱신됨
 function _updateStorageHeaderDate() {
   const el = document.getElementById('storage-header-date');
   if (!el) return;
   if (document.body.classList.contains('pc-layout')) return;
 
-  const d    = new Date(AppState.selectedDate + 'T00:00:00');
+  const d    = new Date();             // 언제나 "오늘" (로컬 타임 = 한국 시간)
   const days = ['일','월','화','수','목','금','토'];
   const dow  = d.getDay();
   el.textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[dow]})`;
