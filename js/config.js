@@ -43,8 +43,8 @@ function getSupabaseClient() {
 }
 
 // ── 브루트포스 방어: 5회 실패 → 10분 잠금 ──
-const LOGIN_FAIL_KEY  = 'login_fails';
-const LOGIN_LOCK_KEY  = 'login_lock_until';
+const LOGIN_FAIL_KEY  = 'ddog_login_fails';
+const LOGIN_LOCK_KEY  = 'ddog_login_lock_until';
 const MAX_FAILS       = 5;
 const LOCK_MINUTES    = 10;
 
@@ -77,13 +77,13 @@ function saveSession(session) {
   if (!session.expires_at && session.expires_in) {
     session.expires_at = Math.floor(Date.now() / 1000) + session.expires_in;
   }
-  localStorage.setItem('sb_session', JSON.stringify(session));
+  localStorage.setItem('ddog_sb_session', JSON.stringify(session));
 }
 function loadSession() {
-  try { return JSON.parse(localStorage.getItem('sb_session')); }
+  try { return JSON.parse(localStorage.getItem('ddog_sb_session')); }
   catch(e) { return null; }
 }
-function clearSession() { localStorage.removeItem('sb_session'); }
+function clearSession() { localStorage.removeItem('ddog_sb_session'); }
 
 function isTokenExpired(session) {
   if (!session || !session.expires_at) return true;
