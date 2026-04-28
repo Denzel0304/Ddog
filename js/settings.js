@@ -352,7 +352,12 @@ function getRepeatDescFromTodo(todo) {
       }
       return `매월 ${todo.repeat_day||1}일`;
     case 'yearly': return `매년 ${meta.yearlyMonth||1}월 ${meta.yearlyDay||1}일`;
-    case 'custom': return '매주 ' + (meta.customDays || []).map(d => days[d]).join(',');
+    case 'custom': {
+      const unitLabels = { day: '일', week: '주', month: '개월', year: '년' };
+      const interval = meta.customInterval || 2;
+      const unit = unitLabels[meta.customUnit] || '일';
+      return `매 ${interval}${unit}마다`;
+    }
     default: return '';
   }
 }
