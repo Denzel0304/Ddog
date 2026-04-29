@@ -21,17 +21,22 @@ let _audioUnlocked = false;
 
 function _unlockAudio() {
   if (_audioUnlocked) return;
-  _sfxComplete.play().then(() => {
-    _sfxComplete.pause();
-    _sfxComplete.currentTime = 0;
+  // iOS Safari: AudioContext 무음 재생으로 언락 (실제 오디오 재생 없이 정책 해제)
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    src.onended = () => { ctx.close(); _audioUnlocked = true; };
+  } catch(e) {
     _audioUnlocked = true;
-  }).catch(() => {
-    // 실패해도 다음 인터랙션에서 재시도할 수 있도록 플래그 세우지 않음
-  });
+  }
 }
 
-document.addEventListener('touchstart', _unlockAudio, { passive: true });
-document.addEventListener('mousedown',  _unlockAudio);
+document.addEventListener('touchstart', _unlockAudio, { passive: true, once: true });
+document.addEventListener('mousedown',  _unlockAudio, { once: true });
 
 function playCompleteSound() {
   try {
