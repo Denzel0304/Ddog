@@ -729,7 +729,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const lineText  = val.substring(lineStart, pos);
       if (/^\d+\.$/.test(lineText)) {
         e.preventDefault();
-        const num = parseInt(lineText);
+        // 이전 번호 줄 기준으로 다음 번호 결정 (잘못된 번호 입력 시 자동 정렬)
+        const prevLines = val.substring(0, lineStart).split('\n');
+        const lastLine = prevLines[prevLines.length - 1];
+        const prevMatch = lastLine.match(/^ {4}(\d+)\. /);
+        const num = prevMatch ? parseInt(prevMatch[1]) + 1 : parseInt(lineText);
         const prefix = `${num}. `;
         const indent = '    '; // 들여쓰기 4칸
         const newLine = indent + prefix;
