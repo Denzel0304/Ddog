@@ -729,10 +729,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const lineText  = val.substring(lineStart, pos);
       if (/^\d+\.$/.test(lineText)) {
         e.preventDefault();
-        // 이전 번호 줄 기준으로 다음 번호 결정 (잘못된 번호 입력 시 자동 정렬)
+        // 이전 번호 줄 기준으로 다음 번호 결정 (빈 줄 건너뜀)
         const prevLines = val.substring(0, lineStart).split('\n');
-        const lastLine = prevLines[prevLines.length - 1];
-        const prevMatch = lastLine.match(/^ {4}(\d+)\. /);
+        let prevMatch = null;
+        for (let k = prevLines.length - 1; k >= 0; k--) {
+          if (prevLines[k].trim() === '') continue;
+          prevMatch = prevLines[k].match(/^ {4}(\d+)\. /);
+          break;
+        }
         const num = prevMatch ? parseInt(prevMatch[1]) + 1 : parseInt(lineText);
         const prefix = `${num}. `;
         const indent = '    '; // 들여쓰기 4칸
