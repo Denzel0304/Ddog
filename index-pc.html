@@ -733,9 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevLines = val.substring(0, lineStart).split('\n');
         let prevMatch = null;
         for (let k = prevLines.length - 1; k >= 0; k--) {
-          if (prevLines[k].trim() === '') continue;
-          prevMatch = prevLines[k].match(/^ {4}(\d+)\. /);
-          break;
+          const m = prevLines[k].match(/^ {4}(\d+)\. /);
+          if (m) { prevMatch = m; break; }
         }
         const num = prevMatch ? parseInt(prevMatch[1]) + 1 : parseInt(lineText);
         const prefix = `${num}. `;
