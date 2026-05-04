@@ -685,26 +685,22 @@ document.addEventListener('input', e => {
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
     const lineText  = val.substring(lineStart, pos);
 
-    // 1. "숫자. " 입력 감지 → 들여쓰기 + 번호 변환 + 즉시 재정렬
+    // 1. "숫자. " 입력 감지 → 들여쓰기 + 번호 변환 (이전 번호줄 기준, 빈 줄 건너뜀)
     const triggerMatch = lineText.match(/^(\d+)\. $/);
     if (triggerMatch) {
-      const num = parseInt(triggerMatch[1]);
+      const prevLines = val.substring(0, lineStart).split('\n');
+      let prevMatch = null;
+      for (let k = prevLines.length - 1; k >= 0; k--) {
+        if (prevLines[k].trim() === '') continue;
+        prevMatch = prevLines[k].match(/^ {4}(\d+)\. /);
+        break;
+      }
+      const num = prevMatch ? parseInt(prevMatch[1]) + 1 : parseInt(triggerMatch[1]);
       const newLine = '    ' + num + '. ';
       const before = val.substring(0, lineStart);
       const after  = val.substring(pos);
-      let newVal = before + newLine + after;
-      let newPos = lineStart + newLine.length;
-      // 이전 번호줄 기준으로 즉시 재정렬
-      const renum = _renumberLines(newVal);
-      if (renum !== newVal) {
-        const lineEnd = renum.indexOf('\n', lineStart);
-        const renumLine = renum.substring(lineStart, lineEnd === -1 ? renum.length : lineEnd);
-        const prefixMatch = renumLine.match(/^ {4}\d+\. /);
-        newPos = lineStart + (prefixMatch ? prefixMatch[0].length : newLine.length);
-        newVal = renum;
-      }
-      el.value = newVal;
-      el.selectionStart = el.selectionEnd = newPos;
+      el.value = before + newLine + after;
+      el.selectionStart = el.selectionEnd = lineStart + newLine.length;
       _prevVal = el.value;
       return;
     }
