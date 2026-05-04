@@ -653,20 +653,26 @@ document.addEventListener('input', e => {
 
 /* ── 메모 자동 번호 리스트 (input 이벤트 — 모바일/PC 공통) ── */
 (function() {
-  // 번호 재정렬: 매 input마다 호출 — 삭제/수정 시에도 즉시 재정렬
-  function _renumberMemo(el) {
-    const oldVal = el.value;
-    const oldPos = el.selectionStart;
-    let n = 1, adj = 0;
-    const newVal = oldVal.replace(/^( {4})(\d+)(\. )/gm, function(m, sp, num, dot, offset) {
-      const newNum = String(n++);
-      if (offset < oldPos) adj += newNum.length - num.length;
-      return sp + newNum + dot;
-    });
-    if (newVal === oldVal) return;
-    el.value = newVal;
-    const np = Math.max(0, Math.min(oldPos + adj, newVal.length));
-    el.selectionStart = el.selectionEnd = np;
+  function _renumberLines(text) {
+    const lines = text.split('\n');
+    let changed = false;
+    let i = 0;
+    while (i < lines.length) {
+      if (/^ {4}\d+\. /.test(lines[i])) {
+        const startNum = parseInt(lines[i].match(/^ {4}(\d+)\. /)[1]);
+        let j = i, counter = startNum;
+        while (j < lines.length && /^ {4}\d+\. /.test(lines[j])) {
+          const newLine = lines[j].replace(/^( {4})\d+(\. )/, '$1' + counter + '$2');
+          if (newLine !== lines[j]) { lines[j] = newLine; changed = true; }
+          counter++;
+          j++;
+        }
+        i = j;
+      } else {
+        i++;
+      }
+    }
+    return changed ? lines.join('\n') : text;
   }
 
   let _prevVal = '';
@@ -674,23 +680,31 @@ document.addEventListener('input', e => {
     const el = e.target;
     if (el.id !== 'input-memo') return;
 
-    // 번호 재정렬 먼저 (삭제 포함 모든 경우)
-    _renumberMemo(el);
-
     const val = el.value;
     const pos = el.selectionStart;
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
     const lineText  = val.substring(lineStart, pos);
 
-    // 1. "숫자. " 입력 감지 → 들여쓰기 + 번호 변환
+    // 1. "숫자. " 입력 감지 → 들여쓰기 + 번호 변환 + 즉시 재정렬
     const triggerMatch = lineText.match(/^(\d+)\. $/);
     if (triggerMatch) {
       const num = parseInt(triggerMatch[1]);
       const newLine = '    ' + num + '. ';
       const before = val.substring(0, lineStart);
       const after  = val.substring(pos);
-      el.value = before + newLine + after;
-      el.selectionStart = el.selectionEnd = lineStart + newLine.length;
+      let newVal = before + newLine + after;
+      let newPos = lineStart + newLine.length;
+      // 이전 번호줄 기준으로 즉시 재정렬
+      const renum = _renumberLines(newVal);
+      if (renum !== newVal) {
+        const lineEnd = renum.indexOf('\n', lineStart);
+        const renumLine = renum.substring(lineStart, lineEnd === -1 ? renum.length : lineEnd);
+        const prefixMatch = renumLine.match(/^ {4}\d+\. /);
+        newPos = lineStart + (prefixMatch ? prefixMatch[0].length : newLine.length);
+        newVal = renum;
+      }
+      el.value = newVal;
+      el.selectionStart = el.selectionEnd = newPos;
       _prevVal = el.value;
       return;
     }
@@ -698,7 +712,17 @@ document.addEventListener('input', e => {
     // 2. 줄바꿈 감지 → 번호 줄 다음에 다음 번호 삽입
     const prevVal = _prevVal;
     _prevVal = val;
-    if (val.length <= prevVal.length) return; // 삭제면 줄바꿈 감지 불필요
+    if (val.length <= prevVal.length) {
+      // 삭제 시 번호 재정렬
+      const renum = _renumberLines(val);
+      if (renum !== val) {
+        const s = el.selectionStart;
+        el.value = renum;
+        _prevVal = renum;
+        el.selectionStart = el.selectionEnd = s;
+      }
+      return;
+    }
     const added = val.substring(prevVal.length);
     if (!added.includes('\n')) return;
 
