@@ -86,6 +86,7 @@ function initBackButton() {
 
 function hasOpenPopup() {
   if (document.getElementById('habits-modal-overlay')) return true;
+  if (document.getElementById('dday-modal-overlay')) return true;
   if (document.getElementById('theme-sheet')) return true;
   if (document.getElementById('stats-overlay')) return true;
   // ── 창고 탭 전용 팝업들 (storage.js가 동적 생성) ──
@@ -109,6 +110,12 @@ function closeTopPopup() {
   if (habitsOverlay) {
     if (typeof closeHabitsModal === 'function') closeHabitsModal();
     else habitsOverlay.remove();
+    return;
+  }
+  const ddayOverlay = document.getElementById('dday-modal-overlay');
+  if (ddayOverlay) {
+    if (typeof closeDdayModal === 'function') closeDdayModal();
+    else ddayOverlay.remove();
     return;
   }
   const statsOverlay = document.getElementById('stats-overlay');
