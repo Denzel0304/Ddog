@@ -290,6 +290,40 @@ function closeDdayModal() {
   if (overlay) overlay.remove();
 }
 
+// ── 버킷리스트 (PC 전용 중앙 팝업) ──
+// 습관 트래커/디데이와 동일 패턴. 독립 파일 js/bucket.html을 iframe으로 로드.
+function openBucketModal() {
+  if (document.getElementById('bucket-modal-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'bucket-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.id = 'bucket-modal-box';
+  box.style.cssText = [
+    'width:440px;max-width:92vw;height:86vh;max-height:880px;',
+    'background:var(--bg-elevated);border-radius:20px;overflow:hidden;',
+    'box-shadow:0 8px 40px rgba(0,0,0,0.5);animation:slideUp 0.25s ease;'
+  ].join('');
+
+  const frame = document.createElement('iframe');
+  frame.id = 'bucket-iframe';
+  frame.src = 'js/bucket.html';
+  frame.style.cssText = 'width:100%;height:100%;border:none;display:block;background:transparent;';
+
+  box.appendChild(frame);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeBucketModal(); });
+}
+
+function closeBucketModal() {
+  const overlay = document.getElementById('bucket-modal-overlay');
+  if (overlay) overlay.remove();
+}
+
 function initSettings() {
   document.getElementById('nav-settings').addEventListener('click', openSettingsPanel);
   document.getElementById('settings-close').addEventListener('click', closeSettingsPanel);
@@ -317,6 +351,15 @@ function initSettings() {
       setTimeout(openDdayModal, 350);
     } else {
       location.href = 'js/Dday.html';
+    }
+  });
+  const menuBucket = document.getElementById('menu-bucket');
+  if (menuBucket) menuBucket.addEventListener('click', () => {
+    if (document.body.classList.contains('pc-layout')) {
+      closeSettingsPanel();
+      setTimeout(openBucketModal, 350);
+    } else {
+      location.href = 'js/bucket.html';
     }
   });
   document.getElementById('repeats-back').addEventListener('click', closeRepeatsPanel);
