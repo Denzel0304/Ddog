@@ -75,10 +75,14 @@ function initBackButton() {
     if (e.state && e.state.page === 'base') {
       if (hasOpenPopup()) {
         closeTopPopup();
-        history.pushState({ page: 'app' }, '');
+        // popstate 핸들러 '안'에서 pushState하면 일부 환경(PC/모바일 공통)에서
+        // history.state만 바뀌고 실제 뒤로가기 항목(세션 포인터)이 재생성되지 않아
+        // 다음 뒤로가기에서 앱을 탈출하는 문제가 있음.
+        // → 다음 task로 미뤄 popstate 스택 밖에서 호출하면 정상적으로 재충전됨.
+        setTimeout(() => history.pushState({ page: 'app' }, ''), 0);
       } else if (currentTab !== 'todo') {
         switchTab('todo');
-        history.pushState({ page: 'app' }, '');
+        setTimeout(() => history.pushState({ page: 'app' }, ''), 0);
       }
     }
   });
