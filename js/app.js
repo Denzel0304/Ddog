@@ -73,11 +73,12 @@ function initBackButton() {
 
   window.addEventListener('popstate', e => {
     if (e.state && e.state.page === 'base') {
-      history.pushState({ page: 'app' }, '');
       if (hasOpenPopup()) {
         closeTopPopup();
+        history.pushState({ page: 'app' }, '');
       } else if (currentTab !== 'todo') {
         switchTab('todo');
+        history.pushState({ page: 'app' }, '');
       }
     }
   });
