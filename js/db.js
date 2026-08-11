@@ -525,42 +525,31 @@ async function deleteRepeatOnlyDate(masterId, dateStr) {
 }
 
 // 2. 이 날짜 이후 삭제
-// 마스터를 완전 삭제하고, dateStr 이후 예외 행도 삭제.
-// dateStr 이전 예외 행(과거 완료 기록 등)은 보존 → 달력에서 그대로 보임.
 async function deleteRepeatFromDate(masterId, dateStr) {
   const all = await idbGetAll();
+  const master = all.find(t => String(t.id) === String(masterId));
 
-  // dateStr 이후 예외 행 삭제 (IDB)
-  const exToDelete = all.filter(t =>
+  // dateStr이 마스터 시작일 이하면 → 유효 날짜가 하나도 안 남음 → 전체 삭제
+  if (master && dateStr <= master.date) {
+    await deleteRepeatAll(masterId);
+    return;
+  }
+
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const endDate = toLocalDateStr(d);
+
+  await updateTodo(masterId, { repeat_end_date: endDate });
+
+  // 이후 예외 행들 삭제
+  const all2 = await idbGetAll();
+  const toDeletes = all2.filter(t =>
     String(t.repeat_master_id) === String(masterId) && t.date >= dateStr
   );
-  await Promise.all(exToDelete.map(t => idbDelete(t.id)));
+  await Promise.all(toDeletes.map(t => deleteTodo(t.id)));
 
-  // 마스터 삭제 (IDB)
-  await idbDelete(masterId);
-
-  // Supabase — 예외 행 먼저, 마스터 나중에 (FK 순서)
-  if (AppState.isOnline) {
-    try {
-      // dateStr 이후 예외 행 삭제
-      await fetch(
-        `${DB.url}/rest/v1/${TABLE_NAME}?repeat_master_id=eq.${masterId}&date=gte.${dateStr}`,
-        { method: 'DELETE', headers: DB.headers }
-      );
-      // 마스터 삭제
-      await fetch(
-        `${DB.url}/rest/v1/${TABLE_NAME}?id=eq.${masterId}`,
-        { method: 'DELETE', headers: DB.headers }
-      );
-    } catch(e) {
-      console.warn('[db] deleteRepeatFromDate Supabase 실패, queue에 저장:', e);
-      await queuePush({ path: `${TABLE_NAME}?repeat_master_id=eq.${masterId}&date=gte.${dateStr}`, method: 'DELETE', body: null });
-      await queuePush({ path: `${TABLE_NAME}?id=eq.${masterId}`, method: 'DELETE', body: null });
-    }
-  } else {
-    await queuePush({ path: `${TABLE_NAME}?repeat_master_id=eq.${masterId}&date=gte.${dateStr}`, method: 'DELETE', body: null });
-    await queuePush({ path: `${TABLE_NAME}?id=eq.${masterId}`, method: 'DELETE', body: null });
-  }
+  // 시작일~종료일 사이에 유효 날짜가 모두 삭제됐으면 마스터도 삭제
+  await checkAndCleanMaster(masterId);
 }
 
 // 3. 전체 삭제: 마스터 + 모든 예외 행
