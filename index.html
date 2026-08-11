@@ -745,20 +745,21 @@ document.addEventListener('input', e => {
 
   function renumberAll() {
     const pos = ta.selectionStart;
-    // ZWS 제거 후 재번호, 번호 줄 첫 내용 앞에 ZWS 재삽입
     const lines = ta.value.split('\n');
     let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
     const result = lines.map(line => {
-      // ZWS 제거해서 순수 텍스트로 비교
+      // ZWS를 제거한 버전으로 번호 줄 판정
       const cleanLine = line.replace(/\u200b/g, '');
       const m = cleanLine.match(/^(\d+)(\.\s)([\s\S]*)$/);
       if (m) {
         if (!inBlock) { inBlock = true; blockStart = parseInt(m[1], 10); blockOffset = 0; }
         const expected = blockStart + blockOffset++;
-        // 내용이 없는 줄(새로 삽입된 빈 번호 줄)에만 ZWS 유지
-        const content = m[3];
-        const newLine = expected + m[2] + (content === '' ? ZWS : content);
-        if (newLine !== line) changed = true;
+        const oldPrefix = m[1] + m[2];           // 원래 prefix (ZWS 없는 버전)
+        const newPrefix = expected + m[2];        // 새 prefix
+        if (oldPrefix === newPrefix) return line; // prefix 변화 없으면 원본 그대로
+        // prefix만 교체하고 나머지(ZWS 포함 내용)는 원본에서 그대로 가져옴
+        const newLine = newPrefix + line.slice(oldPrefix.length);
+        changed = true;
         return newLine;
       } else { inBlock = false; return line; }
     });
