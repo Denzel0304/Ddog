@@ -776,24 +776,28 @@ document.addEventListener('input', e => {
     ta.selectionStart = ta.selectionEnd = pos;
   }
 
+  // Android에서 preventDefault() 후에도 input 이벤트가 발생하는 경우 건너뛰기 위한 플래그
+  let _skipNextInput = false;
+
   // PC: keydown
   ta.addEventListener('keydown', function(e) {
-    let handled = false;
-    if (e.key === ' ') handled = handleSpace(() => e.preventDefault());
-    else if (e.key === 'Enter') handled = handleEnter(() => e.preventDefault(), e.shiftKey);
+    if (e.key === ' ') handleSpace(() => e.preventDefault());
+    else if (e.key === 'Enter') handleEnter(() => e.preventDefault(), e.shiftKey);
   });
 
   // 모바일: beforeinput
   ta.addEventListener('beforeinput', function(e) {
-    let handled = false;
-    if (e.inputType === 'insertText' && e.data === ' ')
-      handled = handleSpace(() => e.preventDefault());
-    else if (e.inputType === 'insertLineBreak' || (e.inputType === 'insertText' && e.data === '\n'))
-      handled = handleEnter(() => e.preventDefault(), false);
+    if (e.inputType === 'insertText' && e.data === ' ') {
+      handleSpace(() => e.preventDefault());
+    } else if (e.inputType === 'insertLineBreak' || (e.inputType === 'insertText' && e.data === '\n')) {
+      const handled = handleEnter(() => e.preventDefault(), false);
+      if (handled) _skipNextInput = true; // 처리됐으면 뒤따라오는 input 1회 무시
+    }
   });
 
   // input: 삭제 후 재번호 + 모드 리셋
   ta.addEventListener('input', function(e) {
+    if (_skipNextInput) { _skipNextInput = false; return; }
     if (ta.value === '') { mode = null; return; }
     if (mode === 'number' && !e.isComposing) renumberAll();
   });
