@@ -753,10 +753,13 @@ document.addEventListener('input', e => {
       const insert = '\n' + nextNum + '. ' + ZWS;
       const afterLines = after.split('\n');
       let renumFrom = nextNum + 1;
+      let inSameBlock = true; // 같은 그룹 내에서만 재번호
       const renumberedAfter = afterLines.map((line, idx) => {
         if (idx === 0) return line;
-        const lm = line.match(/^(\d+)(\.\s)/);
-        if (lm) return renumFrom++ + lm[2] + line.slice(lm[0].length);
+        const cleanLine = line.replace(/\u200b/g, '');
+        const lm = cleanLine.match(/^(\d+)(\.\s)/);
+        if (lm && inSameBlock) return renumFrom++ + lm[2] + line.slice(lm[0].length);
+        if (!lm) inSameBlock = false; // 빈 줄/일반 텍스트 → 그룹 끊김
         return line;
       }).join('\n');
       ta.value = before + insert + renumberedAfter;
