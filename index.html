@@ -721,7 +721,7 @@ document.addEventListener('input', e => {
       ta.selectionStart = ta.selectionEnd = start + insert.length;
     } else if (mode === 'number') {
       const match = curLine.match(/^(\d+)\.\s/);
-      if (match && curLine === match[0]) {
+      if (match && curLine.replace(/\u200b/g, '') === match[0]) {
         const trim2 = before.slice(0, -match[0].length);
         ta.value = trim2 + '\n' + after;
         ta.selectionStart = ta.selectionEnd = trim2.length + 1;
