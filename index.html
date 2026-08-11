@@ -722,7 +722,8 @@ document.addEventListener('input', e => {
     } else if (mode === 'number') {
       const match = curLine.match(/^(\d+)\.\s/);
       if (match && curLine.replace(/\u200b/g, '') === match[0]) {
-        const trim2 = before.slice(0, -match[0].length);
+        // curLine 전체 길이(ZWS 포함)만큼 제거
+        const trim2 = before.slice(0, -curLine.length);
         ta.value = trim2 + '\n' + after;
         ta.selectionStart = ta.selectionEnd = trim2.length + 1;
         mode = null; return true;
