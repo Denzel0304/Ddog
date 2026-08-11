@@ -860,9 +860,9 @@ document.addEventListener('input', e => {
         handleEnter(() => e.preventDefault(), false);
     });
 
-    ta.addEventListener('input', function(e) {
+    ta.addEventListener('input', function() {
       if (ta.value === '') { mode = null; return; }
-      if (mode === 'number' && !e.isComposing) renumberAll();
+      if (mode === 'number') renumberAll();
     });
 
     // 모달 열릴 때 mode 리셋
