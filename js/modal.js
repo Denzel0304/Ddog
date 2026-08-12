@@ -134,9 +134,7 @@ function openEditModal(todo) {
   document.getElementById('modal-title-label').textContent = '할일 수정';
   resetModalForm();
   document.getElementById('input-title').value  = todo.title || '';
-  const memoEl = document.getElementById('input-memo');
-  memoEl.value = todo.memo || '';
-  memoEl.scrollTop = 0;
+  document.getElementById('input-memo').value   = todo.memo  || '';
   document.getElementById('input-date').value   = todo.date  || todayStr();
   document.getElementById('input-remind').value = todo.remind_days || 0;
   document.getElementById('input-weekly-flag').checked = !!todo.weekly_flag;
