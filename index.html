@@ -883,7 +883,15 @@ document.addEventListener('input', e => {
   // 모달 열릴 때마다 mode 리셋
   const _origOpen = window.openEditModal;
   if (_origOpen) {
-    window.openEditModal = function(todo) { mode = null; _origOpen(todo); };
+    window.openEditModal = function(todo) {
+      mode = null;
+      _origOpen(todo);
+      // 모달을 열 때마다 메모 textarea 스크롤을 항상 최상단으로 리셋
+      requestAnimationFrame(() => {
+        const ta = document.getElementById('input-memo');
+        if (ta) ta.scrollTop = 0;
+      });
+    };
   }
   const _origAdd = window.openAddModal;
   if (_origAdd) {
