@@ -287,11 +287,17 @@ let currentFilter = 'all';
 // ── 네트워크 상태 ──
 function updateNetStatus() {
   const online = navigator.onLine;
-  document.getElementById('net-dot').className   = 'dot ' + (online ? 'online' : 'offline');
-  document.getElementById('net-label').textContent = online
-    ? '온라인 — Supabase 비교 가능'
-    : '오프라인 — IDB 목록만 확인 가능';
-  document.getElementById('btn-compare').disabled = !online;
+  const jwt    = getAppJwt();
+  document.getElementById('net-dot').className = 'dot ' + (online ? 'online' : 'offline');
+
+  if (!online) {
+    document.getElementById('net-label').textContent = '오프라인 — IDB 목록만 확인 가능';
+  } else if (!jwt) {
+    document.getElementById('net-label').textContent = '⚠️ 앱 세션 없음 — 앱에 먼저 로그인하세요';
+  } else {
+    document.getElementById('net-label').textContent = '온라인 · 세션 감지됨 — Supabase 비교 가능';
+  }
+  document.getElementById('btn-compare').disabled = !online || !jwt;
 }
 updateNetStatus();
 window.addEventListener('online',  updateNetStatus);
@@ -324,15 +330,31 @@ async function idbDeleteById(id) {
   });
 }
 
+// ── 앱 세션 JWT 읽기 ──
+function getAppJwt() {
+  try {
+    const session = JSON.parse(localStorage.getItem('ddog_sb_session'));
+    return session?.access_token || null;
+  } catch(e) { return null; }
+}
+
 // ── Supabase id 목록 ──
 async function fetchSbIds() {
+  const jwt = getAppJwt();
+  if (!jwt) throw new Error('앱 로그인 세션이 없어요. 앱에 먼저 로그인 후 이 페이지를 열어주세요.');
+
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${jwt}`
+  };
+
   let allIds = [];
   let offset = 0;
   const pageSize = 1000;
   while (true) {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=id&limit=${pageSize}&offset=${offset}`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      { headers }
     );
     if (!res.ok) throw new Error('Supabase 조회 실패: ' + res.status);
     const page = await res.json();
