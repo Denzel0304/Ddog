@@ -47,12 +47,13 @@ async function bootApp() {
 function initLightMode() {
   applyLogoMode();
   document.getElementById('lightmode-toggle').addEventListener('click', () => {
-    // 컬러 테마 활성 시 토글 무시
-    if (document.body.classList.contains('theme-active')) return;
-    const isLight = document.body.classList.toggle('light-mode');
-    localStorage.setItem('lightmode', isLight ? '1' : '0');
-    localStorage.setItem('app-theme', isLight ? 'light' : 'dark');
-    applyLogoMode();
+    // 어떤 테마에서든 토글 → 다크 모드 / 다크 모드에서 토글 → 직전 테마로 복귀
+    const current = localStorage.getItem('app-theme') || (localStorage.getItem('lightmode') === '1' ? 'light' : 'dark');
+    if (current === 'dark') {
+      applyTheme(localStorage.getItem('app-theme-prev') || 'light');
+    } else {
+      applyTheme('dark');
+    }
   });
 }
 

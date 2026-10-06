@@ -32,6 +32,8 @@ function applyTheme(themeId) {
   }
 
   localStorage.setItem('app-theme', themeId);
+  // 다크가 아닌 테마는 '직전 테마'로 기억 (다크에서 토글 시 복귀용)
+  if (themeId !== 'dark') localStorage.setItem('app-theme-prev', themeId);
   if (typeof applyLogoMode === 'function') applyLogoMode();
 }
 
