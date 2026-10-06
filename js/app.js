@@ -62,8 +62,8 @@ function initLightMode() {
 }
 
 function applyLogoMode() {
-  const isLight = document.body.classList.contains('light-mode');
-  const src = isLight ? 'logo1.png' : 'logo.png';
+  // 투명 배경 로고 하나로 통일 (배경색은 테마별 CSS가 처리)
+  const src = 'logo2.png';
   // 스플래시 + 로그인 화면 로고 모두 교체
   const splashLogo = document.getElementById('splash-logo');
   const loginLogo  = document.getElementById('login-logo');
