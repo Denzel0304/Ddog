@@ -50,7 +50,11 @@ function initLightMode() {
     // 어떤 테마에서든 토글 → 다크 모드 / 다크 모드에서 토글 → 직전 테마로 복귀
     const current = localStorage.getItem('app-theme') || (localStorage.getItem('lightmode') === '1' ? 'light' : 'dark');
     if (current === 'dark') {
-      applyTheme(localStorage.getItem('app-theme-prev') || 'light');
+      let prev = localStorage.getItem('app-theme-prev') || 'light';
+      // 삭제된 테마가 직전 테마로 남아있는 경우 대체 테마로 변환, 다크로 이어지면 라이트로
+      if (typeof LEGACY_THEMES !== 'undefined' && LEGACY_THEMES[prev]) prev = LEGACY_THEMES[prev];
+      if (prev === 'dark') prev = 'light';
+      applyTheme(prev);
     } else {
       applyTheme('dark');
     }

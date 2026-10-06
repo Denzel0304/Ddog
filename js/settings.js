@@ -2,20 +2,28 @@
 // settings.js — 설정 패널 & 반복함
 // =============================================
 
-const COLOR_THEMES = ['sage', 'sky', 'rose', 'lavender', 'navy'];
+const COLOR_THEMES = ['sky', 'rose', 'lavender', 'cream', 'apricot', 'mint', 'mocha', 'gray'];
+
+// 삭제된 테마 → 대체 테마 (기존 저장값 호환)
+const LEGACY_THEMES = { sage: 'light', navy: 'dark' };
 
 const THEMES = [
   { id: 'light',    label: '라이트 모드', bg: '#ebeee7', dot: '#3a9e6a' },
   { id: 'dark',     label: '다크 모드',   bg: '#1e2028', dot: '#7ecfa0' },
-  { id: 'sage',     label: '연한 녹색',   bg: '#e4ede4', dot: '#3a8a5a' },
   { id: 'sky',      label: '연한 하늘색', bg: '#e2ecf6', dot: '#2868c0' },
   { id: 'rose',     label: '연한 붉은색', bg: '#f4e4e4', dot: '#c03848' },
   { id: 'lavender', label: '연한 자주색', bg: '#eae4f4', dot: '#7040c0' },
-  { id: 'navy',     label: '진한 청색',   bg: '#1a2448', dot: '#4878e8' },
+  { id: 'cream',    label: '연한 노란색', bg: '#f2edd8', dot: '#a87a10' },
+  { id: 'apricot',  label: '연한 주황색', bg: '#f6e4d8', dot: '#d0682a' },
+  { id: 'mint',     label: '연한 청록색', bg: '#dcf0ec', dot: '#13877d' },
+  { id: 'mocha',    label: '연한 갈색',   bg: '#ece2d6', dot: '#8a5a34' },
+  { id: 'gray',     label: '연한 회색',   bg: '#e7e9ec', dot: '#4a5568' },
 ];
 
 function applyTheme(themeId) {
+  if (LEGACY_THEMES[themeId]) themeId = LEGACY_THEMES[themeId];
   COLOR_THEMES.forEach(t => document.body.classList.remove('theme-' + t));
+  Object.keys(LEGACY_THEMES).forEach(t => document.body.classList.remove('theme-' + t));
   document.body.classList.remove('theme-active');
 
   if (themeId === 'light') {
