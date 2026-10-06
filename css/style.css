@@ -1438,10 +1438,14 @@ body.light-mode #logout-modal > div {
    5가지 컬러 테마 (배경 전체 톤이 바뀌는 독립 테마)
    ============================================= */
 
-/* 토글 버튼: 컬러 테마 활성 시 비활성화 */
-body.theme-active #lightmode-toggle {
-  opacity: 0.3;
-  pointer-events: none;
+/* 토글 버튼: 컬러 테마 활성 시에도 켜짐(오른쪽) 상태로 표시 — 누르면 다크 모드 */
+body.theme-active .lm-toggle-track {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+body.theme-active .lm-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--accent);
 }
 
 /* 1. 연한 녹색 (Sage) */
