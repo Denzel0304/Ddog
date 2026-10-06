@@ -170,31 +170,45 @@ function getLevel(count) {
   return STAT_LEVELS.find(l => count >= l.min && count <= l.max) || STAT_LEVELS[0];
 }
 
-async function openStatsModal() {
-  // IDB에서 전체 데이터 로드
-  let all = [];
-  try { all = await idbGetAll(); } catch(e) {}
+// ── 통계: 서버에서 직접 집계 ──
+// 기기마다 로컬 캐시가 다를 수 있으므로 완료 개수/시작일은 항상 Supabase 기준.
+// 오프라인이거나 10초 안에 응답이 없으면 '오프라인' 표시.
+const STATS_TIMEOUT_MS = 10000;
 
-  // 완료된 할일 수 (가상 row 제외)
-  const doneCount = all.filter(t => t.is_done && !t._virtual).length;
+async function fetchServerStats() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), STATS_TIMEOUT_MS);
+  try {
+    // 완료 개수: 행을 내려받지 않고 개수만 받음 (Content-Range: 0-0/2098)
+    const countReq = fetch(
+      `${DB.url}/rest/v1/${TABLE_NAME}?select=id&is_done=eq.true&limit=1`,
+      { headers: { ...DB.headers, 'Prefer': 'count=exact' }, signal: ctrl.signal }
+    ).then(async res => {
+      if (!res.ok) throw new Error(await res.text());
+      const range = res.headers.get('content-range') || '';
+      const total = parseInt(range.split('/')[1], 10);
+      if (isNaN(total)) throw new Error('개수 응답 없음');
+      return total;
+    });
 
-  // 시작일: created_at 가장 오래된 row
-  const dates = all.map(t => t.created_at).filter(Boolean).sort();
-  let daysSince = 0;
-  let startDateStr = '';
-  if (dates.length > 0) {
-    const start = new Date(dates[0]);
-    const today = new Date();
-    daysSince = Math.max(1, Math.floor((today - start) / 86400000) + 1);
-    startDateStr = `${start.getFullYear()}년 ${start.getMonth()+1}월 ${start.getDate()}일`;
+    // 시작일: 가장 오래된 created_at 하나
+    const startReq = fetch(
+      `${DB.url}/rest/v1/${TABLE_NAME}?select=created_at&created_at=not.is.null&order=created_at.asc&limit=1`,
+      { headers: DB.headers, signal: ctrl.signal }
+    ).then(async res => {
+      if (!res.ok) throw new Error(await res.text());
+      const rows = await res.json();
+      return rows && rows[0] ? rows[0].created_at : null;
+    });
+
+    const [doneCount, startAt] = await Promise.all([countReq, startReq]);
+    return { doneCount, startAt };
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  const lv = getLevel(doneCount);
-  const nextLv = STAT_LEVELS.find(l => l.level === lv.level + 1);
-  const progress = nextLv
-    ? Math.min(100, Math.round((doneCount - lv.min) / (nextLv.min - lv.min) * 100))
-    : 100;
-
+async function openStatsModal() {
   // 모달 생성
   const overlay = document.createElement('div');
   overlay.id = 'stats-overlay';
@@ -214,11 +228,53 @@ async function openStatsModal() {
     'font-family:var(--font-main);',
   ].join('');
 
-  box.innerHTML = `
+  const header = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div style="font-size:17px;font-weight:700;color:var(--text-primary);">📊 나의 통계</div>
       <button id="stats-close" style="font-size:18px;color:var(--text-muted);background:none;border:none;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;">✕</button>
+    </div>`;
+
+  const card = (value, label, small) => `
+      <div style="flex:1;background:var(--bg-surface);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:${small ? '16px' : '26px'};font-weight:700;color:${small ? 'var(--text-muted)' : 'var(--accent)'};${small ? 'line-height:31px;' : ''}">${value}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${label}</div>
+      </div>`;
+
+  // 불러오는 중 / 오프라인 화면 (계급·진행률은 비워 둠)
+  function renderPlaceholder(text) {
+    box.innerHTML = `
+    ${header}
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:56px;height:56px;margin:0 auto 6px;"></div>
+      <div style="font-size:15px;font-weight:600;color:var(--text-muted);margin-bottom:4px;">${text}</div>
     </div>
+
+    <div style="display:flex;gap:12px;margin-bottom:24px;">
+      ${card(text, '사용 일수', true)}
+      ${card(text, '완료한 할일', true)}
+    </div>
+  `;
+    box.querySelector('#stats-close').addEventListener('click', () => overlay.remove());
+  }
+
+  function renderStats(doneCount, startAt) {
+    let daysSince = 0;
+    let startDateStr = '';
+    if (startAt) {
+      const start = new Date(startAt);
+      const today = new Date();
+      daysSince = Math.max(1, Math.floor((today - start) / 86400000) + 1);
+      startDateStr = `${start.getFullYear()}년 ${start.getMonth()+1}월 ${start.getDate()}일`;
+    }
+
+    const lv = getLevel(doneCount);
+    const nextLv = STAT_LEVELS.find(l => l.level === lv.level + 1);
+    const progress = nextLv
+      ? Math.min(100, Math.round((doneCount - lv.min) / (nextLv.min - lv.min) * 100))
+      : 100;
+
+    box.innerHTML = `
+    ${header}
 
     <div style="text-align:center;margin-bottom:28px;">
       <div style="width:56px;height:56px;margin:0 auto 6px;">${lv.icon}</div>
@@ -227,14 +283,8 @@ async function openStatsModal() {
     </div>
 
     <div style="display:flex;gap:12px;margin-bottom:24px;">
-      <div style="flex:1;background:var(--bg-surface);border-radius:14px;padding:16px;text-align:center;">
-        <div style="font-size:26px;font-weight:700;color:var(--accent);">${daysSince.toLocaleString()}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">사용 일수</div>
-      </div>
-      <div style="flex:1;background:var(--bg-surface);border-radius:14px;padding:16px;text-align:center;">
-        <div style="font-size:26px;font-weight:700;color:var(--accent);">${doneCount.toLocaleString()}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">완료한 할일</div>
-      </div>
+      ${card(daysSince.toLocaleString(), '사용 일수')}
+      ${card(doneCount.toLocaleString(), '완료한 할일')}
     </div>
 
     ${nextLv ? `
@@ -253,12 +303,28 @@ async function openStatsModal() {
     </div>
     `}
   `;
+    box.querySelector('#stats-close').addEventListener('click', () => overlay.remove());
+  }
+
+  const offline = !AppState.isOnline || !navigator.onLine;
+  renderPlaceholder(offline ? '오프라인' : '불러오는 중…');
 
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  box.querySelector('#stats-close').addEventListener('click', () => overlay.remove());
+
+  if (offline) return;
+
+  try {
+    const { doneCount, startAt } = await fetchServerStats();
+    if (!overlay.isConnected) return;   // 그 사이 창을 닫았으면 무시
+    renderStats(doneCount, startAt);
+  } catch(e) {
+    console.warn('[stats] 서버 집계 실패 → 오프라인 표시:', e);
+    if (!overlay.isConnected) return;
+    renderPlaceholder('오프라인');
+  }
 }
 
 // ── 습관 트래커 (PC 전용 중앙 팝업) ──
