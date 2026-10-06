@@ -1099,7 +1099,7 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
     ['일','월','화','수','목','금','토'].forEach((d, i) => {
       const span = document.createElement('div');
       span.textContent = d;
-      span.style.cssText = `text-align:center;font-size:13px;font-weight:600;padding:4px 0;color:${i===0?'var(--danger)':i===6?'#6b9fd4':'var(--text-muted)'};`;
+      span.style.cssText = `text-align:center;font-size:13px;font-weight:600;padding:4px 0;color:${i===0?'var(--danger)':i===6?'var(--sat)':'var(--text-muted)'};`;
       wdays.appendChild(span);
     });
     popup.appendChild(wdays);
@@ -1121,7 +1121,7 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
       const isToday    = dateStr === todayStr2;
       const isSelected = dateStr === highlightDate;
       const dow = new Date(pickerYear, pickerMonth - 1, d).getDay();
-      const color = dow === 0 ? 'var(--danger)' : dow === 6 ? '#6b9fd4' : 'var(--text-primary)';
+      const color = dow === 0 ? 'var(--danger)' : dow === 6 ? 'var(--sat)' : 'var(--text-primary)';
       cell.style.cssText = `
         aspect-ratio:1;width:100%;border:none;cursor:pointer;border-radius:50%;
         font-size:16px;font-weight:${isToday||isSelected?'700':'400'};
