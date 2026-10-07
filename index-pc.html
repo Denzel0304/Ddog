@@ -1216,10 +1216,9 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
 /* ── 구분선 드래그로 3분할 너비 조절 ──
    우선순위: 가운데(할일목록) > 좌측(달력) > 우측(세부내역)
    창이 좁아지면 우측부터 줄이고, 그다음 좌측을 줄임.
-   사용자가 정한 너비는 브라우저별로 저장(PC/노트북 각자 기억).
-   창을 다시 넓히면 저장된 너비로 복귀. 더블클릭 = 기본값. */
+   조절한 너비는 사용하는 동안에만 유지(저장 안 함) → 다시 접속하면 기본 크기.
+   창을 다시 넓히면 조절해둔 너비로 복귀. 더블클릭 = 기본값. */
 (function () {
-  const KEY_L = 'pc-pane-left', KEY_R = 'pc-pane-right';
   const MIN   = { L: 260, C: 320, R: 220 };  // 1차 최소폭
   const FLOOR = { L: 240, R: 180 };          // 아주 좁을 때 2차 최소폭
   const root  = document.documentElement;
@@ -1227,16 +1226,10 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
   const hR = document.getElementById('pc-resizer-right');
   if (!hL || !hR) return;
 
-  function load(k) {
-    try { const v = parseInt(localStorage.getItem(k), 10); return v > 0 ? v : null; }
-    catch (e) { return null; }
-  }
-  function save(k, v) {
-    try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, String(Math.round(v))); }
-    catch (e) {}
-  }
+  // 이전 버전에서 저장해둔 너비 값 정리
+  try { localStorage.removeItem('pc-pane-left'); localStorage.removeItem('pc-pane-right'); } catch (e) {}
 
-  const pref = { L: load(KEY_L), R: load(KEY_R) };   // null = 기본값(창 크기에 따라 자동)
+  const pref = { L: null, R: null };   // null = 기본값(창 크기에 따라 자동). 메모리에만 보관
   const cur  = { l: 0, r: 0 };                       // 실제 적용 중인 값
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -1275,6 +1268,9 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
       if (e.button !== 0) return;
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
+      // 반대쪽 패널은 현재 너비로 고정 → 드래그한 만큼 가운데만 늘고 줄어듦
+      if (side === 'L' && pref.R == null) pref.R = cur.r;
+      if (side === 'R' && pref.L == null) pref.L = cur.l;
       handle.classList.add('active');
       document.body.classList.add('pc-resizing');
     });
@@ -1293,15 +1289,14 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
       try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
       handle.classList.remove('active');
       document.body.classList.remove('pc-resizing');
-      save(side === 'L' ? KEY_L : KEY_R, side === 'L' ? pref.L : pref.R);
     };
     handle.addEventListener('pointerup', end);
     handle.addEventListener('pointercancel', end);
 
     // 더블클릭: 이 구분선만 기본값으로
     handle.addEventListener('dblclick', () => {
-      if (side === 'L') { pref.L = null; save(KEY_L, null); }
-      else              { pref.R = null; save(KEY_R, null); }
+      if (side === 'L') pref.L = null;
+      else              pref.R = null;
       apply();
     });
 
@@ -1310,8 +1305,8 @@ function pcPickDate(id, fromWeekly, targetDate, onSelect) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
       const step = (e.shiftKey ? 64 : 16) * (e.key === 'ArrowRight' ? 1 : -1);
-      if (side === 'L') { setLeft(cur.l + step);  save(KEY_L, pref.L); }
-      else              { setRight(cur.r - step); save(KEY_R, pref.R); }
+      if (side === 'L') setLeft(cur.l + step);
+      else              setRight(cur.r - step);
     });
   }
 
