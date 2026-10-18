@@ -36,11 +36,81 @@ async function bootApp() {
   loadTodos();
   initBackButton();
 
+  // ── 첫 접속 시 오늘의 시간 일정 팝업 ──
+  // 서버 동기화 완료 + 스플래시 페이드아웃(320ms) 이후에 표시
+  // (앱 새로 열기/새로고침 때만 실행. 날짜 이동·백그라운드 복귀 시에는 실행 안 됨)
+  Promise.all([
+    initialSyncPromise.catch(() => {}),
+    new Promise(r => setTimeout(r, 400)),
+  ]).then(showTimedTodosPopup);
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       document.getElementById('date-bar-actions').style.visibility = 'visible';
     });
   });
+}
+
+// ── 오늘의 시간 일정 팝업 (상기용, 확인 버튼만) ──
+async function showTimedTodosPopup() {
+  try {
+    if (document.getElementById('timed-todos-overlay')) return;
+    const today = toLocalDateStr(new Date());
+    const rows  = await fetchTodosByDate(today);
+    const timed = rows
+      .filter(t => t.time_at && !t.is_done)
+      .sort((a, b) => (a.time_at < b.time_at ? -1 : a.time_at > b.time_at ? 1 : 0));
+    if (timed.length === 0) return;   // 시간 일정 없으면 띄우지 않음
+
+    const overlay = document.createElement('div');
+    overlay.id = 'timed-todos-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1300;' +
+      'display:flex;align-items:center;justify-content:center;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--bg-elevated);border-radius:16px;padding:24px 22px 20px;' +
+      'width:320px;max-width:calc(100vw - 40px);max-height:80vh;display:flex;flex-direction:column;gap:16px;' +
+      'box-shadow:0 8px 32px rgba(0,0,0,0.5);border:1px solid var(--border-light);font-family:var(--font-main);';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:16px;font-weight:600;color:var(--text-primary);text-align:center;';
+    title.textContent = '🕒 오늘의 시간 일정';
+
+    const list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:8px;overflow-y:auto;';
+    timed.forEach(t => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:10px 12px;border-radius:10px;' +
+        'background:var(--bg-surface);font-size:14px;color:var(--text-primary);line-height:1.4;';
+      const tm = document.createElement('span');
+      tm.style.cssText = 'color:var(--accent);font-weight:600;white-space:nowrap;font-family:var(--font-ui);';
+      tm.textContent = `[${formatTimeLabel(t.time_at)}]`;
+      const tt = document.createElement('span');
+      tt.style.cssText = 'word-break:break-all;';
+      tt.textContent = t.title || '';
+      row.appendChild(tm);
+      row.appendChild(tt);
+      list.appendChild(row);
+    });
+
+    const okBtn = document.createElement('button');
+    okBtn.style.cssText = 'width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);' +
+      'color:#1a1a2e;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;';
+    okBtn.textContent = '확인';
+    okBtn.addEventListener('click', closeTimedTodosPopup);
+
+    box.appendChild(title);
+    box.appendChild(list);
+    box.appendChild(okBtn);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  } catch(e) {
+    console.warn('[app] 시간 일정 팝업 실패', e);
+  }
+}
+
+function closeTimedTodosPopup() {
+  document.getElementById('timed-todos-overlay')?.remove();
 }
 
 // ── 라이트 모드 토글 ──
@@ -97,6 +167,7 @@ function initBackButton() {
 function hasOpenPopup() {
   // 로그아웃 확인 모달 (z-index 최상위) — 떠 있을 때만 감지
   if (document.getElementById('logout-modal')?.style.display === 'flex') return true;
+  if (document.getElementById('timed-todos-overlay')) return true;
   if (document.getElementById('habits-modal-overlay')) return true;
   if (document.getElementById('dday-modal-overlay')) return true;
   if (document.getElementById('bucket-modal-overlay')) return true;
@@ -128,6 +199,8 @@ function closeTopPopup() {
     else logoutModal.style.display = 'none';
     return;
   }
+  // 시간 일정 팝업: 뒤로가기 = 확인과 동일
+  if (document.getElementById('timed-todos-overlay')) { closeTimedTodosPopup(); return; }
   const habitsOverlay = document.getElementById('habits-modal-overlay');
   if (habitsOverlay) {
     if (typeof closeHabitsModal === 'function') closeHabitsModal();
