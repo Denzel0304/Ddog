@@ -570,10 +570,6 @@ async function fullResync() {
 
 // ── 앱 시작 시 호출 ──
 
-// 앱 시작 시 서버 동기화 완료 신호 (시간 일정 팝업이 이 완료를 기다렸다가 표시됨)
-// 오프라인이거나 동기화가 필요 없으면 즉시 완료 상태
-let initialSyncPromise = Promise.resolve();
-
 async function initSync() {
   await getIDB();
 
@@ -587,7 +583,7 @@ async function initSync() {
     // [수정 ②] bgSync 실패 시 콘솔 경고만 내고 조용히 넘어가던 것을
     //           실패해도 refreshCurrentTab/updateMonthDots는 반드시 호출되도록 보장
     if (AppState.isOnline) {
-      initialSyncPromise = bgSync().catch(e => {
+      bgSync().catch(e => {
         console.warn('[sync] bg sync 실패', e);
         refreshCurrentTab();
         updateMonthDots();
