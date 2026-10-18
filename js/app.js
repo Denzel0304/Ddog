@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 앱 전체 초기화 (로그인 성공 후 또는 세션 복원 후 호출)
 async function bootApp() {
+  // 시간 일정 팝업용 데이터: 앱 시작과 동시에 서버에 직접 요청 (전체 동기화와 병렬)
+  const timedServerPromise = fetchTimedTodosFromServer();
+
   await initSync();
   initCalendar();
   initModal();
@@ -37,12 +40,15 @@ async function bootApp() {
   initBackButton();
 
   // ── 첫 접속 시 오늘의 시간 일정 팝업 ──
-  // 서버 동기화 완료 + 스플래시 페이드아웃(320ms) 이후에 표시
+  // 스플래시가 걷히기 전에 팝업을 미리 깔아둠 → 스플래시가 사라지면 바로 팝업이 보임
+  // (bootApp이 끝나야 스플래시가 사라지므로, 서버 응답을 최대 3초까지 기다림)
   // (앱 새로 열기/새로고침 때만 실행. 날짜 이동·백그라운드 복귀 시에는 실행 안 됨)
-  Promise.all([
-    initialSyncPromise.catch(() => {}),
-    new Promise(r => setTimeout(r, 400)),
-  ]).then(showTimedTodosPopup);
+  try {
+    const timed = await buildTimedTodosForPopup(timedServerPromise);
+    showTimedTodosPopup(timed);
+  } catch(e) {
+    console.warn('[app] 시간 일정 팝업 실패', e);
+  }
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -51,20 +57,73 @@ async function bootApp() {
   });
 }
 
+// ── 오늘의 시간 일정 조회 (팝업용) ──
+// 서버에 "오늘 + 시간 있음 + 미완료"만 직접 요청 → 다른 기기 변경분까지 즉시 반영
+// + 아직 서버로 안 올라간 이 기기의 변경분(tmp 행, 더 최신인 로컬 수정)은 기기 데이터로 보완
+// 오프라인/실패/3초 초과 시 기기 데이터만으로 진행
+// 1) 서버 조회 (bootApp 시작과 동시에 출발, 실패/3초 초과 시 null)
+async function fetchTimedTodosFromServer() {
+  if (!AppState.isOnline) return null;
+  const today = toLocalDateStr(new Date());
+  try {
+    const path = `${TABLE_NAME}?date=eq.${today}&time_at=not.is.null&is_done=eq.false`;
+    return await Promise.race([
+      sbFetch(path, { signal: _timeoutSignal(3000) }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000)),
+    ]);
+  } catch(e) {
+    console.warn('[app] 시간 일정 서버 조회 실패 → 기기 데이터 사용', e);
+    return null;
+  }
+}
+
+// 2) 서버 결과 + 기기 데이터 합치기 (initSync 이후 호출 → IDB 준비 완료 상태)
+async function buildTimedTodosForPopup(serverPromise) {
+  const today = toLocalDateStr(new Date());
+  const isTimedUndone = t => t && t.time_at && !t.is_done && !t.storage_flag && t.date === today;
+
+  const serverRows = await serverPromise;
+
+  let localRows = [];
+  try {
+    localRows = await fetchTodosByDate(today);
+  } catch(e) {}
+
+  let result;
+  if (Array.isArray(serverRows)) {
+    const localMap = new Map(localRows.map(t => [String(t.id), t]));
+    const toTime = v => (v ? (Date.parse(v) || 0) : 0);
+    const merged = new Map();
+    // 서버 행 기준. 단, 기기에 더 최신 수정(아직 미전송)이 있으면 기기 것을 사용
+    serverRows.forEach(r => {
+      const local = localMap.get(String(r.id));
+      const use = (local && toTime(local.updated_at) > toTime(r.updated_at)) ? local : r;
+      merged.set(String(r.id), use);
+    });
+    // 서버에 아직 없는 이 기기의 새 할일(tmp 행)
+    localRows.forEach(t => {
+      if (String(t.id).startsWith('tmp_')) merged.set(String(t.id), t);
+    });
+    result = [...merged.values()];
+  } else {
+    result = localRows;
+  }
+
+  return result
+    .filter(isTimedUndone)
+    .sort((a, b) => (a.time_at < b.time_at ? -1 : a.time_at > b.time_at ? 1 : 0));
+}
+
 // ── 오늘의 시간 일정 팝업 (상기용, 확인 버튼만) ──
-async function showTimedTodosPopup() {
+// 뒤 배경은 불투명 → 확인을 눌러야 할일 화면이 보임
+function showTimedTodosPopup(timed) {
   try {
     if (document.getElementById('timed-todos-overlay')) return;
-    const today = toLocalDateStr(new Date());
-    const rows  = await fetchTodosByDate(today);
-    const timed = rows
-      .filter(t => t.time_at && !t.is_done)
-      .sort((a, b) => (a.time_at < b.time_at ? -1 : a.time_at > b.time_at ? 1 : 0));
-    if (timed.length === 0) return;   // 시간 일정 없으면 띄우지 않음
+    if (!timed || timed.length === 0) return;   // 시간 일정 없으면 띄우지 않음
 
     const overlay = document.createElement('div');
     overlay.id = 'timed-todos-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1300;' +
+    overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg-base);z-index:1300;' +
       'display:flex;align-items:center;justify-content:center;';
 
     const box = document.createElement('div');
