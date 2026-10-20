@@ -209,13 +209,13 @@ function makeCalCell(day, year, month, isOtherMonth, today, selectedDate) {
   if (isOtherMonth) el.classList.add('other-month');
   if (dow === 0) el.classList.add('sun');
   if (dow === 6) el.classList.add('sat');
-  // PC 달력 칸: 할일 점 아래에 음력 표시 (초하루는 '월.일', 나머지는 '일')
+  // PC 달력 칸: 할일 점 아래에 음력 1일·15일만 표시 ('월.일', 윤달은 '윤월.일')
   if (document.body.classList.contains('pc-layout')) {
     const lunar = getLunarInfo(date.getFullYear(), date.getMonth() + 1, date.getDate());
-    if (lunar) {
+    if (lunar && (lunar.day === 1 || lunar.day === 15)) {
       const lu = document.createElement('span');
       lu.className = 'cal-lunar';
-      lu.textContent = lunar.day === 1 ? `${lunar.leap ? '윤' : ''}${lunar.month}.1` : lunar.day;
+      lu.textContent = `${lunar.leap ? '윤' : ''}${lunar.month}.${lunar.day}`;
       if (lunar.day === 1) lu.classList.add('lunar-first');
       span.appendChild(lu);
     }
