@@ -181,7 +181,6 @@
   color: var(--text-muted);
   pointer-events: none;
 }
-#pc-left .cal-lunar.lunar-first { color: var(--text-secondary); font-weight: 600; }
 /* 음력 span은 날짜 span 안에 있으므로, 할일 점(span::after)이 음력에 또 찍히지 않게 차단 */
 #pc-left .cal-day span.cal-lunar::after { content: none !important; display: none !important; }
 
