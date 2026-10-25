@@ -640,7 +640,7 @@ function _openStorageDatePicker(storageId, isPc, onSelect, initialDate) {
     });
 
     const thisMonthBtn = document.createElement('button');
-    thisMonthBtn.textContent = '오늘';
+    thisMonthBtn.textContent = '이번 달';
     thisMonthBtn.style.cssText = 'font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-glow);border:1px solid var(--accent);cursor:pointer;padding:5px 10px;border-radius:12px;white-space:nowrap;flex-shrink:0;';
     thisMonthBtn.addEventListener('click', e => {
       e.stopPropagation();
