@@ -2,7 +2,8 @@
 // sync.js — 로컬캐시(IndexedDB) + 동기화 엔진
 // =============================================
 
-const IDB_NAME    = 'ddog-cache';
+// 업무 모드는 별도 로컬DB 사용 (할일·대기 큐 모두 일반과 완전 분리)
+const IDB_NAME    = (typeof APP_MODE !== 'undefined' && APP_MODE === 'work') ? 'ddog-cache-work' : 'ddog-cache';
 const IDB_VERSION = 1;
 const STORE_TODOS = 'todos';
 const STORE_QUEUE = 'pending_queue';
