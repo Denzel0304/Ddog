@@ -41,7 +41,8 @@ if (APP_MODE === 'work') document.body.classList.add('mode-work');   // (접속 
 //  - '업무' 탭: 일반 모드면 업무로 전환 / 업무 모드면 업무 할일 화면으로
 //  - 업무 모드에서 '할일': 일반 모드로 전환
 //  - 업무 모드에서 '주간'·'창고': 일반 모드로 전환 후 해당 탭 열기
-//  - 검색·설정은 그대로 (업무 모드에서도 사용)
+//  - 검색은 그대로 (업무 모드에서도 사용)
+//  - 설정: 할일/업무 화면에서만 열림 (주간·창고·검색에서는 안내 토스트)
 document.addEventListener('click', e => {
   const btn = e.target && e.target.closest ? e.target.closest('.nav-btn') : null;
   if (!btn) return;
@@ -50,6 +51,13 @@ document.addEventListener('click', e => {
     e.preventDefault(); e.stopPropagation();
     if (APP_MODE !== 'work') switchAppMode('work', { tab: 'todo' });
     else if (currentTab !== 'todo') switchTab('todo');
+    return;
+  }
+
+  // 설정: '할일'(일반) 또는 '업무' 화면에서만 열림 → 어느 쪽 설정(반복함·통계)인지 항상 명확
+  if (btn.dataset.tab === 'settings' && currentTab !== 'todo') {
+    e.preventDefault(); e.stopPropagation();
+    if (typeof showToast === 'function') showToast('할일 또는 업무 탭에서 설정을 열어주세요');
     return;
   }
 
