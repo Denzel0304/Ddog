@@ -6,14 +6,15 @@
 // =============================================
 
 // ── 업무 모드 표시 ──
-if (APP_MODE === 'work') document.body.classList.add('mode-work');
+if (APP_MODE === 'work') document.body.classList.add('mode-work');   // (접속 시엔 항상 일반이라 실제로는 해당 없음)
 
 (function injectWorkModeStyle() {
   const css = `
     /* 업무 모드: '할일' 대신 '업무' 탭을 활성 표시 */
-    body.mode-work #nav-todo.active { color: var(--text-muted); border-bottom-color: transparent; background: none; }
+    body.mode-work #nav-todo.active { color: var(--text-muted); border-bottom-color: transparent; background: none; box-shadow: none; }
     body.mode-work #nav-todo.active + #nav-work { color: var(--accent); }
     body.mode-work #nav-todo.active + #nav-work.pc-nav-btn { border-bottom-color: var(--accent); background: var(--accent-glow); }
+    body.mode-work #bottom-nav #nav-todo.active + #nav-work { background: var(--accent-glow); box-shadow: inset 0 2.5px 0 var(--accent); }
     /* 업무 모드에는 주간·창고가 없으므로 입력창의 주간/창고 체크 비활성화
        (style.css의 '#detail-section #flags-column > label#...' !important 규칙보다 우선하도록 선택자 강화) */
     body.mode-work #detail-section #flags-column > label#weekly-flag-label,
@@ -22,13 +23,6 @@ if (APP_MODE === 'work') document.body.classList.add('mode-work');
       pointer-events: none !important;
       user-select: none !important;
       cursor: not-allowed !important;
-    }
-    /* 날짜줄 '업무' 표시 */
-    body.mode-work #selected-date-label::before {
-      content: '업무'; display: inline-block; vertical-align: middle;
-      font-size: 11px; font-weight: 700; line-height: 1.5;
-      padding: 0 7px; margin-right: 6px; border-radius: 6px;
-      background: var(--accent); color: #1a1a2e;
     }
     /* 검색 결과 '업무' 표시 */
     .s-mode-badge {
@@ -148,6 +142,8 @@ function _openIdbByName(name) {
 // ── 모드 전환 (새로고침 없이 즉시) ──
 // target: 전환 후 열 곳 { tab: 'todo'|'weekly'|'storage', date?: 'YYYY-MM-DD' }
 let _modeSwitchChain = Promise.resolve();
+let _workTimedPopupShown = false;   // 업무 모드 시간 일정 팝업 표시 여부 (새로고침 전까지 유지)
+let _workTimedPopupBuilding = false;
 
 function switchAppMode(mode, target) {
   _modeSwitchChain = _modeSwitchChain
@@ -214,7 +210,6 @@ async function _doSwitchAppMode(mode, target) {
   AppState.editingTodo = null;
 
   document.body.classList.toggle('mode-work', mode === 'work');
-  try { sessionStorage.setItem('ddog_mode', mode); } catch (e) {}
 
   // 6) 화면 즉시 전환 (기기에 저장된 데이터로 바로 표시)
   _openTarget(target);
@@ -239,13 +234,25 @@ async function _doSwitchAppMode(mode, target) {
     }
   })();
 
-  // 9) 해당 모드 기준 '오늘의 시간 일정' 팝업
-  try {
-    const timed = await buildTimedTodosForPopup(fetchTimedTodosFromServer());
-    if (gen === _syncGen) showTimedTodosPopup(timed);
-  } catch (e) {
-    console.warn('[workmode] 시간 일정 팝업 실패', e);
-  }
+  // 9) '오늘의 시간 일정' 팝업: 업무 모드를 처음 열 때 한 번만
+  //    (일반 모드는 접속 시 app.js가 이미 표시. 이후 탭 이동에서는 표시 안 함, 새로고침하면 초기화)
+  //    기다리지 않고 따로 진행 → 팝업 준비 중에도 다른 탭으로 바로 이동 가능.
+  //    준비 중에 업무를 벗어나면 이번엔 띄우지 않고, 다음에 업무를 열 때 띄움
+  if (mode !== 'work' || _workTimedPopupShown || _workTimedPopupBuilding) return;
+  _workTimedPopupBuilding = true;
+  (async () => {
+    try {
+      const timed = await buildTimedTodosForPopup(fetchTimedTodosFromServer());
+      if (gen === _syncGen) {
+        _workTimedPopupShown = true;
+        showTimedTodosPopup(timed);
+      }
+    } catch (e) {
+      console.warn('[workmode] 시간 일정 팝업 실패', e);
+    } finally {
+      _workTimedPopupBuilding = false;
+    }
+  })();
 }
 
 // ── (호환용) 예전 방식의 전환 목적지 정리 — app.js bootApp에서 호출 ──

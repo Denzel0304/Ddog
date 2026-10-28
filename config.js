@@ -5,12 +5,9 @@
 const SUPABASE_URL  = 'https://rcfayyhlgxubuakxhrxy.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjZmF5eWhsZ3h1YnVha3hocnh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDQ4MjYsImV4cCI6MjA5MTQyMDgyNn0.j7YtqXfN0zxM-35RLGcjcw47uq83etMjJbHip4td4xg';
 // ── 모드(일반/업무) ──
-// 현재 창(탭)에서만 기억(sessionStorage) → 앱을 새로 열면 항상 일반 모드로 시작
+// 접속·새로고침 시 항상 일반 모드로 시작
 // (실행 중 전환은 workmode.js가 APP_MODE / TABLE_NAME 값을 바꿔서 처리)
-let APP_MODE = (function () {
-  try { return sessionStorage.getItem('ddog_mode') === 'work' ? 'work' : 'personal'; }
-  catch (e) { return 'personal'; }
-})();
+let APP_MODE = 'personal';
 let TABLE_NAME      = APP_MODE === 'work' ? 'ddog_work' : 'ddog';
 
 // Supabase REST 클라이언트
