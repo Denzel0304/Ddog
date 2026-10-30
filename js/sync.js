@@ -597,6 +597,9 @@ async function fullResync() {
 
 // ── 앱 시작 시 호출 ──
 
+// 앱 시작 시 bgSync 진행 상태 (bootApp에서 화면을 그리기 전에 최대 3초 기다림)
+let _bootSyncPromise = null;
+
 async function initSync() {
   await getIDB();
 
@@ -610,7 +613,7 @@ async function initSync() {
     // [수정 ②] bgSync 실패 시 콘솔 경고만 내고 조용히 넘어가던 것을
     //           실패해도 refreshCurrentTab/updateMonthDots는 반드시 호출되도록 보장
     if (AppState.isOnline) {
-      bgSync().catch(e => {
+      _bootSyncPromise = bgSync().catch(e => {
         console.warn('[sync] bg sync 실패', e);
         refreshCurrentTab();
         updateMonthDots();

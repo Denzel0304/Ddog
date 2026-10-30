@@ -36,6 +36,15 @@ async function bootApp() {
   initTabs();
   initTheme();
   initLightMode();
+  // ── 동기화 먼저: 스플래시가 떠 있는 동안 최신 데이터를 받은 뒤 화면/팝업 구성 ──
+  // (기기 데이터가 있을 때의 bgSync를 최대 3초까지 기다림. 초과/실패 시 기기 데이터로 진행,
+  //  동기화가 나중에 끝나면 기존처럼 화면이 자동 갱신됨)
+  if (_bootSyncPromise) {
+    await Promise.race([
+      _bootSyncPromise,
+      new Promise(r => setTimeout(r, 3000)),
+    ]);
+  }
   loadTodos();
   initBackButton();
   // 일반↔업무 전환 직후: 이동 목적지(탭/날짜)가 있으면 적용 (workmode.js)
@@ -68,7 +77,9 @@ async function fetchTimedTodosFromServer() {
   if (!AppState.isOnline) return null;
   const today = toLocalDateStr(new Date());
   try {
-    const path = `${TABLE_NAME}?date=eq.${today}&time_at=not.is.null&is_done=eq.false`;
+    // 미완료 시간 일정 + 오늘의 반복 예외 행(완료 포함)
+    // → 다른 기기에서 완료한 반복 일정도 팝업에서 제외되도록
+    const path = `${TABLE_NAME}?date=eq.${today}&or=(and(time_at.not.is.null,is_done.eq.false),repeat_exception.eq.true)`;
     return await Promise.race([
       sbFetch(path, { signal: _timeoutSignal(3000) }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000)),
