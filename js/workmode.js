@@ -160,14 +160,17 @@ function switchAppMode(mode, target) {
   return _modeSwitchChain;
 }
 
+// 반환: 화면 그리기 완료 시점 (없으면 null)
 function _openTarget(target) {
   const tab = (target && target.tab) || 'todo';
   if (tab === 'todo') {
-    switchTab('todo');
+    const rendered = switchTab('todo');
     if (target && target.date) selectDate(target.date);
+    return rendered;
   } else if (document.getElementById(`tab-${tab}`)) {
-    switchTab(tab);
+    return switchTab(tab);
   }
+  return null;
 }
 
 async function _doSwitchAppMode(mode, target) {
@@ -224,7 +227,7 @@ async function _doSwitchAppMode(mode, target) {
 
   // 업무 첫 클릭이 아니면: 기존처럼 화면부터 즉시 전환 (동기화는 그 뒤에 출발
   //  → 화면용 기기 데이터 읽기가 동기화용 읽기보다 먼저 처리되어 지연 없음)
-  if (!needTimedPopup) _openTarget(target);
+  const renderDone = needTimedPopup ? null : _openTarget(target);
 
   // 6) 백그라운드 최신화: 이 기기에서 처음 여는 모드면 전체 다운로드, 아니면 변경분만
   //    - 업무 첫 클릭(시간 일정 팝업이 뜨는 때)만 동기화 1단계까지 기다린 뒤 화면 전환 (최대 3초)
@@ -234,6 +237,9 @@ async function _doSwitchAppMode(mode, target) {
   const quickSync = new Promise(r => { _quickDone = r; });
   (async () => {
     try {
+      // 화면을 다 그린 뒤에 동기화 출발 (화면용 기기 데이터 읽기가 동기화의 큰 읽기 뒤로 밀리지 않게)
+      // 혹시 완료 신호가 없어도 최대 1.5초 뒤에는 출발
+      if (renderDone) await Promise.race([Promise.resolve(renderDone).catch(() => {}), _sleep(1500)]);
       const rows = await idbGetAll();
       if (gen !== _syncGen || !AppState.isOnline) return;
       if (rows.length === 0) {
