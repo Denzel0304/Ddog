@@ -219,6 +219,13 @@ async function _doSwitchAppMode(mode, target) {
 
   document.body.classList.toggle('mode-work', mode === 'work');
 
+  // 업무 모드를 처음 여는 때(시간 일정 팝업이 뜨는 때)인지
+  const needTimedPopup = mode === 'work' && !_workTimedPopupShown && !_workTimedPopupBuilding;
+
+  // 업무 첫 클릭이 아니면: 기존처럼 화면부터 즉시 전환 (동기화는 그 뒤에 출발
+  //  → 화면용 기기 데이터 읽기가 동기화용 읽기보다 먼저 처리되어 지연 없음)
+  if (!needTimedPopup) _openTarget(target);
+
   // 6) 백그라운드 최신화: 이 기기에서 처음 여는 모드면 전체 다운로드, 아니면 변경분만
   //    - 업무 첫 클릭(시간 일정 팝업이 뜨는 때)만 동기화 1단계까지 기다린 뒤 화면 전환 (최대 3초)
   //      → 팝업·첫 화면이 최신 데이터로 표시됨. 기다리는 동안 이전 화면 클릭 차단
@@ -248,7 +255,6 @@ async function _doSwitchAppMode(mode, target) {
   try { startRealtime(); } catch (e) {}
 
   // 팝업용 서버 조회는 동기화 대기와 동시에 미리 출발 (업무 모드를 처음 열 때만)
-  const needTimedPopup = mode === 'work' && !_workTimedPopupShown && !_workTimedPopupBuilding;
   const timedServerPromise = needTimedPopup ? fetchTimedTodosFromServer() : null;
 
   if (needTimedPopup) {
@@ -262,10 +268,9 @@ async function _doSwitchAppMode(mode, target) {
     } finally {
       blocker.remove();
     }
+    // 8) 업무 첫 클릭: 동기화 1단계 후 최신화된 데이터로 화면 전환
+    if (gen === _syncGen) _openTarget(target);
   }
-
-  // 8) 화면 전환 (업무 첫 클릭이면 최신화된 데이터로, 그 외엔 즉시)
-  if (gen === _syncGen) _openTarget(target);
 
   // 9) '오늘의 시간 일정' 팝업: 업무 모드를 처음 열 때 한 번만
   //    (일반 모드는 접속 시 app.js가 이미 표시. 이후 탭 이동에서는 표시 안 함, 새로고침하면 초기화)
