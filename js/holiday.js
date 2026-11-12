@@ -384,4 +384,8 @@ function openHolidayModal() {
 
   overlay.appendChild(box);
   document.body.appendChild(overlay);
+
+  // 바깥(어두운 배경) 클릭 시 닫기 (통계 모달 등과 동일)
+  // ※ 디자인 달력은 overlay 밖(body)에 따로 뜨므로, 달력 조작 클릭으로는 닫히지 않음
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeHolidayModal(); });
 }
