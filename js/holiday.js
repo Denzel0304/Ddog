@@ -195,6 +195,35 @@ function _hdShowWhenReady() {
   }, 300);
 }
 
+// ── 날짜 버튼 (앱 디자인 달력 연동) ──
+const _HD_DOW = ['일','월','화','수','목','금','토'];
+
+// 버튼 표시: "9월 24일 (목)" (연도 없이), 값은 data-value에 YYYY-MM-DD로 보관
+function _hdSetDateBtn(btn, v) {
+  if (_hdValidDate(v)) {
+    const d = new Date(v + 'T00:00:00');
+    btn.dataset.value = v;
+    btn.textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 (${_HD_DOW[d.getDay()]})`;
+    btn.style.color = 'var(--text-primary)';
+  } else {
+    btn.dataset.value = '';
+    btn.textContent = '날짜 선택';
+    btn.style.color = 'var(--text-muted)';
+  }
+}
+
+// PC: pcPickDate (index-pc.html) / 모바일: openCustomDatePicker (storage.js)
+// 값이 있으면 그 달부터 열고 강조, 없으면 이번 달부터 (강조 없음)
+function _hdPickDate(cur, onSelect) {
+  const init = _hdValidDate(cur) ? cur : null;
+  const isPcLayout = document.body.classList.contains('pc-layout');
+  if (isPcLayout && typeof pcPickDate === 'function') {
+    pcPickDate(null, false, init || toLocalDateStr(new Date()), onSelect, { backdrop: true, noHighlight: !init });
+  } else if (typeof openCustomDatePicker === 'function') {
+    openCustomDatePicker(onSelect, init);
+  }
+}
+
 // ── 모달 ──
 function closeHolidayModal() {
   const ov = document.getElementById('holiday-overlay');
@@ -209,7 +238,8 @@ function openHolidayModal() {
 
   const overlay = document.createElement('div');
   overlay.id = 'holiday-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.5);display:flex;' +
+  // z-index 550: 설정창(~202)보다 위, 앱 디자인 달력(PC 600 / 모바일 1000)보다 아래
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:550;background:rgba(0,0,0,0.5);display:flex;' +
     (isPC ? 'align-items:center;justify-content:center;' : 'align-items:flex-end;');
 
   const box = document.createElement('div');
@@ -225,7 +255,7 @@ function openHolidayModal() {
 
   const inputCss = `box-sizing:border-box;height:38px;padding:0 8px;border-radius:9px;border:1px solid var(--border-light);` +
     `background:var(--bg-surface);color:var(--text-primary);font-size:${fs};font-family:var(--font-ui);outline:none;min-width:0;`;
-  const dateW = isPC ? '150px' : '132px';
+  const dateW = isPC ? '130px' : '112px';
   const daysW = '44px';
   const delW  = '30px';
   const gap   = '6px';
@@ -233,7 +263,7 @@ function openHolidayModal() {
   box.innerHTML = `
     <style>
       #holiday-box .hd-in:focus { border-color: var(--accent) !important; }
-      #holiday-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); margin:0; padding:0; }
+      #holiday-box .hd-date { cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
       #holiday-box input[type="number"]::-webkit-inner-spin-button,
       #holiday-box input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
       #holiday-box input[type="number"] { -moz-appearance:textfield; text-align:center; }
@@ -267,13 +297,30 @@ function openHolidayModal() {
     row.className = 'hd-row';
     row.style.cssText = `display:flex;gap:${gap};align-items:center;`;
     row.innerHTML = `
-      <input type="date" class="hd-in hd-date" min="${year}-01-01" max="${year}-12-31" style="${inputCss}flex:0 0 ${dateW};width:${dateW};padding:0 6px;">
+      <button type="button" class="hd-in hd-date" style="${inputCss}flex:0 0 ${dateW};width:${dateW};padding:0 8px;"></button>
       <input type="text" class="hd-in hd-name" placeholder="예: 추석" maxlength="20" autocomplete="off" style="${inputCss}flex:1;width:0;">
       <input type="number" class="hd-in hd-days" placeholder="1" min="1" max="${HOLIDAY_MAX_DAYS}" inputmode="numeric" style="${inputCss}flex:0 0 ${daysW};width:${daysW};padding:0 2px;">
       <button type="button" class="hd-del" title="삭제">✕</button>
     `;
+    const dateBtn = row.querySelector('.hd-date');
+    _hdSetDateBtn(dateBtn, item && item.date ? item.date : '');
+    dateBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      // 키보드가 올라와 있으면 내림 (달력 가림 방지)
+      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (_) {}
+      const cur = dateBtn.dataset.value || '';
+      _hdPickDate(cur, picked => {
+        if (!picked.startsWith(year + '-')) {
+          msgEl.textContent = `${year}년 날짜만 선택할 수 있어요.`;
+          return;
+        }
+        msgEl.textContent = '';
+        dateBtn.style.borderColor = '';
+        _hdSetDateBtn(dateBtn, picked);
+      });
+    });
     if (item) {
-      row.querySelector('.hd-date').value = item.date || '';
       row.querySelector('.hd-name').value = item.name || '';
       const n = _hdClampDays(item.days);
       row.querySelector('.hd-days').value = n > 1 ? n : '';
@@ -284,8 +331,8 @@ function openHolidayModal() {
     });
     rowsEl.appendChild(row);
     if (focus) {
+      // 새 줄로 스크롤만 (모바일에서 키보드가 바로 올라오지 않도록 포커스는 주지 않음)
       rowsEl.scrollTop = rowsEl.scrollHeight;
-      setTimeout(() => row.querySelector('.hd-date').focus(), 50);
     }
   }
 
@@ -303,7 +350,7 @@ function openHolidayModal() {
     const items = [];
     let bad = false;
     rowsEl.querySelectorAll('.hd-row').forEach(r => {
-      const date = r.querySelector('.hd-date').value.trim();
+      const date = (r.querySelector('.hd-date').dataset.value || '').trim();
       const name = r.querySelector('.hd-name').value.trim();
       const daysRaw = r.querySelector('.hd-days').value.trim();
       r.querySelector('.hd-date').style.borderColor = '';
