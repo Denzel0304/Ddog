@@ -111,7 +111,7 @@ function _unlockAudio() {
   } catch (e) {}
 
   _loadBuffer().then(() => {
-    if (_pendingPlay) { _pendingPlay = false; _playSfx(); }
+    if (_pendingPlay) { _pendingPlay = false; playCompleteSound(); }
   }).catch(() => {});
 
   if (ctx.state === 'running') _removeUnlock();
@@ -131,15 +131,8 @@ _loadBuffer().catch(() => {});
 
 // =============================================
 // 공개 API — 기존 호출부 그대로 사용 가능
-// 할일 완료 시: 효과음 + 폭죽 (폭죽은 화면 터치를 통과시키는 캔버스에만 그려서 다른 동작에 영향 없음)
 // =============================================
 function playCompleteSound() {
-  _playSfx();
-  try { Fireworks.play('small', 4000); } catch (e) { /* 연출 실패는 무시 */ }
-}
-
-// ── 효과음 재생 (기존 playCompleteSound 내용 그대로) ──
-function _playSfx() {
   const ctx = _getCtx();
 
   // Web Audio 자체가 불가능한 환경 → 구형 방식으로 폴백
@@ -151,7 +144,7 @@ function _playSfx() {
     // 아직 디코딩 전이면, 끝나는 대로 한 번 재생
     _pendingPlay = true;
     _loadBuffer().then(() => {
-      if (_pendingPlay) { _pendingPlay = false; _playSfx(); }
+      if (_pendingPlay) { _pendingPlay = false; playCompleteSound(); }
     }).catch(() => { _pendingPlay = false; _fallbackPlay(); });
     return;
   }
@@ -183,136 +176,3 @@ function _fallbackPlay() {
     _fallbackEl.play().catch(() => {});
   } catch (e) {}
 }
-
-// =============================================
-/* ---------- 폭죽 엔진 (학원 앱과 같은 코드) ----------
-   화면 맨 위에 클릭을 통과시키는 캔버스 하나만 잠깐 붙였다가 지운다 (pointer-events:none)
-   → 터지는 동안에도 클릭·입력·화면 전환 등 다른 작업은 그대로 동시에 된다.
-   그리기는 requestAnimationFrame 한 줄기로만 돌고, 화면 밖으로 나간 조각은 바로 지워서 가볍게 유지한다.
-   play(kind, ms, colors) — kind 'big'(근무시간 종료) | 'small'(할일 완료). 이미 터지는 중이면 조각을 더하고 시간을 늘린다.
-   stop() — 바로 끔 */
-const Fireworks = {
-  COLORS: ['#F0A202', '#F7B733', '#FFFDF6', '#E8730A', '#FF9F6B'],
-  cv: null, ctx: null, parts: [], queue: [], until: 0, fade: 600, raf: 0, last: 0, t0: 0, w: 0, h: 0, dpr: 1,
-
-  reduced() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); },
-  canvas() {
-    if (this.cv) return;
-    const cv = this.cv = document.createElement('canvas');
-    cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999';
-    cv.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(cv);
-    this.w = window.innerWidth; this.h = window.innerHeight; this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    cv.width = this.w * this.dpr; cv.height = this.h * this.dpr;
-    this.ctx = cv.getContext('2d');
-    this.parts = []; this.queue = [];
-  },
-  rnd(a, b) { return a + Math.random() * (b - a); },
-
-  /* 조각 만들기 */
-  // 양옆 아래에서 안쪽 위로 쏘는 축포 (화면 가운데까지 닿게)
-  cannon(n, cols) {
-    const { w, h } = this, up = Math.max(0.75, Math.min(1.3, h / 850));
-    for (let i = 0; i < n; i++) {
-      const L = i % 2 === 0;
-      this.parts.push({ t: 'c', x: L ? -10 : w + 10, y: h * this.rnd(0.72, 0.95), vx: (L ? 1 : -1) * this.rnd(5, 15) * Math.max(0.8, w / 1400),
-        vy: -this.rnd(13, 25) * up, g: 0.34, d: 0.99, s: this.rnd(6, 12), r: Math.random() * 6.3, vr: this.rnd(-0.35, 0.35), c: cols[i % cols.length] });
-    }
-  },
-  // 화면 가운데 · 위쪽에서 둥글게 퍼지는 불꽃 (불티 + 색종이)
-  burst(n, cols) {
-    const { w, h } = this;
-    const cx = w * this.rnd(0.22, 0.78), cy = h * this.rnd(0.18, 0.5), sp = Math.max(0.8, Math.min(1.4, Math.min(w, h) / 750));
-    const c0 = cols[Math.floor(Math.random() * cols.length)];
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, v = this.rnd(2.5, 10) * sp;
-      this.parts.push({ t: 's', x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 0.07, d: 0.955, s: this.rnd(2, 3.8),
-        life: this.rnd(900, 1700), age: 0, c: i % 3 ? c0 : cols[i % cols.length] });
-    }
-    for (let i = 0; i < Math.round(n / 4); i++) {
-      const a = Math.random() * Math.PI * 2, v = this.rnd(3, 9) * sp;
-      this.parts.push({ t: 'c', x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, g: 0.18, d: 0.97, s: this.rnd(6, 11),
-        r: Math.random() * 6.3, vr: this.rnd(-0.35, 0.35), c: cols[i % cols.length] });
-    }
-  },
-  // 위에서 화면 전체로 천천히 내려오는 색종이
-  rain(n, cols) {
-    for (let i = 0; i < n; i++) {
-      this.parts.push({ t: 'r', x: Math.random() * this.w, y: -this.rnd(10, 60), vx: 0, vy: this.rnd(1.6, 3.6), ph: Math.random() * 6.3,
-        s: this.rnd(6, 11), r: Math.random() * 6.3, vr: this.rnd(-0.12, 0.12), c: cols[i % cols.length] });
-    }
-  },
-
-  // 시간표대로 조각 넣기 (setTimeout 없이 그리기 줄기 안에서 처리)
-  plan(kind, cols) {
-    const k = this.w < 600 ? 0.6 : 1, N = (x) => Math.max(1, Math.round(x * k)), at = (ms, fn) => this.queue.push({ at: this.t + ms, fn });
-    if (kind === 'big') {
-      at(0, () => this.cannon(N(240), cols));
-      at(300, () => this.cannon(N(200), cols));
-      [200, 800, 1400, 2000, 2700, 3400].forEach(ms => at(ms, () => this.burst(N(110), cols)));
-      for (let ms = 1500; ms <= 4500; ms += 300) at(ms, () => this.rain(N(30), cols));
-    } else {
-      at(0, () => this.cannon(N(140), cols));
-      [100, 550, 1050].forEach(ms => at(ms, () => this.burst(N(70), cols)));
-      for (let ms = 900; ms <= 2100; ms += 300) at(ms, () => this.rain(N(16), cols));
-    }
-  },
-
-  play(kind, ms, colors) {
-    try {
-      if (this.reduced()) return;
-      this.canvas();
-      const now = performance.now();
-      if (!this.raf) { this.t0 = now; this.t = 0; this.last = now; }
-      this.plan(kind, colors && colors.length ? colors : this.COLORS);
-      this.until = Math.max(this.until, now + ms);
-      this.fade = kind === 'big' ? 900 : 600;
-      if (!this.raf) this.raf = requestAnimationFrame(() => this.step());
-    } catch (e) { /* 연출 실패는 무시 */ }
-  },
-  stop() {
-    cancelAnimationFrame(this.raf);
-    this.raf = 0; this.until = 0; this.parts = []; this.queue = [];
-    if (this.cv) { this.cv.remove(); this.cv = null; this.ctx = null; }
-  },
-  step() {
-    const now = performance.now();
-    const left = this.until - now;
-    if (left <= 0 || !this.cv) { this.stop(); return; }
-    const dt = Math.min(3, (now - this.last) / 16.67);        // 화면 주사율과 상관없이 같은 속도
-    this.last = now; this.t = now - this.t0;
-    if (this.queue.length) {
-      const due = this.queue.filter(q => q.at <= this.t);
-      if (due.length) { this.queue = this.queue.filter(q => q.at > this.t); due.forEach(q => q.fn()); }
-    }
-    const { ctx, w, h, dpr } = this;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-    const base = Math.min(1, left / this.fade);              // 끝날 때 서서히 흐려짐
-    const keep = [];
-    for (const q of this.parts) {
-      if (q.t === 'r') { q.x += Math.sin(this.t / 400 + q.ph) * 0.9 * dt; q.y += q.vy * dt; }
-      else { q.vy += q.g * dt; const dd = Math.pow(q.d, dt); q.vx *= dd; q.vy *= dd; q.x += q.vx * dt; q.y += q.vy * dt; }
-      if (q.y > h + 40 || q.x < -60 || q.x > w + 60) continue;
-      if (q.t === 's') {
-        q.age += 16.67 * dt;
-        if (q.age >= q.life) continue;
-        ctx.globalAlpha = base * (1 - q.age / q.life);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.fillStyle = q.c;
-        ctx.beginPath(); ctx.arc(q.x, q.y, q.s, 0, 6.283); ctx.fill();
-      } else {
-        q.r += q.vr * dt;
-        ctx.globalAlpha = base;
-        const c = Math.cos(q.r), s = Math.sin(q.r);
-        ctx.setTransform(c * dpr, s * dpr, -s * dpr, c * dpr, q.x * dpr, q.y * dpr);
-        ctx.fillStyle = q.c;
-        ctx.fillRect(-q.s / 2, -q.s / 4, q.s, q.s / 2);
-      }
-      keep.push(q);
-    }
-    this.parts = keep;
-    ctx.globalAlpha = 1;
-    this.raf = requestAnimationFrame(() => this.step());
-  },
-};
