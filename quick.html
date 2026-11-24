@@ -377,6 +377,14 @@ function qSaveTemplates(list) {
   localStorage.setItem(Q_TPL_KEY, JSON.stringify(list));
 }
 
+// 표시 순서: 중요도 높음 → 보통 → 낮음 → 없음, 같은 중요도 안에서는 저장된 순서
+function qSortedTemplates() {
+  return qLoadTemplates()
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => ((b.t.importance || 0) - (a.t.importance || 0)) || (a.i - b.i))
+    .map(x => x.t);
+}
+
 // ─────────────────────────────────────────────
 // 메인 화면 (템플릿 목록)
 // ─────────────────────────────────────────────
@@ -384,7 +392,7 @@ let _qEditing = false;   // 편집 모드
 
 function qRenderGrid() {
   const grid = document.getElementById('q-grid');
-  const list = qLoadTemplates();
+  const list = qSortedTemplates();
   grid.innerHTML = '';
 
   if (!list.length) {
@@ -401,6 +409,7 @@ function qRenderGrid() {
     const card = document.createElement('button');
     card.className = 'q-card imp-' + (tpl.importance || 0);
     card.dataset.tplid = tpl.id;
+    card.dataset.imp = String(tpl.importance || 0);
 
     const title = document.createElement('div');
     title.className = 'q-card-title';
@@ -441,12 +450,26 @@ function qRenderGrid() {
 }
 
 // ─── 템플릿 드래그 정렬 (똑비서 체크리스트 드래그 방식 재활용) ───
+// 같은 중요도 범위 안에서만 이동 가능 (끌고 있는 카드가 범위 밖으로 나가지 않음)
 function qInitCardDrag(handle, container, tplId) {
-  let startY = 0, isDragging = false, cloneEl = null, origRect = null, srcCard = null;
+  let startY = 0, isDragging = false, cloneEl = null, origRect = null, srcCard = null, lastY = 0;
 
   const getCard = () => container.querySelector(`[data-tplid="${tplId}"]`);
-  const otherCards = () => [...container.querySelectorAll('.q-card:not(.q-dragging)')];
-  const clearMarks = () => otherCards().forEach(c => c.classList.remove('q-drag-over-top', 'q-drag-over-bottom'));
+  const groupCards = () => [...container.querySelectorAll(`.q-card[data-imp="${srcCard.dataset.imp}"]`)];
+  const otherCards = () => groupCards().filter(c => c !== srcCard);
+  const clearMarks = () => container.querySelectorAll('.q-drag-over-top, .q-drag-over-bottom')
+    .forEach(c => c.classList.remove('q-drag-over-top', 'q-drag-over-bottom'));
+
+  // 끌고 있는 카드의 위치를 같은 중요도 범위 안으로 제한 → 카드 중심 Y 반환
+  const clampedCenter = (clientY) => {
+    const g = groupCards();
+    const top    = g[0].getBoundingClientRect().top;
+    const bottom = g[g.length - 1].getBoundingClientRect().bottom;
+    let cardTop = origRect.top + (clientY - startY);
+    cardTop = Math.max(top, Math.min(cardTop, bottom - origRect.height));
+    if (cloneEl) cloneEl.style.top = cardTop + 'px';
+    return cardTop + origRect.height / 2;
+  };
 
   const onStart = (clientY) => { startY = clientY; srcCard = getCard(); };
 
@@ -462,16 +485,17 @@ function qInitCardDrag(handle, container, tplId) {
       document.body.appendChild(cloneEl);
       srcCard.classList.add('q-dragging');
     }
-    cloneEl.style.top = (origRect.top + (clientY - startY)) + 'px';
+    const y = clampedCenter(clientY);
+    lastY = y;
 
     clearMarks();
     const target = otherCards().find(c => {
       const r = c.getBoundingClientRect();
-      return clientY >= r.top && clientY <= r.bottom;
+      return y >= r.top && y <= r.bottom;
     });
     if (target) {
       const r = target.getBoundingClientRect();
-      target.classList.add(clientY < r.top + r.height / 2 ? 'q-drag-over-top' : 'q-drag-over-bottom');
+      target.classList.add(y < r.top + r.height / 2 ? 'q-drag-over-top' : 'q-drag-over-bottom');
     }
 
     // 목록 위/아래 끝으로 끌면 자동 스크롤
@@ -480,27 +504,40 @@ function qInitCardDrag(handle, container, tplId) {
     else if (clientY > window.innerHeight - 70) app.scrollTop += 8;
   };
 
-  const onEnd = (clientY) => {
+  const onEnd = () => {
     if (!srcCard) return;
     if (!isDragging) { srcCard = null; return; }
     isDragging = false;
     if (cloneEl) { cloneEl.remove(); cloneEl = null; }
-    srcCard.classList.remove('q-dragging');
     clearMarks();
 
-    const cards = otherCards().filter(c => c !== srcCard);
+    // 같은 중요도 안에서 놓인 위치 계산
+    // (범위 끝에 닿으면 카드 중심이 이웃 카드 중심과 같아지므로, 움직인 방향으로 판정)
+    const movedDown = lastY > origRect.top + origRect.height / 2;
     let dropBeforeId = null;
-    for (const c of cards) {
+    for (const c of otherCards()) {
       const r = c.getBoundingClientRect();
-      if (clientY < r.top + r.height / 2) { dropBeforeId = c.dataset.tplid; break; }
+      const mid = r.top + r.height / 2;
+      if (movedDown ? lastY < mid : lastY <= mid) { dropBeforeId = c.dataset.tplid; break; }
     }
+    srcCard.classList.remove('q-dragging');
 
-    const list = qLoadTemplates();
+    // 화면 순서(중요도 정렬)대로 저장하면서, 같은 중요도 묶음 안에서만 위치 이동
+    const list = qSortedTemplates();
     const srcIdx = list.findIndex(t => t.id === tplId);
     if (srcIdx !== -1) {
       const [item] = list.splice(srcIdx, 1);
-      const to = dropBeforeId === null ? list.length : list.findIndex(t => t.id === dropBeforeId);
-      list.splice(to === -1 ? list.length : to, 0, item);
+      let to;
+      if (dropBeforeId !== null) {
+        to = list.findIndex(t => t.id === dropBeforeId);
+      } else {
+        // 묶음의 맨 끝 = 같은 중요도의 마지막 카드 바로 뒤
+        const imp = item.importance || 0;
+        let lastIdx = -1;
+        list.forEach((t, i) => { if ((t.importance || 0) === imp) lastIdx = i; });
+        to = lastIdx === -1 ? srcIdx : lastIdx + 1;
+      }
+      list.splice(to === -1 ? srcIdx : to, 0, item);
       qSaveTemplates(list);
     }
     srcCard = null;
@@ -515,7 +552,7 @@ function qInitCardDrag(handle, container, tplId) {
       document.removeEventListener('touchmove', mv);
       document.removeEventListener('touchend', en);
       document.removeEventListener('touchcancel', en);
-      onEnd(ev.changedTouches[0].clientY);
+      onEnd();
     };
     document.addEventListener('touchmove', mv, { passive: false });
     document.addEventListener('touchend', en, { passive: true });
@@ -531,7 +568,7 @@ function qInitCardDrag(handle, container, tplId) {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', en);
       document.body.style.userSelect = '';
-      onEnd(ev.clientY);
+      onEnd();
     };
     document.addEventListener('mousemove', mv);
     document.addEventListener('mouseup', en);
@@ -675,7 +712,13 @@ async function qHandleSave() {
       checklist:  v.validItems.map(it => ({ id: it.id, text: it.text.trim(), checked: false })),
     };
     const idx = list.findIndex(t => t.id === tpl.id);
-    if (idx !== -1) list[idx] = tpl; else list.push(tpl);
+    if (idx !== -1 && (list[idx].importance || 0) === (tpl.importance || 0)) {
+      list[idx] = tpl;
+    } else {
+      // 새 템플릿 또는 중요도 변경 → 해당 중요도 묶음의 맨 끝에 표시되도록 뒤로 이동
+      if (idx !== -1) list.splice(idx, 1);
+      list.push(tpl);
+    }
     qSaveTemplates(list);
     qCloseSheet();
     qRenderGrid();
