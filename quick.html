@@ -62,6 +62,12 @@
       border: 1px solid var(--border-light); color: var(--text-secondary);
     }
     #q-edit-toggle.active { background: var(--accent); border-color: var(--accent); color: #1a1a2e; font-weight: 600; }
+    #q-header-btns { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    #q-add-tpl {
+      display: none; padding: 7px 12px; border-radius: 20px; font-size: 13px;
+      border: 1px solid var(--accent); color: var(--accent);
+    }
+    #q-app.editing #q-add-tpl { display: block; }
 
     #q-direct {
       width: 100%; padding: 15px; margin-bottom: 16px;
@@ -93,19 +99,21 @@
       font-size: 11px; color: var(--text-secondary);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .q-card-move { display: none; position: absolute; top: 4px; right: 4px; gap: 2px; }
-    #q-app.editing .q-card-move { display: flex; }
-    #q-app.editing .q-card { padding-right: 58px; border-style: dashed; border-left-style: solid; }
-    .q-move-btn {
-      width: 26px; height: 26px; border-radius: 50%; font-size: 12px;
-      background: var(--bg-hover); color: var(--text-secondary);
-      display: flex; align-items: center; justify-content: center;
+    /* 편집 모드: 1열 목록 + 오른쪽 드래그 핸들(가로 3선, 체크리스트와 동일) */
+    #q-app.editing #q-grid { grid-template-columns: 1fr; gap: 8px; }
+    #q-app.editing .q-card { min-height: 60px; padding-right: 56px; border-style: dashed; border-left-style: solid; }
+    #q-app.editing .q-card:active { transform: none; }
+    .q-card-handle {
+      display: none; position: absolute; top: 0; right: 0; bottom: 0; width: 52px;
+      align-items: center; justify-content: center;
+      color: var(--text-muted); cursor: grab; touch-action: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     }
-    .q-move-btn:disabled { opacity: 0.3; }
-    .q-card.q-add-card {
-      border: 1.5px dashed var(--border-light); border-left-width: 1.5px;
-      align-items: center; color: var(--text-secondary); font-size: 14px;
-    }
+    #q-app.editing .q-card-handle { display: flex; }
+    .q-card.q-dragging { opacity: 0.3; }
+    .q-card.q-drag-over-top    { box-shadow: 0 -3px 0 var(--accent); }
+    .q-card.q-drag-over-bottom { box-shadow: 0 3px 0 var(--accent); }
+    .q-drag-clone { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
     #q-empty {
       grid-column: 1 / -1; text-align: center; color: var(--text-muted);
       font-size: 13px; line-height: 1.7; padding: 30px 0;
@@ -195,7 +203,10 @@
       <div id="q-header-title">⚡ 빠른 똑비서</div>
       <div id="q-header-sub"></div>
     </div>
-    <button id="q-edit-toggle">편집</button>
+    <div id="q-header-btns">
+      <button id="q-add-tpl">＋ 새 템플릿</button>
+      <button id="q-edit-toggle">템플릿 편집</button>
+    </div>
   </div>
   <button id="q-direct">✏️ 직접 입력</button>
   <div id="q-grid"></div>
@@ -376,17 +387,20 @@ function qRenderGrid() {
   const list = qLoadTemplates();
   grid.innerHTML = '';
 
-  if (!list.length && !_qEditing) {
+  if (!list.length) {
     const empty = document.createElement('div');
     empty.id = 'q-empty';
-    empty.innerHTML = '등록된 템플릿이 없어요.<br>오른쪽 위 [편집]에서 추가해 보세요.';
+    empty.innerHTML = _qEditing
+      ? '오른쪽 위 [＋ 새 템플릿]으로 추가해 보세요.'
+      : '등록된 템플릿이 없어요.<br>오른쪽 위 [템플릿 편집]에서 추가해 보세요.';
     grid.appendChild(empty);
     return;
   }
 
-  list.forEach((tpl, idx) => {
+  list.forEach(tpl => {
     const card = document.createElement('button');
     card.className = 'q-card imp-' + (tpl.importance || 0);
+    card.dataset.tplid = tpl.id;
 
     const title = document.createElement('div');
     title.className = 'q-card-title';
@@ -410,19 +424,13 @@ function qRenderGrid() {
       card.appendChild(memo);
     }
 
-    // 편집 모드: 순서 이동 버튼
-    const move = document.createElement('div');
-    move.className = 'q-card-move';
-    const up = document.createElement('span');
-    up.className = 'q-move-btn'; up.textContent = '▲';
-    const down = document.createElement('span');
-    down.className = 'q-move-btn'; down.textContent = '▼';
-    if (idx === 0) up.style.opacity = '0.3';
-    if (idx === list.length - 1) down.style.opacity = '0.3';
-    up.addEventListener('click', e => { e.stopPropagation(); qMoveTemplate(idx, -1); });
-    down.addEventListener('click', e => { e.stopPropagation(); qMoveTemplate(idx, 1); });
-    move.appendChild(up); move.appendChild(down);
-    card.appendChild(move);
+    // 편집 모드: 드래그 핸들 (똑비서 체크리스트와 같은 가로 3선)
+    const handle = document.createElement('span');
+    handle.className = 'q-card-handle';
+    handle.innerHTML = '<svg viewBox="0 0 24 14" width="20" height="13" fill="currentColor"><rect y="0" width="24" height="2.5" rx="1.2"/><rect y="5.5" width="24" height="2.5" rx="1.2"/><rect y="11" width="24" height="2.5" rx="1.2"/></svg>';
+    handle.addEventListener('click', e => e.stopPropagation());
+    card.appendChild(handle);
+    qInitCardDrag(handle, grid, tpl.id);
 
     card.addEventListener('click', () => {
       if (_qEditing) qOpenSheet('tpl-edit', tpl);
@@ -430,30 +438,111 @@ function qRenderGrid() {
     });
     grid.appendChild(card);
   });
-
-  if (_qEditing) {
-    const add = document.createElement('button');
-    add.className = 'q-card q-add-card';
-    add.textContent = '＋ 새 템플릿';
-    add.addEventListener('click', () => qOpenSheet('tpl-new', null));
-    grid.appendChild(add);
-  }
 }
 
-function qMoveTemplate(idx, dir) {
-  const list = qLoadTemplates();
-  const to = idx + dir;
-  if (to < 0 || to >= list.length) return;
-  [list[idx], list[to]] = [list[to], list[idx]];
-  qSaveTemplates(list);
-  qRenderGrid();
+// ─── 템플릿 드래그 정렬 (똑비서 체크리스트 드래그 방식 재활용) ───
+function qInitCardDrag(handle, container, tplId) {
+  let startY = 0, isDragging = false, cloneEl = null, origRect = null, srcCard = null;
+
+  const getCard = () => container.querySelector(`[data-tplid="${tplId}"]`);
+  const otherCards = () => [...container.querySelectorAll('.q-card:not(.q-dragging)')];
+  const clearMarks = () => otherCards().forEach(c => c.classList.remove('q-drag-over-top', 'q-drag-over-bottom'));
+
+  const onStart = (clientY) => { startY = clientY; srcCard = getCard(); };
+
+  const onMove = (clientY) => {
+    if (!srcCard) return;
+    if (!isDragging) {
+      if (Math.abs(clientY - startY) <= 6) return;
+      isDragging = true;
+      origRect = srcCard.getBoundingClientRect();
+      cloneEl = srcCard.cloneNode(true);
+      cloneEl.classList.add('q-drag-clone');
+      cloneEl.style.cssText = `position:fixed;left:${origRect.left}px;top:${origRect.top}px;width:${origRect.width}px;height:${origRect.height}px;z-index:9999;pointer-events:none;opacity:0.9;margin:0;`;
+      document.body.appendChild(cloneEl);
+      srcCard.classList.add('q-dragging');
+    }
+    cloneEl.style.top = (origRect.top + (clientY - startY)) + 'px';
+
+    clearMarks();
+    const target = otherCards().find(c => {
+      const r = c.getBoundingClientRect();
+      return clientY >= r.top && clientY <= r.bottom;
+    });
+    if (target) {
+      const r = target.getBoundingClientRect();
+      target.classList.add(clientY < r.top + r.height / 2 ? 'q-drag-over-top' : 'q-drag-over-bottom');
+    }
+
+    // 목록 위/아래 끝으로 끌면 자동 스크롤
+    const app = document.getElementById('q-app');
+    if (clientY < 70) app.scrollTop -= 8;
+    else if (clientY > window.innerHeight - 70) app.scrollTop += 8;
+  };
+
+  const onEnd = (clientY) => {
+    if (!srcCard) return;
+    if (!isDragging) { srcCard = null; return; }
+    isDragging = false;
+    if (cloneEl) { cloneEl.remove(); cloneEl = null; }
+    srcCard.classList.remove('q-dragging');
+    clearMarks();
+
+    const cards = otherCards().filter(c => c !== srcCard);
+    let dropBeforeId = null;
+    for (const c of cards) {
+      const r = c.getBoundingClientRect();
+      if (clientY < r.top + r.height / 2) { dropBeforeId = c.dataset.tplid; break; }
+    }
+
+    const list = qLoadTemplates();
+    const srcIdx = list.findIndex(t => t.id === tplId);
+    if (srcIdx !== -1) {
+      const [item] = list.splice(srcIdx, 1);
+      const to = dropBeforeId === null ? list.length : list.findIndex(t => t.id === dropBeforeId);
+      list.splice(to === -1 ? list.length : to, 0, item);
+      qSaveTemplates(list);
+    }
+    srcCard = null;
+    qRenderGrid();
+  };
+
+  handle.addEventListener('touchstart', e => {
+    e.preventDefault();
+    onStart(e.touches[0].clientY);
+    const mv = ev => { ev.preventDefault(); onMove(ev.touches[0].clientY); };
+    const en = ev => {
+      document.removeEventListener('touchmove', mv);
+      document.removeEventListener('touchend', en);
+      document.removeEventListener('touchcancel', en);
+      onEnd(ev.changedTouches[0].clientY);
+    };
+    document.addEventListener('touchmove', mv, { passive: false });
+    document.addEventListener('touchend', en, { passive: true });
+    document.addEventListener('touchcancel', en, { passive: true });
+  }, { passive: false });
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    onStart(e.clientY);
+    document.body.style.userSelect = 'none';
+    const mv = ev => onMove(ev.clientY);
+    const en = ev => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', en);
+      document.body.style.userSelect = '';
+      onEnd(ev.clientY);
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', en);
+  });
 }
 
 function qSetEditing(on) {
   _qEditing = on;
   document.getElementById('q-app').classList.toggle('editing', on);
   const btn = document.getElementById('q-edit-toggle');
-  btn.textContent = on ? '완료' : '편집';
+  btn.textContent = on ? '완료' : '템플릿 편집';
   btn.classList.toggle('active', on);
   document.getElementById('q-direct').style.display = on ? 'none' : '';
   qRenderGrid();
@@ -692,6 +781,7 @@ function qHasOpenPopup() {
   if (!document.getElementById('time-overlay').classList.contains('hidden')) return true;
   if (!document.getElementById('checklist-overlay').classList.contains('hidden')) return true;
   if (!document.getElementById('modal-overlay').classList.contains('hidden')) return true;
+  if (_qEditing) return true;   // 템플릿 편집 화면 → 뒤로가기 시 첫 화면으로
   return false;
 }
 
@@ -706,6 +796,7 @@ function qCloseTopPopup() {
   if (!document.getElementById('time-overlay').classList.contains('hidden'))      { closeTimeModal(false); return; }
   if (!document.getElementById('checklist-overlay').classList.contains('hidden')) { closeChecklistModal(false); return; }
   if (!document.getElementById('modal-overlay').classList.contains('hidden'))     { qCloseSheet(); return; }
+  if (_qEditing) { qSetEditing(false); return; }
 }
 
 // 창이 열리고 닫힐 때마다 보호 칸 상태를 맞춤
@@ -814,6 +905,7 @@ function qInit() {
   // 메인 화면
   document.getElementById('q-direct').addEventListener('click', () => qOpenSheet('add', null));
   document.getElementById('q-edit-toggle').addEventListener('click', () => qSetEditing(!_qEditing));
+  document.getElementById('q-add-tpl').addEventListener('click', () => qOpenSheet('tpl-new', null));
   qUpdateHeaderSub();
   qRenderGrid();
   qInitBackButton();
