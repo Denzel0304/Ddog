@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>똑비서 빠른 추가</title>
+  <link rel="icon" href="favicon.png" />
+  <!-- 똑비서와 같은 스타일시트(같은 ?v=) → 브라우저 캐시 공유 -->
+  <link rel="stylesheet" href="css/style.css?v=20261028a" />
+  <!-- 글꼴은 화면 표시를 막지 않도록 비동기 로드 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@300;400;500&display=swap" />
+  <style>
+    /* ── 로그인 화면 (index.html과 동일) ── */
+    #login-screen {
+      position: fixed; inset: 0; background: #16181d;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9998;
+    }
+    #login-box {
+      width: 100%; max-width: 340px; padding: 40px 28px 36px;
+      background: #1e2028; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    #login-logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 8px; }
+    #login-logo { width: 160px; height: 160px; background: transparent; border-radius: 12px; }
+    #login-title { font-size: 20px; font-weight: 700; color: #e0e0e0; letter-spacing: 1px; }
+    #login-box input {
+      width: 100%; padding: 13px 16px; border-radius: 10px; border: 1.5px solid #2e3240;
+      background: #16181d; color: #e0e0e0; font-size: 15px; outline: none; box-sizing: border-box;
+      transition: border-color 0.2s; font-family: 'Noto Sans KR', sans-serif;
+    }
+    #login-box input:focus { border-color: #7c6ef5; }
+    #login-btn {
+      width: 100%; padding: 13px; border-radius: 10px; border: none; background: #7c6ef5; color: #fff;
+      font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 8px; transition: background 0.2s;
+      font-family: 'Noto Sans KR', sans-serif; margin-top: 4px;
+    }
+    #login-btn:active { background: #5a4abf; }
+    #login-btn:disabled { background: #2e3240; cursor: not-allowed; }
+    #login-error { color: #e05c6a; font-size: 13px; text-align: center; min-height: 16px; line-height: 1.4; }
+    #login-spinner {
+      display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 빠른 추가 메인 화면 ── */
+    #q-app {
+      height: 100dvh; max-width: 480px; margin: 0 auto;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 18px 16px 120px;
+    }
+    #q-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    #q-header-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    #q-header-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    #q-edit-toggle {
+      padding: 7px 14px; border-radius: 20px; font-size: 13px;
+      border: 1px solid var(--border-light); color: var(--text-secondary);
+    }
+    #q-edit-toggle.active { background: var(--accent); border-color: var(--accent); color: #1a1a2e; font-weight: 600; }
+
+    #q-direct {
+      width: 100%; padding: 15px; margin-bottom: 16px;
+      border-radius: var(--radius); border: 1.5px dashed var(--accent);
+      background: var(--accent-glow); color: var(--accent);
+      font-size: 15px; font-weight: 600;
+    }
+    #q-direct:active { transform: scale(0.98); }
+
+    #q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .q-card {
+      position: relative; text-align: left;
+      background: var(--bg-surface); border: 1px solid var(--border-light);
+      border-left: 4px solid var(--border-light);
+      border-radius: var(--radius); padding: 14px 12px; min-height: 74px;
+      display: flex; flex-direction: column; justify-content: center; gap: 6px;
+      transition: transform 0.1s;
+    }
+    .q-card:active { transform: scale(0.97); }
+    .q-card.imp-1 { border-left-color: var(--imp-1); }
+    .q-card.imp-2 { border-left-color: var(--imp-2); }
+    .q-card.imp-3 { border-left-color: var(--imp-3); }
+    .q-card-title {
+      font-size: 15px; font-weight: 600; color: var(--text-primary);
+      word-break: break-all; line-height: 1.3;
+    }
+    .q-card-meta { font-size: 11px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 6px; }
+    .q-card-memo {
+      font-size: 11px; color: var(--text-secondary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .q-card-move { display: none; position: absolute; top: 4px; right: 4px; gap: 2px; }
+    #q-app.editing .q-card-move { display: flex; }
+    #q-app.editing .q-card { padding-right: 58px; border-style: dashed; border-left-style: solid; }
+    .q-move-btn {
+      width: 26px; height: 26px; border-radius: 50%; font-size: 12px;
+      background: var(--bg-hover); color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .q-move-btn:disabled { opacity: 0.3; }
+    .q-card.q-add-card {
+      border: 1.5px dashed var(--border-light); border-left-width: 1.5px;
+      align-items: center; color: var(--text-secondary); font-size: 14px;
+    }
+    #q-empty {
+      grid-column: 1 / -1; text-align: center; color: var(--text-muted);
+      font-size: 13px; line-height: 1.7; padding: 30px 0;
+    }
+
+    /* ── 입력 시트 (똑비서 할일 모달 스타일 재사용) ── */
+    #modal-box { max-height: 92dvh; overflow-y: auto; }
+    #detail-section { margin-bottom: 18px; }
+    #q-date-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+    .q-date-chip {
+      padding: 7px 11px; border-radius: 20px; font-size: 12px;
+      border: 1px solid var(--border-light); color: var(--text-secondary);
+      white-space: nowrap; transition: all 0.15s;
+    }
+    .q-date-chip.active { background: var(--accent); border-color: var(--accent); color: #1a1a2e; font-weight: 600; }
+    #q-date-text { font-size: 11px; color: var(--text-muted); margin-left: 40px; margin-top: -6px; }
+    #q-option-slots { display: flex; gap: 14px; align-items: center; }
+    #q-option-slots .remind-flag-slot { min-height: 30px; }
+    #q-option-slots #checklist-toggle-label { margin-left: 0; }
+    #q-option-slots .checklist-open-btn,
+    #q-option-slots .time-open-btn { padding: 5px 12px; font-size: 12px; }
+    #q-footer { display: flex; gap: 8px; }
+    #q-footer #modal-save { flex: 1; margin-top: 0; }
+    #q-tpl-delete {
+      padding: 13px 18px; border-radius: var(--radius-sm); font-size: 15px;
+      border: 1px solid var(--danger); color: var(--danger);
+    }
+    #q-tpl-delete.hidden { display: none; }
+    #modal-save:disabled { opacity: 0.5; }
+
+    /* ── 확인 창 (템플릿 삭제) ── */
+    #q-confirm {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #q-confirm.hidden { display: none; }
+    #q-confirm-box {
+      background: var(--bg-elevated); border-radius: 16px; padding: 24px 20px 18px; width: 280px;
+      display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #q-confirm-msg { font-size: 15px; font-weight: 600; color: var(--text-primary); text-align: center; line-height: 1.5; word-break: break-all; }
+    #q-confirm-btns { display: flex; gap: 10px; }
+    #q-confirm-btns button { flex: 1; padding: 11px; border-radius: 10px; font-size: 15px; }
+    #q-confirm-cancel { background: var(--bg-hover); color: var(--text-primary); }
+    #q-confirm-ok { background: var(--danger); color: #fff; font-weight: 600; }
+
+    /* 하단 탭바가 없으므로 토스트 위치를 아래로 */
+    #toast { bottom: 40px; }
+  </style>
+</head>
+<body>
+<script>
+  // 저장된 테마를 먼저 적용 (index.html의 스플래시 스크립트와 동일)
+  (function () {
+    var LEGACY = { sage: 'light', navy: 'dark' };
+    var COLORS = ['sky', 'rose', 'lavender', 'cream', 'apricot', 'mint', 'mocha', 'gray'];
+    var t = localStorage.getItem('app-theme') || (localStorage.getItem('lightmode') === '1' ? 'light' : 'dark');
+    if (LEGACY[t]) t = LEGACY[t];
+    if (t === 'light') document.body.classList.add('light-mode');
+    else if (COLORS.indexOf(t) !== -1) document.body.classList.add('theme-' + t, 'theme-active');
+  })();
+</script>
+
+<!-- ===== 로그인 화면 (저장된 로그인이 없을 때만 표시) ===== -->
+<div id="login-screen">
+  <div id="login-box">
+    <div id="login-logo-wrap">
+      <img id="login-logo" src="logo2.png" alt="똑비서" />
+      <div id="login-title">빠른 추가</div>
+    </div>
+    <form id="login-form" autocomplete="off">
+      <input type="email" id="login-email" placeholder="이메일" required autocomplete="username" />
+      <input type="password" id="login-password" placeholder="비밀번호" required autocomplete="current-password" />
+      <div id="login-error"></div>
+      <button type="submit" id="login-btn">
+        <span id="login-btn-text">로그인</span>
+        <span id="login-spinner"></span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== 메인 화면: 템플릿 목록 ===== -->
+<div id="q-app" style="display:none">
+  <div id="q-header">
+    <div>
+      <div id="q-header-title">⚡ 빠른 추가</div>
+      <div id="q-header-sub"></div>
+    </div>
+    <button id="q-edit-toggle">편집</button>
+  </div>
+  <button id="q-direct">✏️ 직접 입력</button>
+  <div id="q-grid"></div>
+</div>
+
+<!-- ===== 입력 시트 (똑비서 할일 모달 구조/스타일 재사용) ===== -->
+<div id="modal-overlay" class="hidden">
+  <div id="modal-box">
+    <div id="modal-header">
+      <span id="modal-title-label">할일 추가</span>
+      <button id="modal-close">✕</button>
+    </div>
+    <div id="modal-title-row">
+      <input type="text" id="input-title" size="1" placeholder="할일을 입력하세요..." autocomplete="off" />
+    </div>
+    <div id="detail-section">
+      <div class="detail-row" id="q-date-row">
+        <label class="detail-label">날짜</label>
+        <div id="q-date-btns">
+          <button class="q-date-chip" data-offset="0">오늘</button>
+          <button class="q-date-chip" data-offset="1">내일</button>
+          <button class="q-date-chip" data-offset="2">모레</button>
+          <button class="q-date-chip" id="q-date-pick">📅 선택</button>
+        </div>
+      </div>
+      <div id="q-date-text"></div>
+      <div class="detail-row">
+        <label class="detail-label">중요도</label>
+        <div id="importance-btns">
+          <button class="imp-btn" data-val="0">없음</button>
+          <button class="imp-btn" data-val="1">낮음</button>
+          <button class="imp-btn" data-val="2">보통</button>
+          <button class="imp-btn" data-val="3">높음</button>
+        </div>
+      </div>
+      <div class="detail-row">
+        <label class="detail-label">메모</label>
+        <textarea id="input-memo" cols="1" placeholder="메모 (선택사항)"></textarea>
+      </div>
+      <div class="detail-row">
+        <label class="detail-label">옵션</label>
+        <div id="q-option-slots">
+          <div class="remind-flag-slot">
+            <label id="time-toggle-label">
+              <input type="checkbox" id="time-toggle" />
+              <span>시간</span>
+            </label>
+            <button id="time-open-btn" class="time-open-btn hidden" title="시간 편집">🕒 시간</button>
+          </div>
+          <div class="remind-flag-slot">
+            <label id="checklist-toggle-label">
+              <input type="checkbox" id="checklist-toggle" />
+              <span>리스트</span>
+            </label>
+            <button id="checklist-open-btn" class="checklist-open-btn hidden" title="체크리스트 편집">☑ 리스트</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="q-footer">
+      <button id="q-tpl-delete" class="hidden">삭제</button>
+      <button id="modal-save">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 체크리스트 모달 (index.html과 동일) ===== -->
+<div id="checklist-overlay" class="hidden">
+  <div id="checklist-box">
+    <div id="checklist-header">
+      <span>체크 리스트</span>
+      <button id="checklist-modal-close">✕</button>
+    </div>
+    <div id="checklist-items"></div>
+    <div id="checklist-add-row">
+      <input type="text" id="checklist-input" size="1" placeholder="" autocomplete="off" />
+      <button id="checklist-add-btn">＋</button>
+    </div>
+    <div id="checklist-footer">
+      <button id="checklist-cancel-btn" class="checklist-footer-btn cancel">취소</button>
+      <button id="checklist-confirm-btn" class="checklist-footer-btn confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 시간 설정 모달 (index.html과 동일) ===== -->
+<div id="time-overlay" class="hidden">
+  <div id="time-box">
+    <div id="time-header">
+      <span>시간 설정</span>
+      <button id="time-modal-close">✕</button>
+    </div>
+    <div id="time-select-row">
+      <select id="time-hour"></select>
+      <span class="time-unit">시</span>
+      <select id="time-minute"></select>
+      <span class="time-unit">분</span>
+    </div>
+    <div id="time-footer">
+      <button id="time-delete-btn" class="time-footer-btn delete hidden">삭제</button>
+      <button id="time-cancel-btn" class="time-footer-btn cancel">취소</button>
+      <button id="time-confirm-btn" class="time-footer-btn confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 템플릿 삭제 확인 ===== -->
+<div id="q-confirm" class="hidden">
+  <div id="q-confirm-box">
+    <div id="q-confirm-msg"></div>
+    <div id="q-confirm-btns">
+      <button id="q-confirm-cancel">취소</button>
+      <button id="q-confirm-ok">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 똑비서 파일 재활용 (같은 ?v= → 브라우저 캐시 공유)
+     config.js  : 로그인·출입증 갱신·공용 함수(showToast, todayStr …)
+     db.js      : insertTodo (할일 저장), 체크리스트 진행도
+     sync.js    : 기기 저장소(IndexedDB)·대기 큐 — 오프라인 저장용
+     todo.js    : 시간 표시 형식(formatTimeLabel)
+     modal.js   : 시간 모달·체크리스트 모달
+     storage.js : 디자인 달력(openCustomDatePicker)
+     holiday.js : 달력의 공휴일 빨간 날 -->
+<script src="js/config.js?v=20261114a"></script>
+<script src="js/db.js"></script>
+<script src="js/sync.js?v=20261028a"></script>
+<script src="js/todo.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/storage.js?v=20261112b"></script>
+<script src="js/holiday.js?v=20261112c"></script>
+
+<script>
+// =============================================
+// quick.html — 똑비서 빠른 추가 (모바일 전용)
+// - 템플릿(기기 안 저장)을 눌러 바로 할일 추가
+// - 저장 대상: 개인 모드(ddog) 테이블
+// =============================================
+
+// ── 똑비서 화면 함수 대체 ──
+// 재활용한 파일들이 똑비서 화면 갱신 함수를 부르는 경우가 있어 빈 함수로 둔다.
+// (빠른 추가에는 달력·목록 화면이 없음)
+function refreshCurrentTab() {}
+function updateMonthDots() {}
+
+// config.js의 로그인 폼(initLoginForm)은 로그인 성공 시 showApp()을 부른다.
+// → 똑비서 전체를 띄우는 대신 빠른 추가 화면을 띄우도록 이 페이지용으로 교체
+async function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('q-app').style.display = '';
+  _qLoadHolidays();
+}
+
+// ─────────────────────────────────────────────
+// 템플릿 저장소 (기기 안 localStorage)
+// ─────────────────────────────────────────────
+const Q_TPL_KEY = 'ddog_quick_templates';
+
+function qLoadTemplates() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(Q_TPL_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch(e) { return []; }
+}
+
+function qSaveTemplates(list) {
+  localStorage.setItem(Q_TPL_KEY, JSON.stringify(list));
+}
+
+// ─────────────────────────────────────────────
+// 메인 화면 (템플릿 목록)
+// ─────────────────────────────────────────────
+let _qEditing = false;   // 편집 모드
+
+function qRenderGrid() {
+  const grid = document.getElementById('q-grid');
+  const list = qLoadTemplates();
+  grid.innerHTML = '';
+
+  if (!list.length && !_qEditing) {
+    const empty = document.createElement('div');
+    empty.id = 'q-empty';
+    empty.innerHTML = '등록된 템플릿이 없어요.<br>오른쪽 위 [편집]에서 추가해 보세요.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  list.forEach((tpl, idx) => {
+    const card = document.createElement('button');
+    card.className = 'q-card imp-' + (tpl.importance || 0);
+
+    const title = document.createElement('div');
+    title.className = 'q-card-title';
+    title.textContent = tpl.title;
+    card.appendChild(title);
+
+    const metaParts = [];
+    if (tpl.time_at) metaParts.push('🕒 ' + formatTimeLabel(tpl.time_at));
+    const clCount = (tpl.checklist || []).filter(it => it.text && it.text.trim()).length;
+    if (clCount) metaParts.push('☑ ' + clCount);
+    if (metaParts.length) {
+      const meta = document.createElement('div');
+      meta.className = 'q-card-meta';
+      metaParts.forEach(t => { const s = document.createElement('span'); s.textContent = t; meta.appendChild(s); });
+      card.appendChild(meta);
+    }
+    if (tpl.memo) {
+      const memo = document.createElement('div');
+      memo.className = 'q-card-memo';
+      memo.textContent = tpl.memo.split('\n')[0];
+      card.appendChild(memo);
+    }
+
+    // 편집 모드: 순서 이동 버튼
+    const move = document.createElement('div');
+    move.className = 'q-card-move';
+    const up = document.createElement('span');
+    up.className = 'q-move-btn'; up.textContent = '▲';
+    const down = document.createElement('span');
+    down.className = 'q-move-btn'; down.textContent = '▼';
+    if (idx === 0) up.style.opacity = '0.3';
+    if (idx === list.length - 1) down.style.opacity = '0.3';
+    up.addEventListener('click', e => { e.stopPropagation(); qMoveTemplate(idx, -1); });
+    down.addEventListener('click', e => { e.stopPropagation(); qMoveTemplate(idx, 1); });
+    move.appendChild(up); move.appendChild(down);
+    card.appendChild(move);
+
+    card.addEventListener('click', () => {
+      if (_qEditing) qOpenSheet('tpl-edit', tpl);
+      else           qOpenSheet('add', tpl);
+    });
+    grid.appendChild(card);
+  });
+
+  if (_qEditing) {
+    const add = document.createElement('button');
+    add.className = 'q-card q-add-card';
+    add.textContent = '＋ 새 템플릿';
+    add.addEventListener('click', () => qOpenSheet('tpl-new', null));
+    grid.appendChild(add);
+  }
+}
+
+function qMoveTemplate(idx, dir) {
+  const list = qLoadTemplates();
+  const to = idx + dir;
+  if (to < 0 || to >= list.length) return;
+  [list[idx], list[to]] = [list[to], list[idx]];
+  qSaveTemplates(list);
+  qRenderGrid();
+}
+
+function qSetEditing(on) {
+  _qEditing = on;
+  document.getElementById('q-app').classList.toggle('editing', on);
+  const btn = document.getElementById('q-edit-toggle');
+  btn.textContent = on ? '완료' : '편집';
+  btn.classList.toggle('active', on);
+  document.getElementById('q-direct').style.display = on ? 'none' : '';
+  qRenderGrid();
+}
+
+function qUpdateHeaderSub() {
+  const d = new Date();
+  const dow = ['일','월','화','수','목','금','토'][d.getDay()];
+  document.getElementById('q-header-sub').textContent =
+    `오늘 ${d.getMonth()+1}월 ${d.getDate()}일 (${dow})`;
+}
+
+// ─────────────────────────────────────────────
+// 입력 시트
+//   mode: 'add'      → 할일 추가 (tpl 있으면 템플릿 값으로 채움, 없으면 직접 입력)
+//         'tpl-new'  → 새 템플릿 등록
+//         'tpl-edit' → 템플릿 수정/삭제
+// ─────────────────────────────────────────────
+let _qMode   = 'add';
+let _qTplId  = null;
+let _qDate   = todayStr();
+let _qSaving = false;
+
+function _qDateOffset(n) {
+  const d = new Date(); d.setDate(d.getDate() + n); return toLocalDateStr(d);
+}
+
+function _qDateLabel(v) {
+  const d = new Date(v + 'T00:00:00');
+  const dow = ['일','월','화','수','목','금','토'][d.getDay()];
+  return `${d.getMonth()+1}. ${d.getDate()}.(${dow})`;
+}
+
+function qSetDate(dateStr) {
+  _qDate = dateStr;
+  let matched = false;
+  document.querySelectorAll('.q-date-chip[data-offset]').forEach(chip => {
+    const on = _qDateOffset(parseInt(chip.dataset.offset, 10)) === dateStr;
+    chip.classList.toggle('active', on);
+    if (on) matched = true;
+  });
+  const pick = document.getElementById('q-date-pick');
+  pick.classList.toggle('active', !matched);
+  pick.textContent = matched ? '📅 선택' : '📅 ' + _qDateLabel(dateStr);
+  const full = _formatCustomDateLabel(dateStr);   // storage.js: "2026. 11. 24. (화)"
+  document.getElementById('q-date-text').textContent = full;
+}
+
+function qSetImportance(val) {
+  selectedImportance = val;   // modal.js 전역
+  document.querySelectorAll('#importance-btns .imp-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.val, 10) === val);
+  });
+}
+
+function qOpenSheet(mode, tpl) {
+  _qMode  = mode;
+  _qTplId = tpl ? tpl.id : null;
+  _qSaving = false;
+  AppState.editingId = null;   // 체크리스트 모달이 "신규" 동작(확인 = 임시 보관)을 하도록
+
+  const isAdd = mode === 'add';
+  document.getElementById('modal-title-label').textContent =
+    mode === 'tpl-new'  ? '새 템플릿' :
+    mode === 'tpl-edit' ? '템플릿 수정' :
+    (tpl ? '할일 추가 · 템플릿' : '할일 추가');
+  document.getElementById('q-date-row').style.display  = isAdd ? '' : 'none';
+  document.getElementById('q-date-text').style.display = isAdd ? '' : 'none';
+  document.getElementById('q-tpl-delete').classList.toggle('hidden', mode !== 'tpl-edit');
+  const saveBtn = document.getElementById('modal-save');
+  saveBtn.textContent = isAdd ? '추가' : '템플릿 저장';
+  saveBtn.disabled = false;
+
+  // 값 채우기 (템플릿 → 시트)
+  document.getElementById('input-title').value = tpl ? (tpl.title || '') : '';
+  document.getElementById('input-memo').value  = tpl ? (tpl.memo  || '') : '';
+  qSetImportance(tpl ? (tpl.importance || 0) : 0);
+  timeValue = tpl ? (tpl.time_at || null) : null;                       // modal.js 전역
+  checklistItems = tpl && Array.isArray(tpl.checklist)                  // modal.js 전역
+    ? tpl.checklist.map(it => ({ ...it, checked: false }))
+    : [];
+  updateTimeUI();
+  updateChecklistUI();
+  qSetDate(todayStr());
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  // 직접 입력/새 템플릿은 제목칸에 바로 포커스 (템플릿 추가는 키보드 안 띄움)
+  if (!tpl) setTimeout(() => document.getElementById('input-title').focus(), 250);
+}
+
+function qCloseSheet() {
+  try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e) {}
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// 시트 내용 → 템플릿/할일 값
+function _qCollect() {
+  const validItems = checklistItems.filter(it => it.text && it.text.trim());
+  return {
+    title:      document.getElementById('input-title').value.trim(),
+    memo:       document.getElementById('input-memo').value.trim(),
+    importance: selectedImportance,
+    time_at:    timeValue || null,
+    validItems,
+  };
+}
+
+function _qTitleRequired() {
+  const el = document.getElementById('input-title');
+  el.focus();
+  el.style.borderColor = 'var(--danger)';
+  setTimeout(() => { el.style.borderColor = ''; }, 1500);
+  showToast('제목을 입력해주세요 ✏️');
+}
+
+async function qHandleSave() {
+  if (_qSaving) return;
+  const v = _qCollect();
+  if (!v.title) { _qTitleRequired(); return; }
+
+  // ── 템플릿 저장 ──
+  if (_qMode !== 'add') {
+    const list = qLoadTemplates();
+    const tpl = {
+      id:         _qTplId || ('tpl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+      title:      v.title,
+      memo:       v.memo,
+      importance: v.importance,
+      time_at:    v.time_at,
+      checklist:  v.validItems.map(it => ({ id: it.id, text: it.text.trim(), checked: false })),
+    };
+    const idx = list.findIndex(t => t.id === tpl.id);
+    if (idx !== -1) list[idx] = tpl; else list.push(tpl);
+    qSaveTemplates(list);
+    qCloseSheet();
+    qRenderGrid();
+    showToast('템플릿 저장됐어요 ✓');
+    return;
+  }
+
+  // ── 할일 추가 → 똑비서(ddog)로 저장 ──
+  _qSaving = true;
+  const saveBtn = document.getElementById('modal-save');
+  saveBtn.disabled = true;
+
+  try {
+    // 출입증 확인 (유효하면 서버 요청 없이 즉시 통과, 만료 임박이면 갱신)
+    const auth = await refreshNow();
+    if (auth === 'invalid' || auth === 'none') {
+      clearSession();
+      _qSaving = false;
+      saveBtn.disabled = false;
+      showToast('로그인이 만료됐어요. 다시 로그인해 주세요');
+      document.getElementById('login-screen').style.display = 'flex';
+      return;
+    }
+
+    // 정렬 순서: 똑비서와 동일하게 "그 날짜의 맨 위"로 (insertTodo가 AppState.todos 기준으로 계산)
+    try {
+      AppState.todos = (await fetchTodosByDate(_qDate)).filter(t => typeof t.sort_order === 'number');
+    } catch(e) {
+      AppState.todos = [];
+    }
+
+    const checklistJson = v.validItems.length
+      ? JSON.stringify(v.validItems.map(it => ({ id: it.id, text: it.text.trim(), checked: false })))
+      : null;
+
+    const saved = await insertTodo({
+      title:        v.title,
+      memo:         v.memo,
+      importance:   v.importance,
+      date:         _qDate,
+      time_at:      v.time_at,
+      checklist:    checklistJson,
+      remind_days:  0,
+      weekly_flag:  false,
+      storage_flag: false,
+      repeat_type:  'none',
+    });
+
+    const isTmp = String(saved && saved.id).startsWith('tmp_');
+    if (!isTmp && saved && saved.id != null) {
+      // 서버 저장 성공 → 기기 저장소에 넣은 사본은 지움.
+      // 똑비서는 다음 실행 때 "마지막으로 받은 시각 이후 변경분"을 받아오는데,
+      // 이 행이 기기 저장소에 있으면 그 기준 시각이 이 행의 시각으로 앞당겨져
+      // 그 사이 다른 기기에서 바뀐 일정을 첫 단계에서 놓칠 수 있기 때문.
+      // (지워도 똑비서를 열면 서버에서 바로 받아와 표시됨)
+      try { await idbDelete(saved.id); } catch(e) {}
+    }
+    // 오프라인/전송 실패(tmp) → 기기 저장소 + 대기 큐에 남김 → 똑비서 실행 시 자동 전송
+
+    qCloseSheet();
+    showToast(isTmp ? '오프라인 저장 · 똑비서를 열면 전송돼요' : '추가됐어요 ✓', 2500);
+  } catch(e) {
+    console.error('[quick] 저장 실패', e);
+    showToast('저장 실패. 다시 시도해주세요');
+  } finally {
+    _qSaving = false;
+    saveBtn.disabled = false;
+  }
+}
+
+// ── 템플릿 삭제 확인 ──
+function qOpenConfirm() {
+  const title = document.getElementById('input-title').value.trim() || '이 템플릿';
+  document.getElementById('q-confirm-msg').textContent = `'${title}' 템플릿을 삭제할까요?`;
+  document.getElementById('q-confirm').classList.remove('hidden');
+}
+function qCloseConfirm() {
+  document.getElementById('q-confirm').classList.add('hidden');
+}
+function qDeleteTemplate() {
+  const list = qLoadTemplates().filter(t => t.id !== _qTplId);
+  qSaveTemplates(list);
+  qCloseConfirm();
+  qCloseSheet();
+  qRenderGrid();
+  showToast('템플릿 삭제됐어요');
+}
+
+// ─────────────────────────────────────────────
+// 뒤로가기: 열린 창(모달)만 닫기
+//   - 평소 히스토리: [바닥] 한 칸뿐 → 아무것도 안 열려 있으면 뒤로가기 한 번에 바로 나감
+//   - 창이 열리면 [바닥, 보호] 두 칸으로 (보호 칸은 항상 최대 1개 → 쌓이지 않음)
+//   - 뒤로가기 → 맨 위 창 하나 닫기. 아직 열린 창이 있으면 똑비서와 같은 방식으로
+//     history.forward()로 보호 칸에 복귀 (뒤로가기 중 pushState가 칸을 덮어쓰는 문제 회피)
+//   - 버튼으로 창을 다 닫으면 남은 보호 칸을 스스로 정리 (다음 뒤로가기에 바로 나가도록)
+// ─────────────────────────────────────────────
+let _qGuardActive    = false;   // 보호 칸이 쌓여 있는지
+let _qConsumingGuard = false;   // 보호 칸을 스스로 정리하는 중인지
+
+function qHasOpenPopup() {
+  if (document.getElementById('storage-date-picker-popup')) return true;
+  if (!document.getElementById('q-confirm').classList.contains('hidden')) return true;
+  if (!document.getElementById('time-overlay').classList.contains('hidden')) return true;
+  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) return true;
+  if (!document.getElementById('modal-overlay').classList.contains('hidden')) return true;
+  return false;
+}
+
+function qCloseTopPopup() {
+  const picker = document.getElementById('storage-date-picker-popup');
+  if (picker) {
+    picker.remove();
+    document.getElementById('storage-date-picker-backdrop')?.remove();
+    return;
+  }
+  if (!document.getElementById('q-confirm').classList.contains('hidden'))         { qCloseConfirm(); return; }
+  if (!document.getElementById('time-overlay').classList.contains('hidden'))      { closeTimeModal(false); return; }
+  if (!document.getElementById('checklist-overlay').classList.contains('hidden')) { closeChecklistModal(false); return; }
+  if (!document.getElementById('modal-overlay').classList.contains('hidden'))     { qCloseSheet(); return; }
+}
+
+// 창이 열리고 닫힐 때마다 보호 칸 상태를 맞춤
+function qSyncGuard() {
+  const open = qHasOpenPopup();
+  if (open && !_qGuardActive) {
+    history.pushState({ page: 'q-guard' }, '');
+    _qGuardActive = true;
+  } else if (!open && _qGuardActive && !_qConsumingGuard) {
+    _qConsumingGuard = true;
+    history.back();
+  }
+}
+
+function qInitBackButton() {
+  history.replaceState({ page: 'q-base' }, '');
+
+  window.addEventListener('popstate', e => {
+    // 바닥 칸으로 돌아온 경우만 처리 (forward로 보호 칸에 복귀한 이벤트는 무시)
+    if (!e.state || e.state.page !== 'q-base') return;
+
+    if (_qConsumingGuard) {
+      // 스스로 정리한 경우: 그 사이 창이 다시 열렸으면 보호 칸 복귀
+      _qConsumingGuard = false;
+      if (qHasOpenPopup()) history.forward();
+      else _qGuardActive = false;
+      return;
+    }
+
+    if (!_qGuardActive) return;
+    if (qHasOpenPopup()) {
+      qCloseTopPopup();
+      if (qHasOpenPopup()) { history.forward(); return; }
+    }
+    _qGuardActive = false;
+  });
+
+  // 창 열림/닫힘 감지 (클래스 변경·달력 팝업 추가/제거)
+  let scheduled = false;
+  new MutationObserver(() => {
+    if (scheduled) return;
+    scheduled = true;
+    Promise.resolve().then(() => { scheduled = false; qSyncGuard(); });
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+}
+
+// ─────────────────────────────────────────────
+// 공휴일 (똑비서가 기기에 저장해 둔 목록으로 달력에 빨간 날 표시)
+// ─────────────────────────────────────────────
+function _qLoadHolidays() {
+  try {
+    const c = _hdLoadCache();
+    if (c) _hdApplyState(c.year, c.items);
+  } catch(e) {}
+}
+
+// ─────────────────────────────────────────────
+// 시작
+// ─────────────────────────────────────────────
+function qInit() {
+  // 로그인 폼 (config.js 재활용: 5회 실패 시 10분 잠금 포함)
+  initLoginForm();
+
+  // 시트 이벤트
+  document.getElementById('modal-close').addEventListener('click', qCloseSheet);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target.id === 'modal-overlay') qCloseSheet();
+  });
+  document.querySelectorAll('#importance-btns .imp-btn').forEach(btn => {
+    btn.addEventListener('click', () => qSetImportance(parseInt(btn.dataset.val, 10)));
+  });
+  document.querySelectorAll('.q-date-chip[data-offset]').forEach(chip => {
+    chip.addEventListener('click', () => qSetDate(_qDateOffset(parseInt(chip.dataset.offset, 10))));
+  });
+  document.getElementById('q-date-pick').addEventListener('click', e => {
+    e.preventDefault();
+    try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(_) {}
+    openCustomDatePicker(dateStr => qSetDate(dateStr), _qDate);   // storage.js 디자인 달력
+  });
+  document.getElementById('modal-save').addEventListener('click', qHandleSave);
+  document.getElementById('input-title').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); qHandleSave(); }
+  });
+  document.getElementById('q-tpl-delete').addEventListener('click', qOpenConfirm);
+  document.getElementById('q-confirm-cancel').addEventListener('click', qCloseConfirm);
+  document.getElementById('q-confirm-ok').addEventListener('click', qDeleteTemplate);
+  document.getElementById('q-confirm').addEventListener('click', e => {
+    if (e.target.id === 'q-confirm') qCloseConfirm();
+  });
+
+  // 시간·리스트 (modal.js 재활용 — 똑비서 할일 창과 동일 동작)
+  document.getElementById('checklist-toggle').addEventListener('change', e => {
+    const validItems = checklistItems.filter(it => it.text && it.text.trim());
+    if (validItems.length > 0) { e.target.checked = true; return; }
+    if (e.target.checked) openChecklistModal();
+  });
+  document.getElementById('checklist-open-btn').addEventListener('click', openChecklistModal);
+  document.getElementById('time-toggle').addEventListener('change', e => {
+    if (timeValue) { e.target.checked = true; return; }
+    if (e.target.checked) openTimeModal();
+  });
+  document.getElementById('time-open-btn').addEventListener('click', openTimeModal);
+  initChecklistModal();
+  initTimeModal();
+
+  // 메인 화면
+  document.getElementById('q-direct').addEventListener('click', () => qOpenSheet('add', null));
+  document.getElementById('q-edit-toggle').addEventListener('click', () => qSetEditing(!_qEditing));
+  qUpdateHeaderSub();
+  qRenderGrid();
+  qInitBackButton();
+
+  // 다시 돌아왔을 때 날짜가 바뀌었으면 "오늘" 표시 갱신
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') qUpdateHeaderSub();
+  });
+
+  // 로그인 확인: 똑비서에 저장된 로그인을 그대로 사용
+  const session = loadSession();
+  if (session && session.access_token) {
+    setAuthToken(session.access_token);
+    showApp();
+    // 만료 임박이면 미리 갱신 (화면 표시는 기다리지 않음)
+    refreshNow().then(r => {
+      if (r === 'invalid' || r === 'none') {
+        clearSession();
+        document.getElementById('login-screen').style.display = 'flex';
+      }
+    });
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+}
+
+qInit();
+</script>
+</body>
+</html>
